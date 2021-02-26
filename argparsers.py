@@ -1,20 +1,14 @@
 import argparse
 from fairseq import options
-from pocketml.data.data_util import get_dataset_path
+from download import get_dataset_path, TASK_DATASET_PATHS
 
 pipeline_tasks = [
     'finetune',
     'prune-magnitude',
-    'quantize',
+    'quantize'
 ]
 
-finetune_tasks = [
-    'commonsense_qa',
-    'glue',
-    'superglue',
-    'squad',
-    # TODO skal lige blive enige om nogle foreløbige benchmark tasks
-]
+finetune_tasks = list(TASK_DATASET_PATHS.keys())
 
 # define arguments for model compression
 def get_argparser_compress():
@@ -28,9 +22,9 @@ def get_argparser_compress():
 
 # download benchmark tasks, roberta models etc
 def get_argparser_download():
-    pass
+    parser = argparse.ArgumentParser()
 
-#
+
 def get_argparser_evaluate():
     pass
 
