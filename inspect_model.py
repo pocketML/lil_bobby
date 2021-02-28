@@ -28,7 +28,7 @@ def group_by_layer(model):
         elif 'layers.' in name:
             key = 'layer_' + (name.split('layers.')[1].split('.')[0])
         else:
-            key = 'layer_encoding'
+            key = 'encoding_layer'
         values = layers.get(key, [])
         values.append((name,param))
         layers[key] = values
@@ -56,28 +56,55 @@ def print_parameter_size(model):
     print(f'{total_bits} bits')
     print(f'{total_mbs:.2f} MB')
 
-def ratio_below_treshold(model, threshold):
-    total_weights = 0
-    below = 0
-    for name, param in model.named_parameters():
-        if '.weight' in name:
-            print(name)
-            for w in param.view(-1):
-                total_weights += 1
-                if abs(w) < threshold:
-                    below += 1
-                    print('below')
-                else:
-                    print('above')
-        else:
-            print(f'not applicable for: {name}')
-    print(f'total weights: {total_weights}')
-    print(f'below threshold of {threshold}: {below}')
-    print(f'ratio: {below / total_weights}')
+def map_inplace(param, op):
+    sizes = list(param.size())
+    if len(sizes) > 1:
+        for i in range(sizes[0]):
+            for j in range(sizes[1]):
+                value = param[i,j]
+                param[i,j] = op(value)
+    else:
+        for i in range(sizes[0]):
+            value = param[i]
+            param[i] = op(value)
+
+def fold(param, op, acc):
+    sizes = list(param.size())
+    if len(sizes) > 1:
+        for i in range(sizes[0]):
+            for j in range(sizes[1]):
+                value = param[i, j]
+                op(value, acc)
+    else:
+        for i in range(sizes[0]):
+            value = param[i]
+            op(value, acc)
+    return acc
 
 #layers = group_by_layer(roberta)
 #ratio_below_treshold(roberta, 0.0001)
-print() .data?
+#print() .data?
+
+layers = group_by_layer(roberta)
+'''
+threshold = 0.01
+def count_below(v, acc):
+    if abs(v) < 0.01:
+        acc[1] += 1
+    acc[0] += 1
+print(f'Setting threshold to: {threshold}')
+for key in layers.keys():
+    if 'layer_' in key:
+        print(key)
+        total = 0
+        below = 0
+        result = [0,0]
+        for name,param in layers[key]:
+            if 'weight' in name:
+                result = fold(param, count_below, result)
+        print(f'below threshold: {result[1]}/{result[0]} ({result[1]/result[0]:.4f})')
+'''
+
 
 print('-'*20)
 print_parameter_size(roberta)
