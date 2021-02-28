@@ -1,11 +1,7 @@
-from fairseq.models.roberta import RobertaModel
-from examples.roberta import commonsense_qa # load the Commonsense QA task
-from functools import reduce
 import torch
 import matplotlib.pyplot as plt
-
-roberta = RobertaModel.from_pretrained('./models/checkpoints', 'checkpoint_best.pt', 'data/CommonsenseQA')
-roberta.eval() # disable dropout
+from functools import reduce
+from common import model_utils
 
 def dtype_bits(param):
     dt = param.dtype
@@ -21,68 +17,19 @@ def dtype_bits(param):
         return 8
     raise TypeError(f'Could not recognize dtype: {dt}') 
 
-def group_by_layer(model):
-    layers = {}
-    for name, param in roberta.named_parameters():
-        if 'classification_heads' in name:
-            key = name.split('classification_heads.')[1].split('.')[0]
-        elif 'layers.' in name:
-            key = 'layer_' + (name.split('layers.')[1].split('.')[0])
-        else:
-            key = 'encoding_layer'
-        values = layers.get(key, [])
-        values.append((name,param))
-        layers[key] = values
-    return layers
-
-def print_parameter_size(model):
-    total_weights = 0
+# returns tuple with number of params and number of bits used
+def get_model_size(model):
     total_params = 0
     total_bits = 0
-    total_mbs = 0
     for name, param in model.named_parameters():
         size = list(param.size())
         num_weights = reduce(lambda acc, x: acc * x, size, 1)
-        num_bits = num_weights * dtype_bits(param)
+        total_params += num_weights
+        # components might have different dtype, so we have to check for each
+        total_bits += num_weights * dtype_bits(param)
+    return total_params, total_bits
 
-        total_weights += num_weights
-        total_bits += num_bits
-        total_mbs += num_bits / 8_000_000
-        total_params += 1
-
-    print(f'Number of weights: {total_weights}')
-    print(f'Number of named params: {total_params}')
-    print('---------------')
-    print('Size of weights:')
-    print(f'{total_bits} bits')
-    print(f'{total_mbs:.2f} MB')
-
-def map_inplace(param, op):
-    sizes = list(param.size())
-    if len(sizes) > 1:
-        for i in range(sizes[0]):
-            for j in range(sizes[1]):
-                value = param[i,j]
-                param[i,j] = op(value)
-    else:
-        for i in range(sizes[0]):
-            value = param[i]
-            param[i] = op(value)
-
-def fold(param, op, acc):
-    sizes = list(param.size())
-    if len(sizes) > 1:
-        for i in range(sizes[0]):
-            for j in range(sizes[1]):
-                value = param[i, j]
-                op(value, acc)
-    else:
-        for i in range(sizes[0]):
-            value = param[i]
-            op(value, acc)
-    return acc
-
-# returns all weights in a layer in a single 1-dimensional numpy array
+# returns all weights in a layer as a single contiguous 1-dimensional numpy array
 def concat_weights_in_layer(layer):
     all_weights = torch.empty(1)
     for name, param in layer:
@@ -102,7 +49,7 @@ def weight_histogram_for_layer(layer, num_bins=1000):
     plt.show()
 
 def weight_histogram_for_all_transformers(model, num_bins=2000):
-    layers = group_by_layer(model)
+    layers = model_utils.group_params_by_layer(model)
     transformers = [layer for layer in layers.keys() if 'layer_' in layer]
     n = len(transformers)
     ncols = 4
@@ -119,7 +66,7 @@ def weight_histogram_for_all_transformers(model, num_bins=2000):
     plt.show()
 
 def print_threshold_stats(model):
-    layers = group_by_layer(model)
+    layers = model_utils.group_params_by_layer(model)
     transformers = [layer for layer in layers.keys() if 'layer_' in layer]
     thresholds = [0.001, 0.005, 0.01, 0.05, 0.1]
     for layer_name in transformers:
@@ -130,8 +77,9 @@ def print_threshold_stats(model):
             print(f'below {threshold} in {layer_name}: {below}/{total} ({below/total:.4f})')
         print('-'*20)
 
-
-# weight_histogram_for_all_transformers(roberta)
-print_threshold_stats(roberta)
-print('-'*20)
-print_parameter_size(roberta)
+def print_model_size(model):
+    total_params, total_bits = get_model_size(model)
+    print(f'total num parameters: {total_params}')
+    print(f'size in bits: {total_bits}')
+    print(f'size in MBs: {total_bits/8000000:.1f}')
+    print('-'*20)

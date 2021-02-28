@@ -1,3 +1,5 @@
 python 3.6.9
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 pip install fairseq
+conda install requests
+conda install matplotlib
