@@ -43,9 +43,15 @@ def args_finetune():
     return args
 
 def args_analyze():
+    models = [k for k in TASK_DATASET_PATHS.keys()]
+    [models.append(k) for k in MODEL_PATHS.keys()]
     ap = argparse.ArgumentParser()
-    ap.add_argument('--model-path', required=True, type=str)
-    #a.add_argument("--print-tresholds")
+    ap.add_argument('--model', choices=models, required=True)
+    ap.add_argument('--model-size', action='store_true')
+    ap.add_argument('--weight-hist', action='store_true')
+    ap.add_argument('--layer-weight-hist', type=str)
+    
+
     args = ap.parse_args()
     return args
 

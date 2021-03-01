@@ -34,3 +34,6 @@ def map_weights_inplace(layer, opt):
                     for j in range(size[1]):
                         value = param[i,j]
                         param[i][j] = opt(value)
+
+def get_roberta_base(path):
+    pass
