@@ -27,9 +27,13 @@ def get_transformer_layers(model):
 def map_weights_inplace(layer, opt):
     for name, param in layer:
         if 'weight' in name:
+            print(name, param.size())
             with torch.no_grad():
                 size = list(param.size())
                 for i in range(size[0]):
                     for j in range(size[1]):
                         value = param[i,j]
                         param[i][j] = opt(value)
+
+def get_roberta_base(path):
+    pass

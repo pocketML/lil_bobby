@@ -11,36 +11,49 @@ pipeline_tasks = [
 finetune_tasks = list(TASK_DATASET_PATHS.keys())
 
 # define arguments for model compression
-def get_argparser_compress():
-    a = argparse.ArgumentParser()
-    a.add_argument("task", choices=pipeline_tasks, nargs="+")
-    a.add_argument("--finetune-before", "-ftb", choices=finetune_tasks)
-    a.add_argument("--finetune-during", "-ftd", choices=finetune_tasks)
-    a.add_argument("--finetune-after", "-fta", choices=finetune_tasks)
-    a.add_argument('--config')
-    return a
+def args_compress():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("task", choices=pipeline_tasks, nargs="+")
+    ap.add_argument("--finetune-before", "-ftb", choices=finetune_tasks)
+    ap.add_argument("--finetune-during", "-ftd", choices=finetune_tasks)
+    ap.add_argument("--finetune-after", "-fta", choices=finetune_tasks)
+    ap.add_argument('--config')
+    args = ap.parse_args()
+    return args
 
 # download benchmark tasks, roberta models etc
-def get_argparser_download():
+def args_download():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--task", "-t", choices=TASK_DATASET_PATHS.keys())
     group.add_argument("--model", "-m", choices=MODEL_PATHS.keys())
-    return parser
+    args = parser.parse_args()
+    return args
 
-def get_argparser_evaluate():
+def args_evaluate():
     pass
 
-def get_argparser_experiment():
+def args_experiment():
     pass
 
-def get_argparser_finetune():
-    a = argparse.ArgumentParser()
-    a.add_argument("--config", "-config", required=True)
-    return a
+def args_finetune():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", "-config", required=True)
+    args = ap.parse_args()
+    return args
 
-def get_argparser_inspect():
-    pass
+def args_analyze():
+    models = [k for k in TASK_DATASET_PATHS.keys()]
+    [models.append(k) for k in MODEL_PATHS.keys()]
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--model', choices=models, required=True)
+    ap.add_argument('--model-size', action='store_true')
+    ap.add_argument('--weight-hist', action='store_true')
+    ap.add_argument('--layer-weight-hist', type=str)
+    
+
+    args = ap.parse_args()
+    return args
 
 def parse_roberta_args(parser):
     args = parser.parse_args()
