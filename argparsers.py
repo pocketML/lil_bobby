@@ -39,8 +39,9 @@ def get_argparser_finetune():
     a.add_argument("--config", "-config", required=True)
     return a
 
-def get_argparser_inspect():
-    pass
+def get_argparser_analyze():
+    a = argparse.ArgumentParser()
+
 
 def parse_roberta_args(parser):
     args = parser.parse_args()

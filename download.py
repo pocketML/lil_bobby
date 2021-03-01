@@ -53,9 +53,9 @@ MODEL_PATHS = {
 }
 
 def download_and_extract(urls, folder):
-    base_folder = "/".join(folder.split("/")[:-1])
+    base_folder = "/".join(folder.split("/")[:-1]) + "/"
     if not os.path.exists(base_folder):
-        os.mkdir(base_folder)
+        os.makedirs(base_folder)
 
     for url in urls:
         filename = os.path.basename(url)
@@ -71,6 +71,8 @@ def download_and_extract(urls, folder):
                 os.mkdir(folder)
             shutil.move(filename, f"{folder}/{filename}")
         else: # File is an archive.
+            print(base_folder)
+            print(filename)
             shutil.unpack_archive(filename, base_folder)
 
             os.remove(filename)

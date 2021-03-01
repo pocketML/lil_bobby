@@ -27,6 +27,7 @@ def get_transformer_layers(model):
 def map_weights_inplace(layer, opt):
     for name, param in layer:
         if 'weight' in name:
+            print(name, param.size())
             with torch.no_grad():
                 size = list(param.size())
                 for i in range(size[0]):
