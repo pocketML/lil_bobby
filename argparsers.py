@@ -39,6 +39,7 @@ def args_experiment():
 def args_finetune():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", "-config", required=True)
+    
     args = ap.parse_args()
     return args
 
@@ -47,6 +48,7 @@ def args_analyze():
     [models.append(k) for k in MODEL_PATHS.keys()]
     ap = argparse.ArgumentParser()
     ap.add_argument('--model', choices=models, required=True)
+    ap.add_argument('--model-path', type=str)
     ap.add_argument('--model-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
     ap.add_argument('--layer-weight-hist', type=str)
