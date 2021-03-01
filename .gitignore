@@ -1,6 +1,10 @@
 # pickled files
 *.pt
 
+# Dataset and model files
+models/*
+data/*
+
 # JetBrains PyCharm IDE
 .idea/
 
