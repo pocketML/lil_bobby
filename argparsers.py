@@ -1,6 +1,6 @@
 import argparse
 from fairseq import options
-from download import get_dataset_path, TASK_DATASET_PATHS
+from download import get_dataset_path, TASK_DATASET_PATHS, MODEL_PATHS
 
 pipeline_tasks = [
     'finetune',
@@ -23,7 +23,10 @@ def get_argparser_compress():
 # download benchmark tasks, roberta models etc
 def get_argparser_download():
     parser = argparse.ArgumentParser()
-
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--task", "-t", choices=TASK_DATASET_PATHS.keys())
+    group.add_argument("--model", "-m", choices=MODEL_PATHS.keys())
+    return parser
 
 def get_argparser_evaluate():
     pass
