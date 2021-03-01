@@ -99,8 +99,7 @@ def get_model_path(model_type):
     return folder
 
 if __name__ == "__main__":
-    parser = argparsers.get_argparser_download()
-    args = parser.parse_args()
+    args = argparsers.args_download()
 
     if args.task is not None:
         target_folder = TASK_DATASET_PATHS[args.task]
