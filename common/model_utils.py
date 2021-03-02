@@ -1,5 +1,16 @@
 import torch
 
+MODEL_INFO = {
+    "base": {
+        "path": "models/base",
+        "download_url": "https://dl.fbaipublicfiles.com/fairseq/models/roberta.base.tar.gz"
+    },
+    "large": {
+        "path": "models/large",
+        "download_url": "https://dl.fbaipublicfiles.com/fairseq/models/roberta.large.tar.gz"
+    }
+}
+
 # returns a dictionary with entries for all layers
 # key is layer name, either encoding_layer, layer_i, or classification head name
 # value is list of subcomponents (each a tuple of name and parameters)

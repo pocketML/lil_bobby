@@ -1,6 +1,8 @@
 import argparse
 from fairseq import options
-from download import get_dataset_path, TASK_DATASET_PATHS, MODEL_PATHS
+from common.task_utils import TASK_INFO
+from common.model_utils import MODEL_INFO
+from download import get_dataset_path
 
 pipeline_tasks = [
     'finetune',
@@ -8,7 +10,7 @@ pipeline_tasks = [
     'quantize'
 ]
 
-finetune_tasks = list(TASK_DATASET_PATHS.keys())
+finetune_tasks = list(TASK_INFO.keys())
 
 # define arguments for model compression
 def args_compress():
@@ -25,8 +27,8 @@ def args_compress():
 def args_download():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--task", "-t", choices=TASK_DATASET_PATHS.keys())
-    group.add_argument("--model", "-m", choices=MODEL_PATHS.keys())
+    group.add_argument("--task", "-t", choices=TASK_INFO.keys())
+    group.add_argument("--model", "-m", choices=MODEL_INFO.keys())
     args = parser.parse_args()
     return args
 
@@ -44,8 +46,8 @@ def args_finetune():
     return args
 
 def args_analyze():
-    models = [k for k in TASK_DATASET_PATHS.keys()]
-    [models.append(k) for k in MODEL_PATHS.keys()]
+    models = [k for k in MODEL_INFO.keys()]
+    [models.append(k) for k in MODEL_INFO.keys()]
     ap = argparse.ArgumentParser()
     ap.add_argument('--model', choices=models, required=True)
     ap.add_argument('--model-path', type=str)
