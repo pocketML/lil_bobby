@@ -1,5 +1,5 @@
 TASK_INFO = {
-    'mnli' : 
+    'mnli' : {
         'path': 'data/glue/MNLI',
         'settings': {
             'num-classes' : 3,
