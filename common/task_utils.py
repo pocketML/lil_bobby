@@ -105,14 +105,15 @@ TASK_INFO = {
     }
 }
 
-def get_finetune_string(task, task_path, model_path, arch='roberta_base'):
+def get_finetune_string(task, task_path, model_path, batch_size, arch='roberta_base'):
     settings = TASK_INFO[task]['settings']
     data_path = f'{task_path}/processed/{task}-bin/'
+    update_freq = int(settings['batch-size'] / batch_size)
     arguments = [
         f'{data_path}', # FILE
         '--restore-file', f'{model_path}',
         '--max-positions', '512',
-        '--batch-size', f'{settings["batch-size"]}',
+        '--batch-size', f'{batch_size}',
         '--max-tokens', '4400',
         '--task', 'sentence_prediction',
         '--reset-optimizer',
@@ -141,6 +142,7 @@ def get_finetune_string(task, task_path, model_path, arch='roberta_base'):
         '--fp16-scale-window', '128',
         '--max-epoch', '10',
         '--find-unused-parameters',
+        '--update-freq', f'{update_freq}'
     ]
     if task == 'sts-b':
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
