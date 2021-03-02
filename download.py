@@ -62,6 +62,7 @@ def download_and_extract(urls, folder):
         os.makedirs(base_folder)
 
     for url in urls:
+        print(f"Downloading '{url}' to '{base_folder}'...", flush=True)
         filename = os.path.basename(url)
         filetype = filename.split(".")[-1]
         response = requests.get(url)
@@ -79,7 +80,6 @@ def download_and_extract(urls, folder):
 
             os.remove(filename)
 
-        print(f"Downloaded '{url}' to '{base_folder}'")
 
 def preprocess_glue_task(task):
     preprocess_GLUE_tasks.preprocess_glue_task(task)
@@ -113,6 +113,7 @@ if __name__ == "__main__":
 
     if ARGS.task is not None:
         TARGET_FOLDER = TASK_INFO[ARGS.task]["path"]
+        #preprocess_glue_task(ARGS.task)
         download_and_process_data(ARGS.task, TARGET_FOLDER)
     else:
         TARGET_FOLDER = MODEL_PATHS[ARGS.model]
