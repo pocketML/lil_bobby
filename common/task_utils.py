@@ -1,6 +1,9 @@
+GLUE_URL = "https://dl.fbaipublicfiles.com/glue/data"
+
 TASK_INFO = {
-    'mnli' : 
+    'mnli' : {
         'path': 'data/glue/MNLI',
+        'download_url': f'{GLUE_URL}/MNLI.zip',
         'settings': {
             'num-classes' : 3,
             'lr' : 1e-5,
@@ -11,6 +14,7 @@ TASK_INFO = {
     },
     'qnli' : {
         'path': 'data/glue/QNLI',
+        'download_url': f'{GLUE_URL}/QNLI.zip',
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -21,6 +25,7 @@ TASK_INFO = {
     },
     'qqp' : {
         'path': 'data/glue/QQP',
+        'download_url': f'{GLUE_URL}/QQP.zip',
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -31,6 +36,7 @@ TASK_INFO = {
     },
     'rte' : {
         'path': 'data/glue/RTE',
+        'download_url': f'{GLUE_URL}/RTE.zip',
         'settings': {
             'num-classes' : 2,
             'lr' : 2e-5,
@@ -41,6 +47,7 @@ TASK_INFO = {
     },
     'sst-2' : {
         'path': 'data/glue/SST-2',
+        'download_url': f'{GLUE_URL}/SST-2.zip',
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -51,6 +58,7 @@ TASK_INFO = {
     },
     'mrpc' : {
         'path': 'data/glue/MRPC',
+        'download_url': f'{GLUE_URL}/MRPC.zip',
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -61,6 +69,7 @@ TASK_INFO = {
     },
     'cola' : {
         'path': 'data/glue/CoLA',
+        'download_url': f'{GLUE_URL}/CoLA.zip',
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -71,6 +80,7 @@ TASK_INFO = {
     },
     'sts-b' : {
         'path': 'data/glue/STS-B',
+        'download_url': f'{GLUE_URL}/STS-B.zip',
         'settings': {
             'num-classes' : 1,
             'lr' : 2e-5,
@@ -78,7 +88,7 @@ TASK_INFO = {
             'total-num-update': 3598,
             'warmup-updates': 214,
         }
-    },
+    }
 }
 
 def get_finetune_string(task, model_path, arch='roberta_base'):

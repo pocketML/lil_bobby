@@ -2,51 +2,55 @@ import os
 import shutil
 import requests
 import argparsers
+from misc import preprocess_GLUE_tasks
+from common.task_utils import TASK_INFO
+from common.model_utils import MODEL_INFO
 
 # *===================================================================*
 # *                          DOWNLOAD URLS                            *
 # *===================================================================*
 SUPERGLUE_URL = "https://dl.fbaipublicfiles.com/glue/superglue/data/v2"
+GLUE_URL = "https://dl.fbaipublicfiles.com/glue/data"
 SQUAD_URL = "https://rajpurkar.github.io/SQuAD-explorer/dataset"
 
+# DATASET_DOWNLOAD_URLS = {
+#     "superglue": [f"{SUPERGLUE_URL}/combined.zip"],
+#     "superglue_ax-b": [f"{SUPERGLUE_URL}/AX-b.zip"],
+#     "superglue_cb": [f"{SUPERGLUE_URL}/CB.zip"],
+#     "superglue_mult": [f"{SUPERGLUE_URL}/COPA.zip"],
+#     "superglue_multirc": [f"{SUPERGLUE_URL}/MultiRC.zip"],
+#     "superglue_rte": [f"{SUPERGLUE_URL}/RTE.zip"],
+#     "superglue_wic": [f"{SUPERGLUE_URL}/WiC.zip"],
+#     "superglue_wsc": [f"{SUPERGLUE_URL}/WSC.zip"],
+#     "superglue_boolq": [f"{SUPERGLUE_URL}/BoolQ.zip"],
+#     "superglue_record": [f"{SUPERGLUE_URL}/ReCoRD.zip"],
+#     "superglue_ax-g": [f"{SUPERGLUE_URL}/AX-g.zip"],
+#     "squad": [f"{SQUAD_URL}/train-v2.0.json", f"{SQUAD_URL}/dev-v2.0.json"],
+#     "glue": [x[0] for x in GLUE_DOWNLOAD_URLS.values()]
+# }
+
+# Add download urls from TASK_INFO dictionary.
 DATASET_DOWNLOAD_URLS = {
-    "superglue": [f"{SUPERGLUE_URL}/combined.zip"],
-    "superglue_ax-b": [f"{SUPERGLUE_URL}/AX-b.zip"],
-    "superglue_cb": [f"{SUPERGLUE_URL}/CB.zip"],
-    "superglue_mult": [f"{SUPERGLUE_URL}/COPA.zip"],
-    "superglue_multirc": [f"{SUPERGLUE_URL}/MultiRC.zip"],
-    "superglue_rte": [f"{SUPERGLUE_URL}/RTE.zip"],
-    "superglue_wic": [f"{SUPERGLUE_URL}/WiC.zip"],
-    "superglue_wsc": [f"{SUPERGLUE_URL}/WS.zipC"],
-    "superglue_boolq": [f"{SUPERGLUE_URL}/BoolQ.zip"],
-    "superglue_record": [f"{SUPERGLUE_URL}/ReCoRD.zip"],
-    "superglue_ax-g": [f"{SUPERGLUE_URL}/AX-g.zip"],
-    "squad": [f"{SQUAD_URL}/train-v2.0.json", f"{SQUAD_URL}/dev-v2.0.json"]
+    task: [TASK_INFO[task]["download_url"]]
+    for task in TASK_INFO
 }
 
+GLUE_TASKS = ["mnli", "qnli", "qqp", "rte", "sst-2", "mrpc", "cola", "sts-b"]
+
+# Add 'glue' key that downloads all glue tasks in one go.
+DATASET_DOWNLOAD_URLS["glue"] = [
+    TASK_INFO[task]["download_url"]
+    for task in GLUE_TASKS
+]
+
 MODEL_DOWNLOAD_URLS = {
-    "base": ["https://dl.fbaipublicfiles.com/fairseq/models/roberta.base.tar.gz"],
-    "large": ["https://dl.fbaipublicfiles.com/fairseq/models/roberta.large.tar.gz"]
+    model: [MODEL_INFO[model]["download_url"]]
+    for model in MODEL_INFO
 }
 
 # *===================================================================*
 # *                            DATA PATHS                             *
 # *===================================================================*
-TASK_DATASET_PATHS = {
-    "superglue": "data/superglue/all",
-    "superglue_ax-b": "data/superglue/AX-b",
-    "superglue_cb": "data/superglue/CB",
-    "superglue_copa": "data/superglue/COPA",
-    "superglue_multirc": "data/superglue/MultiRC",
-    "superglue_rte": "data/superglue/RTE",
-    "superglue_wic": "data/superglue/WiC",
-    "superglue_wsc": "data/superglue/WSC",
-    "superglue_boolq": "data/superglue/BoolQ",
-    "superglue_record": "data/superglue/ReCoRD",
-    "superglue_ax-g": "data/superglue/AX-g",
-    "squad": "data/squad"
-}
-
 MODEL_PATHS = {
     "base": "models/base",
     "large": "models/large"
@@ -62,31 +66,37 @@ def download_and_extract(urls, folder):
         filetype = filename.split(".")[-1]
         response = requests.get(url)
 
-        with open(filename, "wb") as fp:
+        with open(filename, "wb+") as fp:
             for chunk in response.iter_content(chunk_size=128):
                 fp.write(chunk)
 
-        if "json" in filetype:
+        if "json" in filetype or "tsv" in filetype:
             if not os.path.exists(folder):
                 os.mkdir(folder)
             shutil.move(filename, f"{folder}/{filename}")
         else: # File is an archive.
-            print(base_folder)
-            print(filename)
             shutil.unpack_archive(filename, base_folder)
 
             os.remove(filename)
 
-        print(f"Downloaded '{url}'")
+        print(f"Downloaded '{url}' to '{base_folder}'")
+
+def preprocess_glue_task(task):
+    preprocess_GLUE_tasks.preprocess_glue_task(task)
 
 def path_exists(folder):
     return os.path.exists(folder)
 
+def download_and_process_data(task, folder):
+    urls = DATASET_DOWNLOAD_URLS[task]
+    download_and_extract(urls, folder)
+    if task in GLUE_TASKS: # Glue task needs preprocessing.
+        preprocess_glue_task(task)
+
 def get_dataset_path(task):
-    folder = TASK_DATASET_PATHS[task]
+    folder = TASK_INFO[task]["path"]
     if not path_exists(folder):
-        urls = DATASET_DOWNLOAD_URLS[task]
-        download_and_extract(urls, folder)
+        download_and_process_data(task, folder)
 
     return folder
 
@@ -99,13 +109,12 @@ def get_model_path(model_type):
     return folder
 
 if __name__ == "__main__":
-    args = argparsers.args_download()
+    ARGS = argparsers.args_download()
 
-    if args.task is not None:
-        target_folder = TASK_DATASET_PATHS[args.task]
-        download_urls = DATASET_DOWNLOAD_URLS[args.task]
-        download_and_extract(download_urls, target_folder)
+    if ARGS.task is not None:
+        TARGET_FOLDER = TASK_INFO[ARGS.task]["path"]
+        download_and_process_data(ARGS.task, TARGET_FOLDER)
     else:
-        target_folder = MODEL_PATHS[args.model]
-        download_urls = MODEL_DOWNLOAD_URLS[args.model]
-        download_and_extract(download_urls, target_folder)
+        TARGET_FOLDER = MODEL_PATHS[ARGS.model]
+        DOWNLOAD_URLS = MODEL_DOWNLOAD_URLS[ARGS.model]
+        download_and_extract(DOWNLOAD_URLS, TARGET_FOLDER)
