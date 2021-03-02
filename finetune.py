@@ -9,7 +9,9 @@ if __name__ == "__main__":
     model = ARGS.model
     task_path = get_dataset_path(task)
     model_path = get_model_path(model)
-    finetune_args = task_utils.get_finetune_string(task, task_path, model_path)
+    batch_size = ARGS.batch_size
+
+    finetune_args = task_utils.get_finetune_string(task, task_path, model_path, batch_size)
     print(finetune_args)
 
     cli_main(input_args=finetune_args)

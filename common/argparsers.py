@@ -42,7 +42,8 @@ def args_finetune():
     ap = argparse.ArgumentParser()
     
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
-    ap.add_argument("--model", "-m", choices=MODEL_INFO.keys(), required=True)    
+    ap.add_argument("--model", "-m", choices=MODEL_INFO.keys(), required=True)
+    ap.add_argument("--batch-size", type=int, default=2)
     #ap.add_argument("--config", "-config", required=True)
     
     args = ap.parse_args()
