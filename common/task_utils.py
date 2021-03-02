@@ -93,21 +93,23 @@ TASK_INFO = {
 
 def get_finetune_string(task, model_path, arch='roberta_base'):
     settings = TASK_INFO[task]['settings']
+    data_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/' 
     arguments = [
+        f'{data_path}', # FILE
         '--restore-file', f'{model_path}',
         '--max-positions', '512',
         '--batch-size', f'{settings["batch-size"]}',
         '--max-tokens', '4400',
         '--task', 'sentence_prediction',
         '--reset-optimizer', 
-        '--reset-dataloaders', 
+        '--reset-dataloader', 
         '--reset-meters',
         '--required-batch-size-multiple', '1',
         '--init-token', '0',
         '--separator-token', '2',
         '--arch', f'{arch}',
         '--criterion', 'sentence_prediction',
-        '--num-classes', f'{settings["num_classes"]}',
+        '--num-classes', f'{settings["num-classes"]}',
         '--dropout', '0.1',
         '--attention-dropout', '0.1',
         '--weight-decay', '0.1',
@@ -117,13 +119,13 @@ def get_finetune_string(task, model_path, arch='roberta_base'):
         '--clip-norm', '0.0',
         '--lr-scheduler', 'polynomial_decay',
         '--lr', f'{settings["lr"]}',
-        '--total-num-update' f'{settings["total-num-updates"]}',
+        '--total-num-update', f'{settings["total-num-update"]}',
         '--warmup-updates', f'{settings["warmup-updates"]}',
         '--fp16',
         '--fp16-init-scale', '4',
         '--threshold-loss-scale', '1',
         '--fp16-scale-window', '128',
-        '--max-epochs', '10',
+        '--max-epoch', '10',
         '--find-unused-parameters',
     ]
     if task == 'sts-b':
