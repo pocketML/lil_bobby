@@ -1,13 +1,15 @@
 from common import argparsers, task_utils
-from common.model_utils import MODEL_INFO
+from download import get_dataset_path, get_model_path
 from roberta_custom.train import cli_main
-from pathlib import Path
 
 if __name__ == "__main__":
     ARGS = argparsers.args_finetune()
 
     task = ARGS.task
-    model_path = MODEL_INFO[ARGS.model]['path']
-    finetune_args = task_utils.get_finetune_string(task, model_path)
+    model = ARGS.model
+    task_path = get_dataset_path(task)
+    model_path = get_model_path(model)
+    finetune_args = task_utils.get_finetune_string(task, task_path, model_path)
+    print(finetune_args)
 
     cli_main(input_args=finetune_args)

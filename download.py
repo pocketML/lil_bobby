@@ -31,11 +31,11 @@ SQUAD_URL = "https://rajpurkar.github.io/SQuAD-explorer/dataset"
 
 # Add download urls from TASK_INFO dictionary.
 DATASET_DOWNLOAD_URLS = {
-    task: [TASK_INFO[task]["download_url"]]
+    task: TASK_INFO[task]["download_url"]
     for task in TASK_INFO
 }
 
-GLUE_TASKS = ["mnli", "qnli", "qqp", "rte", "sst-2", "mrpc", "cola", "sts-b"]
+GLUE_TASKS = ["mnli", "qnli", "qqp", "rte", "sst-2", "mrpc", "cola", "sts-b", "ax"]
 
 # Add 'glue' key that downloads all glue tasks in one go.
 DATASET_DOWNLOAD_URLS["glue"] = [
@@ -44,7 +44,7 @@ DATASET_DOWNLOAD_URLS["glue"] = [
 ]
 
 MODEL_DOWNLOAD_URLS = {
-    model: [MODEL_INFO[model]["download_url"]]
+    model: MODEL_INFO[model]["download_url"]
     for model in MODEL_INFO
 }
 
@@ -71,7 +71,7 @@ def download_and_extract(urls, folder):
             for chunk in response.iter_content(chunk_size=128):
                 fp.write(chunk)
 
-        if "json" in filetype or "tsv" in filetype:
+        if "json" in filetype or "tsv" in filetype or "txt" in filetype:
             if not os.path.exists(folder):
                 os.mkdir(folder)
             shutil.move(filename, f"{folder}/{filename}")
@@ -101,7 +101,7 @@ def get_dataset_path(task):
     return folder
 
 def get_model_path(model_type):
-    folder = MODEL_PATHS[model_type]
+    folder = MODEL_INFO[model_type]["path"]
     if not path_exists(folder):
         urls = MODEL_DOWNLOAD_URLS[model_type]
         download_and_extract(urls, folder)
@@ -116,6 +116,6 @@ if __name__ == "__main__":
         #preprocess_glue_task(ARGS.task)
         download_and_process_data(ARGS.task, TARGET_FOLDER)
     else:
-        TARGET_FOLDER = MODEL_PATHS[ARGS.model]
+        TARGET_FOLDER = MODEL_INFO[ARGS.model]["path"]
         DOWNLOAD_URLS = MODEL_DOWNLOAD_URLS[ARGS.model]
         download_and_extract(DOWNLOAD_URLS, TARGET_FOLDER)
