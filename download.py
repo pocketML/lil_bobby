@@ -1,7 +1,7 @@
 import os
 import shutil
 import requests
-import argparsers
+from common import argparsers
 from misc import preprocess_GLUE_tasks
 from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO

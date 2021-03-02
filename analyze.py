@@ -1,7 +1,7 @@
 from fairseq.models.roberta import RobertaModel
 from examples.roberta import commonsense_qa # load the Commonsense QA task
 from analysis import parameters
-import argparsers
+from common import argparsers
 
 # weight_histogram_for_all_transformers(roberta)
 #parameters.print_threshold_stats(roberta)
