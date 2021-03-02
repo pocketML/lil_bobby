@@ -126,8 +126,10 @@ def preprocess_glue_task(glue_task):
                     "--workers 16 --keep-empty"
                 )
 
-        if os.path.exists(f"{task}-bin"):
-            shutil.rmtree(f"{task}-bin")
+        bin_path = f"{processed_folder}/{task}-bin"
+
+        if os.path.exists(bin_path):
+            shutil.rmtree(bin_path)
 
         devpref = f"{processed_folder}/dev.LANG"
         testpref = f"{processed_folder}/test.LANG"
@@ -136,29 +138,29 @@ def preprocess_glue_task(glue_task):
             devpref = f"{processed_folder}/dev_matched.LANG,{processed_folder}/dev_mismatched.LANG"
             testpref = f"{processed_folder}/test_matched.LANG,{processed_folder}/test_mismatched.LANG"
 
-        for input_type in range(input_count+1):
+        for input_type in range(input_count):
             lang = f"input{input_type}"
             os.system(
                 f"fairseq-preprocess --only-source --trainpref {processed_folder}/train.label "
                 f"--validpref {devpref.replace('LANG', '')}{lang} " +
                 f"--validpref {testpref.replace('LANG', '')}{lang} " +
-                f"--destdir {task}-bin/{lang} --workers 32 --srcdict {BPEMB_PATH}/dict.txt"
+                f"--destdir {bin_path}/{lang} --workers 4 --srcdict {BPEMB_PATH}/dict.txt"
             )
 
         if task != "sts-b":
             os.system(
                 f"fairseq-preprocess --only-source --trainpref {processed_folder}/train.label "
                 f"--validpref {devpref.replace('LANG', '')}label " +
-                f"--destdir {task}-bin/label --workers 32"
+                f"--destdir {bin_path}/label --workers 4"
             )
         else:
-            os.makedirs(f"{task}-bin/label")
+            os.makedirs(f"{bin_path}/label")
             with open(f"{processed_folder}/train.label", "r", encoding="utf-8") as fp_in:
-                with open(f"{task}-bin/label/train.label", "w", encoding="utf-8") as fp_out:
+                with open(f"{bin_path}/label/train.label", "w", encoding="utf-8") as fp_out:
                     for line in fp_in:
                         fp_out.write(str(float(line.split("\t")[0]) / 5.0))
             with open(f"{processed_folder}/dev.label", "r", encoding="utf-8") as fp_in:
-                with open(f"{task}-bin/label/valid.label", "w", encoding="utf-8") as fp_out:
+                with open(f"{bin_path}/label/valid.label", "w", encoding="utf-8") as fp_out:
                     for line in fp_in:
                         fp_out.write(str(float(line.split("\t")[0]) / 5.0))
 

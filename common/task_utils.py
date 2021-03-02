@@ -88,7 +88,7 @@ TASK_INFO = {
             'total-num-update': 3598,
             'warmup-updates': 214,
         }
-    },
+    }
 }
 
 def get_finetune_string(task, model_path, arch='roberta_base'):
