@@ -3,7 +3,7 @@ GLUE_URL = "https://dl.fbaipublicfiles.com/glue/data"
 TASK_INFO = {
     'mnli' : {
         'path': 'data/glue/MNLI',
-        'download_url': f'{GLUE_URL}/MNLI.zip',
+        'download_url': [f'{GLUE_URL}/MNLI.zip'],
         'settings': {
             'num-classes' : 3,
             'lr' : 1e-5,
@@ -14,7 +14,7 @@ TASK_INFO = {
     },
     'qnli' : {
         'path': 'data/glue/QNLI',
-        'download_url': f'{GLUE_URL}/QNLI.zip',
+        'download_url': [f'{GLUE_URL}/QNLI.zip'],
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -25,7 +25,7 @@ TASK_INFO = {
     },
     'qqp' : {
         'path': 'data/glue/QQP',
-        'download_url': f'{GLUE_URL}/QQP.zip',
+        'download_url': [f'{GLUE_URL}/QQP.zip'],
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -36,7 +36,7 @@ TASK_INFO = {
     },
     'rte' : {
         'path': 'data/glue/RTE',
-        'download_url': f'{GLUE_URL}/RTE.zip',
+        'download_url': [f'{GLUE_URL}/RTE.zip'],
         'settings': {
             'num-classes' : 2,
             'lr' : 2e-5,
@@ -47,7 +47,7 @@ TASK_INFO = {
     },
     'sst-2' : {
         'path': 'data/glue/SST-2',
-        'download_url': f'{GLUE_URL}/SST-2.zip',
+        'download_url': [f'{GLUE_URL}/SST-2.zip'],
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -58,7 +58,10 @@ TASK_INFO = {
     },
     'mrpc' : {
         'path': 'data/glue/MRPC',
-        'download_url': f'{GLUE_URL}/MRPC.zip',
+        'download_url': [
+            f'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_train.txt',
+            f'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_test.txt'
+        ],
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -69,7 +72,7 @@ TASK_INFO = {
     },
     'cola' : {
         'path': 'data/glue/CoLA',
-        'download_url': f'{GLUE_URL}/CoLA.zip',
+        'download_url': [f'{GLUE_URL}/CoLA.zip'],
         'settings': {
             'num-classes' : 2,
             'lr' : 1e-5,
@@ -80,7 +83,7 @@ TASK_INFO = {
     },
     'sts-b' : {
         'path': 'data/glue/STS-B',
-        'download_url': f'{GLUE_URL}/STS-B.zip',
+        'download_url': [f'{GLUE_URL}/STS-B.zip'],
         'settings': {
             'num-classes' : 1,
             'lr' : 2e-5,
@@ -88,12 +91,23 @@ TASK_INFO = {
             'total-num-update': 3598,
             'warmup-updates': 214,
         }
+    },
+    'ax' : {
+        'path': 'data/glue/AX',
+        'download_url': [f'{GLUE_URL}/AX.tsv'],
+        'settings': {
+            'num-classes' : 3,
+            'lr' : 1e-5,
+            'batch-size': 32,
+            'total-num-update': 123873,
+            'warmup-updates': 7432,
+        }
     }
 }
 
-def get_finetune_string(task, model_path, arch='roberta_base'):
+def get_finetune_string(task, task_path, model_path, arch='roberta_base'):
     settings = TASK_INFO[task]['settings']
-    data_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/' 
+    data_path = f'{task_path}/processed/{task}-bin/'
     arguments = [
         f'{data_path}', # FILE
         '--restore-file', f'{model_path}',
@@ -101,8 +115,8 @@ def get_finetune_string(task, model_path, arch='roberta_base'):
         '--batch-size', f'{settings["batch-size"]}',
         '--max-tokens', '4400',
         '--task', 'sentence_prediction',
-        '--reset-optimizer', 
-        '--reset-dataloader', 
+        '--reset-optimizer',
+        '--reset-dataloader',
         '--reset-meters',
         '--required-batch-size-multiple', '1',
         '--init-token', '0',
@@ -114,7 +128,7 @@ def get_finetune_string(task, model_path, arch='roberta_base'):
         '--attention-dropout', '0.1',
         '--weight-decay', '0.1',
         '--optimizer', 'adam',
-        '--adam-betas', '"(0.9, 0.98)"',
+        '--adam-betas', "(0.9,0.98)",
         '--adam-eps', '1e-06',
         '--clip-norm', '0.0',
         '--lr-scheduler', 'polynomial_decay',

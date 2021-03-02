@@ -2,12 +2,12 @@ import torch
 
 MODEL_INFO = {
     "base": {
-        "path": "models/base",
-        "download_url": "https://dl.fbaipublicfiles.com/fairseq/models/roberta.base.tar.gz"
+        "path": "models/roberta.base",
+        "download_url": ["https://dl.fbaipublicfiles.com/fairseq/models/roberta.base.tar.gz"]
     },
     "large": {
-        "path": "models/large",
-        "download_url": "https://dl.fbaipublicfiles.com/fairseq/models/roberta.large.tar.gz"
+        "path": "models/roberta.large",
+        "download_url": ["https://dl.fbaipublicfiles.com/fairseq/models/roberta.large.tar.gz"]
     }
 }
 

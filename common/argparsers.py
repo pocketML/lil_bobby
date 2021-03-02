@@ -27,7 +27,7 @@ def args_compress():
 def args_download():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--task", "-t", choices=TASK_INFO.keys())
+    group.add_argument("--task", "-t", choices=list(TASK_INFO.keys()) + ["glue"])
     group.add_argument("--model", "-m", choices=MODEL_INFO.keys())
     args = parser.parse_args()
     return args
