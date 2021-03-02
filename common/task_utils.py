@@ -59,8 +59,9 @@ TASK_INFO = {
     'mrpc' : {
         'path': 'data/glue/MRPC',
         'download_url': [
-            f'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_train.txt',
-            f'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_test.txt'
+            'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_train.txt',
+            'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_test.txt',
+            "https://dl.fbaipublicfiles.com/glue/data/mrpc_dev_ids.tsv"
         ],
         'settings': {
             'num-classes' : 2,

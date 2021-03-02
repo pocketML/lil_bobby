@@ -32,7 +32,7 @@ def format_mrpc(task_folder):
             test_fh.write("%d\t%s\t%s\t%s\t%s\n" % (idx, id1, id2, s1, s2))
 
     dev_ids = []
-    with io.open(os.path.join(task_folder, "dev_ids.tsv"), encoding='utf-8') as ids_fh:
+    with io.open(os.path.join(task_folder, "mrpc_dev_ids.tsv"), encoding='utf-8') as ids_fh:
         for row in ids_fh:
             dev_ids.append(row.strip().split('\t'))
 
