@@ -1,0 +1,62 @@
+#!/bin/bash
+
+########################################################################
+# Used by SLURM
+## Usage: 'sbatch submit.job whatever.py'
+## 'squ' to see active jobs
+
+# Job name
+#SBATCH --job-name=lil_bobby
+
+# Name of output file: %j expands to jobId
+#SBATCH --output=/home/jeno/Code/logs/job_%j.out
+
+# Run time (hh:mm:ss)
+#SBATCH --time=24:00:00
+
+# Start delay (wait time before starting job hh:mm:ss)
+# #SBATCH --begin=07:00:00
+
+# Start after this job has finished
+# #SBATCH --dependency=afterany:33633
+
+# Schedule cores
+#SBATCH --cpus-per-task=10
+
+# Specific machine
+# #SBATCH --nodelist=cn[6]
+
+# Schedule GPUs
+#SBATCH --gres=gpu:1
+
+# Select queue - comma-separated (red,brown)
+# 		red 		cn1-cn5 					High power compute nodes for research projects
+# 		brown 	desktop1-desktop10 	Medium range compute nodes for teaching and research
+#SBATCH --partition=red
+
+
+########################################################################
+# Run by Shell script
+
+# Move to where you want to do things
+cd /home/jeno/Code
+
+# Add paths
+PYTHONPATH=$PYTHONPATH:/home/jeno/Code:/home/jeno/Code/Repositories:/home/jeno/Code/config
+# PYTHONPATH=$PYTHONPATH:/home/jeno/Code/Source/da_fever
+# PYTHONPATH=$PYTHONPATH:/home/jeno/Code/Source/claim_generation
+
+# Print info
+echo ""
+echo "-------------------------------------------------------------------------------------------"
+echo "CWD                   : " $(pwd)
+echo "Machine               : " $(hostname)
+echo "Python bin            : " $(which python)
+echo "PYTHONPATH            : " $PYTHONPATH
+echo "CUDA_VISIBLE_DEVICES  : " $CUDA_VISIBLE_DEVICES
+echo "-------------------------------------------------------------------------------------------"
+echo ""
+
+# Run things
+PYTHONPATH=$PYTHONPATH CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES python "$@" 2>&1
+	
