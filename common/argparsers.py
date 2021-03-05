@@ -33,10 +33,13 @@ def args_download():
     return args
 
 def args_evaluate():
-    pass
-
-def args_experiment():
-    pass
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--model-name", type=str, required=True)
+    ap.add_argument('--cpu', action='store_true')
+    
+    args = ap.parse_args()
+    return args
 
 def args_finetune():
     ap = argparse.ArgumentParser()
@@ -44,6 +47,7 @@ def args_finetune():
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--model", "-m", choices=MODEL_INFO.keys(), required=True)
     ap.add_argument("--batch-size", type=int, default=2)
+    ap.add_argument("--use-fp16", action='store_true')
     #ap.add_argument("--config", "-config", required=True)
     
     args = ap.parse_args()
@@ -58,8 +62,7 @@ def args_analyze():
     ap.add_argument('--model-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
     ap.add_argument('--layer-weight-hist', type=str)
-    
-
+    ap.add_argument('--named-params', action='store_true')
     args = ap.parse_args()
     return args
 

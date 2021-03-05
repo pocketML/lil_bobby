@@ -106,7 +106,7 @@ TASK_INFO = {
     }
 }
 
-def get_finetune_string(task, task_path, model_path, batch_size, arch='roberta_base'):
+def get_finetune_string(task, task_path, model_path, batch_size, use_fp16, arch='roberta_base'):
     settings = TASK_INFO[task]['settings']
     data_path = f'{task_path}/processed/{task}-bin/'
     update_freq = int(settings['batch-size'] / batch_size)
@@ -137,10 +137,7 @@ def get_finetune_string(task, task_path, model_path, batch_size, arch='roberta_b
         '--lr', f'{settings["lr"]}',
         '--total-num-update', f'{settings["total-num-update"]}',
         '--warmup-updates', f'{settings["warmup-updates"]}',
-        '--fp16',
-        '--fp16-init-scale', '4',
         '--threshold-loss-scale', '1',
-        '--fp16-scale-window', '128',
         '--max-epoch', '10',
         '--find-unused-parameters',
         '--update-freq', f'{update_freq}'
@@ -149,4 +146,9 @@ def get_finetune_string(task, task_path, model_path, batch_size, arch='roberta_b
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
     else:
         arguments.extend(['--best-checkpoint-metric', 'accuracy', '--maximize-best-checkpoint-metric'])
+    if use_fp16:
+        arguments.extend([
+            '--fp16',
+            '--fp16-init-scale', '4',
+            '--fp16-scale-window', '128',])
     return arguments

@@ -1,5 +1,4 @@
 from fairseq.models.roberta import RobertaModel
-from examples.roberta import commonsense_qa # load the Commonsense QA task
 from analysis import parameters
 from common import argparsers
 
@@ -26,4 +25,3 @@ if __name__ == "__main__":
 
     if args.model_size:
         parameters.print_model_size()
-    #args = parser.parse_args()
