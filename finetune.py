@@ -10,7 +10,7 @@ if __name__ == "__main__":
     task_path = get_dataset_path(task)
     model_path = get_model_path(model)
     batch_size = ARGS.batch_size
-    use_fp16 = ARGS.use_fp16
+    use_fp16 = not ARGS.cpu
 
     finetune_args = task_utils.get_finetune_string(task, task_path, model_path, batch_size, use_fp16)
     print(finetune_args)
