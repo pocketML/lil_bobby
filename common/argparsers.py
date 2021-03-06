@@ -1,5 +1,4 @@
 import argparse
-from re import sub
 from fairseq import options
 from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO
@@ -28,7 +27,7 @@ def args_download():
     group = ap.add_mutually_exclusive_group(required=True)
     group.add_argument("--task", "-t", choices=list(TASK_INFO.keys()) + ["glue"])
     group.add_argument("--model", "-m", choices=MODEL_INFO.keys())
-    return ap
+    return ap.parse_args()
 
 def args_evaluate():
     ap = argparse.ArgumentParser()
@@ -36,7 +35,7 @@ def args_evaluate():
     ap.add_argument("--model-name", type=str, required=True)
     ap.add_argument('--cpu', action='store_true')
 
-    return ap
+    return ap.parse_args()
 
 def args_finetune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
@@ -61,7 +60,7 @@ def args_analyze():
     ap.add_argument('--weight-hist', action='store_true')
     ap.add_argument('--layer-weight-hist', type=str)
     ap.add_argument('--named-params', action='store_true')
-    return ap
+    return ap.parse_args()
 
 def args_experiment():
     ap = argparse.ArgumentParser()
@@ -71,15 +70,17 @@ def args_experiment():
     ap.add_argument("--name", type=str, required=True)
     ap.add_argument("--output-path", type=str)
 
-    ex_args = argparse.Namespace()
+    task_args = {}
 
-    ex_args, args_remain = ap.parse_known_args(namespace=ex_args)
-    if "finetune" in ex_args.tasks:
-        ex_args, args_remain = args_finetune(args_remain, namespace=ex_args, parse_known=True)
-    if "compress" in ex_args.tasks:
-        ex_args, args_remain = args_compress(args_remain, namespace=ex_args, parse_known=True)
+    experiment_args, args_remain = ap.parse_known_args()
+    if "finetune" in experiment_args.tasks:
+        finetune_args, args_remain = args_finetune(args_remain, parse_known=True)
+        task_args["finetune"] = finetune_args
+    if "compress" in experiment_args.tasks:
+        compress_args, args_remain = args_compress(args_remain, parse_known=True)
+        task_args["compress"] = compress_args
 
-    return ex_args
+    return experiment_args, task_args
 
 def parse_roberta_args(parser):
     args = parser.parse_args()

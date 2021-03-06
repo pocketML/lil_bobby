@@ -9,7 +9,7 @@ def sentiment_encoding(model, tokens):
 def evaluate(model, task):
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
     ncorrect, nsamples = 0,0
-    with open(task_utils.TASK_INFO[ARGS.task]["path"] + '/dev.tsv') as fin:
+    with open(task_utils.TASK_INFO[task]["path"] + '/dev.tsv') as fin:
         fin.readline()
         for i, line in enumerate(fin):
             if line.strip() == '':
@@ -26,16 +26,19 @@ def evaluate(model, task):
             nsamples += 1
     print(f'| Accuracy: {ncorrect/nsamples:.4f}')
 
+def main(args):
+    data_path = f'{task_utils.TASK_INFO[args.task]["path"]}/processed/{args.task}-bin/'
+
+    model = RobertaModel.from_pretrained(
+        'checkpoints',
+        checkpoint_file=args.model_name,
+        data_name_or_path=data_path
+    )
+    if not args.cpu:
+        model.cuda()
+    model.eval()
+    evaluate(model, args.task)
+
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()
-    DATA_PATH = f'{task_utils.TASK_INFO[ARGS.task]["path"]}/processed/{ARGS.task}-bin/'
-
-    MODEL = RobertaModel.from_pretrained(
-        'checkpoints',
-        checkpoint_file=ARGS.model_name,
-        data_name_or_path=DATA_PATH
-    )
-    if not ARGS.cpu:
-        MODEL.cuda()
-    MODEL.eval()
-    evaluate(MODEL, ARGS.task)
+    main(ARGS)
