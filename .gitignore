@@ -5,6 +5,9 @@
 models/*
 data/*
 
+# SLURM bash file
+submit.job
+
 # JetBrains PyCharm IDE
 .idea/
 
