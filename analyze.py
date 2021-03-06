@@ -2,11 +2,6 @@ from fairseq.models.roberta import RobertaModel
 from analysis import parameters
 from common import argparsers, task_utils
 
-# weight_histogram_for_all_transformers(roberta)
-#parameters.print_threshold_stats(roberta)
-#parameters.print_threshold_stats(roberta)
-#parameters.print_model_size(roberta)
-
 if __name__ == "__main__":
     ARGS = argparsers.args_analyze()
     DATA_PATH = task_utils.get_processed_path(ARGS.task)

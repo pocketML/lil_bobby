@@ -48,7 +48,6 @@ def args_finetune(args=None, namespace=None, parse_known=False):
     ap.add_argument("--model", "-m", choices=MODEL_INFO.keys(), required=True)
     ap.add_argument("--batch-size", type=int, default=2)
     ap.add_argument("--cpu", action='store_true')
-    #ap.add_argument("--config", "-config", required=True)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -58,7 +57,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
 def args_analyze():
     models = list(MODEL_INFO.keys())
     ap = argparse.ArgumentParser()
-    #ap.add_argument('--model', choices=models, required=True)
+    
     ap.add_argument('--model-name', type=str, required=True)
     ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
