@@ -28,7 +28,9 @@ def args_download():
     group = ap.add_mutually_exclusive_group(required=True)
     group.add_argument("--task", "-t", choices=list(TASK_INFO.keys()) + ["glue"])
     group.add_argument("--model", "-m", choices=MODEL_INFO.keys())
-    return ap
+
+    args = ap.parse_args()
+    return args
 
 def args_evaluate():
     ap = argparse.ArgumentParser()
@@ -36,7 +38,8 @@ def args_evaluate():
     ap.add_argument("--model-name", type=str, required=True)
     ap.add_argument('--cpu', action='store_true')
 
-    return ap
+    args = ap.parse_args()
+    return args
 
 def args_finetune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
@@ -55,13 +58,17 @@ def args_finetune(args=None, namespace=None, parse_known=False):
 def args_analyze():
     models = list(MODEL_INFO.keys())
     ap = argparse.ArgumentParser()
-    ap.add_argument('--model', choices=models, required=True)
-    ap.add_argument('--model-path', type=str)
+    #ap.add_argument('--model', choices=models, required=True)
+    ap.add_argument('--model-name', type=str, required=True)
+    ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
     ap.add_argument('--layer-weight-hist', type=str)
     ap.add_argument('--named-params', action='store_true')
-    return ap
+    ap.add_argument('--weight-thresholds', action='store_true')
+
+    args = ap.parse_args()
+    return args
 
 def args_experiment():
     ap = argparse.ArgumentParser()

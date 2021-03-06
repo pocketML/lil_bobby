@@ -5,14 +5,14 @@ from roberta_custom.train import cli_main
 if __name__ == "__main__":
     ARGS = argparsers.args_finetune()
 
-    task = ARGS.task
-    model = ARGS.model
-    task_path = get_dataset_path(task)
-    model_path = get_model_path(model)
-    batch_size = ARGS.batch_size
-    use_fp16 = not ARGS.cpu
+    TASK = ARGS.task
+    MODEL = ARGS.model
+    TASK_PATH = get_dataset_path(task)
+    MODEL_PATH = get_model_path(model)
+    BATCH_SIZE = ARGS.batch_size
+    USE_FP16 = not ARGS.cpu
 
-    finetune_args = task_utils.get_finetune_string(task, task_path, model_path, batch_size, use_fp16)
+    FINETUNE_ARGS = task_utils.get_finetune_string(TASK, TASK_PATH, MODEL_PATH, BATCH_SIZE, USE_FP16)
     print(finetune_args)
 
     cli_main(input_args=finetune_args)
