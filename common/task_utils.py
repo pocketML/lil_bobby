@@ -106,6 +106,9 @@ TASK_INFO = {
     }
 }
 
+def get_processed_path(task):
+    return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
+
 def get_finetune_string(task, task_path, model_path, batch_size, use_fp16, arch='roberta_base'):
     settings = TASK_INFO[task]['settings']
     data_path = f'{task_path}/processed/{task}-bin/'

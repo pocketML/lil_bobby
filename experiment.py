@@ -1,24 +1,34 @@
 import os
+from glob import glob
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
-from finetune import run_finetune
-import compress
+from finetune import main as finetune_main
+from compress import main as compress_main
+from evaluate import main as evaluate_main
 
 OUTPUT_DIR = "experiments"
 
-def create_sacred_experiment(args):
+TASK_FUNCS = {
+    "finetune": finetune_main, "compress": compress_main,
+    "evaluate": evaluate_main
+}
+
+def create_experiment(args):
     return Experiment(args.name)
 
-def run_sacred_experiment(tasks_args):
-    for task in tasks_args:
-        run_finetune(tasks_args[task])
+def run_experiment(task_args, experiment):
+    for task in task_args:
+        TASK_FUNCS[task](task_args[task], sacred_experiment=experiment)
 
 if __name__ == "__main__":
     EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
 
-    EXPERIMENT = create_sacred_experiment(EXPERIMENT_ARGS)
-    EXPERIMENT.add_config(EXPERIMENT_ARGS.__dict__)
+    EXPERIMENT = create_experiment(EXPERIMENT_ARGS)
+    EXPERIMENT.add_config({
+        "task_args": TASK_ARGS, "experiment": EXPERIMENT
+    })
+    EXPERIMENT.command(run_experiment)
 
     if EXPERIMENT_ARGS.output_path is not None:
         OUTPUT_DIR = EXPERIMENT_ARGS.output_path
@@ -26,8 +36,20 @@ if __name__ == "__main__":
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
-    OUTPUT_STORAGE = FileStorageObserver(EXPERIMENT_ARGS.output)
+    OUTPUT_STORAGE = FileStorageObserver(OUTPUT_DIR)
 
     EXPERIMENT.observers.append(OUTPUT_STORAGE)
 
-    EXPERIMENT.run()
+    RUN_ID = EXPERIMENT_ARGS.name
+    if os.path.exists(f"{OUTPUT_DIR}/{RUN_ID}"):
+        PREVIOUS_RUN = glob(f"{OUTPUT_DIR}/{RUN_ID}*")
+        INDEX = PREVIOUS_RUN[-1].split("_")[-1]
+        try:
+            INDEX = int(INDEX) + 1
+        except ValueError:
+            INDEX = 2
+        RUN_ID = f"{RUN_ID}_{INDEX}"
+
+    RUN = EXPERIMENT._create_run("run_experiment")
+    RUN._id = RUN_ID
+    RUN()

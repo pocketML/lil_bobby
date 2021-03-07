@@ -1,27 +1,28 @@
 from fairseq.models.roberta import RobertaModel
 from analysis import parameters
-from common import argparsers
+from common import argparsers, task_utils
 
-# weight_histogram_for_all_transformers(roberta)
-#parameters.print_threshold_stats(roberta)
-#parameters.print_threshold_stats(roberta)
-#parameters.print_model_size(roberta)
-
-if __name__ == "__main__":
-    #roberta = RobertaModel.from_pretrained('./models/checkpoints', 'checkpoint_best.pt', 'data/CommonsenseQA')
-    #roberta.eval() # disable dropout
-    args = argparsers.args_analyze()
-    print(args.model)
-    from download import TASK_DATASET_PATHS, MODEL_PATHS
-
-    base_models = [k for k in MODEL_PATHS.keys()]
-    finetuned = [k for k in TASK_DATASET_PATHS.keys()]
-
-    if args.model in base_models:
-        model_path = 'models/roberta.' + args.model
-        model = 
-    elif args.model in finetuned:
-        model_path = ''
+def main(args, sacred_experiment=None):
+    data_path = task_utils.get_processed_path(args.task)
+    model = RobertaModel.from_pretrained(
+        'checkpoints',
+        checkpoint_file=args.model_name,
+        data_name_or_path=data_path
+    )
+    model.eval()
 
     if args.model_size:
-        parameters.print_model_size()
+        parameters.print_model_size(model)
+    if args.weight_hist:
+        parameters.weight_histogram_for_all_transformers(model)
+    if args.layer_weight_hist:
+        pass
+    if args.named_params:
+        parameters.print_named_params(model)
+    if args.weight_thresholds:
+        parameters.print_threshold_stats(model)
+
+if __name__ == "__main__":
+    ARGS = argparsers.args_analyze()
+
+    main(ARGS)    

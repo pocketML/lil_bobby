@@ -43,7 +43,7 @@ logging.basicConfig(
 logger = logging.getLogger("fairseq_cli.train")
 
 
-def main(cfg: FairseqConfig) -> None:
+def main(cfg: FairseqConfig, **kwargs) -> None:
     if isinstance(cfg, argparse.Namespace):
         cfg = convert_namespace_to_omegaconf(cfg)
 
@@ -126,6 +126,8 @@ def main(cfg: FairseqConfig) -> None:
         disable_iterator_cache=task.has_sharded_data("train"),
     )
 
+    experiment = kwargs.get("sacred_experiment")
+
     max_epoch = cfg.optimization.max_epoch or math.inf
     lr = trainer.get_lr()
     train_meter = meters.StopwatchMeter()
@@ -141,6 +143,10 @@ def main(cfg: FairseqConfig) -> None:
 
         # train for one epoch
         valid_losses, should_stop = train(cfg, trainer, task, epoch_itr)
+
+        if experiment is not None:
+            experiment.log_scalar("validation.loss", valid_losses[0])
+
         if should_stop:
             break
 
@@ -435,8 +441,9 @@ def get_valid_stats(
 
 
 def cli_main(
-    modify_parser: Optional[Callable[[argparse.ArgumentParser], None]] = None
-, input_args=[]) -> None:
+    modify_parser: Optional[Callable[[argparse.ArgumentParser], None]] = None,
+    input_args=[], sacred_experiment=None
+):
     parser = options.get_training_parser()
     args = options.parse_args_and_arch(parser, input_args=input_args, modify_parser=modify_parser)
 
@@ -445,9 +452,9 @@ def cli_main(
     if args.profile:
         with torch.cuda.profiler.profile():
             with torch.autograd.profiler.emit_nvtx():
-                distributed_utils.call_main(cfg, main)
+                distributed_utils.call_main(cfg, main, sacred_experiment=sacred_experiment)
     else:
-        distributed_utils.call_main(cfg, main)
+        distributed_utils.call_main(cfg, main, sacred_experiment=sacred_experiment)
 
 
 if __name__ == "__main__":
