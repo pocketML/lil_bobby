@@ -25,4 +25,4 @@ def main(args, sacred_experiment=None):
 if __name__ == "__main__":
     ARGS = argparsers.args_analyze()
 
-    main(ARGS)    
+    main(ARGS)

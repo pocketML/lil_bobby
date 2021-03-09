@@ -10,7 +10,10 @@ def main(args, sacred_experiment=None):
     batch_size = args.batch_size
     use_fp16 = not args.cpu
 
-    finetune_args = task_utils.get_finetune_string(task, task_path, model_path, batch_size, use_fp16)
+    finetune_args = task_utils.get_finetune_string(
+        task, task_path, model_path, batch_size,
+        use_fp16, sacred_experiment=sacred_experiment
+    )
     print(finetune_args)
 
     cli_main(input_args=finetune_args, sacred_experiment=sacred_experiment)

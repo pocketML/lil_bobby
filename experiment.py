@@ -14,21 +14,15 @@ TASK_FUNCS = {
     "evaluate": evaluate_main
 }
 
-def create_experiment(args):
-    return Experiment(args.name)
-
-def run_experiment(task_args, experiment):
+def run_experiment(task_args, experiment, name):
+    experiment.info["name"] = name
     for task in task_args:
         TASK_FUNCS[task](task_args[task], sacred_experiment=experiment)
 
 if __name__ == "__main__":
     EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
 
-    EXPERIMENT = create_experiment(EXPERIMENT_ARGS)
-    EXPERIMENT.add_config({
-        "task_args": TASK_ARGS, "experiment": EXPERIMENT
-    })
-    EXPERIMENT.command(run_experiment)
+    EXPERIMENT = Experiment(EXPERIMENT_ARGS.name)
 
     if EXPERIMENT_ARGS.output_path is not None:
         OUTPUT_DIR = EXPERIMENT_ARGS.output_path
@@ -49,6 +43,11 @@ if __name__ == "__main__":
         except ValueError:
             INDEX = 2
         RUN_ID = f"{RUN_ID}_{INDEX}"
+
+    EXPERIMENT.add_config({
+        "task_args": TASK_ARGS, "experiment": EXPERIMENT, "name": RUN_ID
+    })
+    EXPERIMENT.command(run_experiment)
 
     RUN = EXPERIMENT._create_run("run_experiment")
     RUN._id = RUN_ID
