@@ -14,10 +14,9 @@ TASK_FUNCS = {
     "evaluate": evaluate_main
 }
 
-def run_experiment(task_args, experiment, name):
-    experiment.info["name"] = name
+def run_experiment(task_args, _run):
     for task in task_args:
-        TASK_FUNCS[task](task_args[task], sacred_experiment=experiment)
+        TASK_FUNCS[task](task_args[task], sacred_experiment=_run)
 
 if __name__ == "__main__":
     EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
@@ -45,10 +44,10 @@ if __name__ == "__main__":
         RUN_ID = f"{RUN_ID}_{INDEX}"
 
     EXPERIMENT.add_config({
-        "task_args": TASK_ARGS, "experiment": EXPERIMENT, "name": RUN_ID
+        "task_args": TASK_ARGS
     })
     EXPERIMENT.command(run_experiment)
 
-    RUN = EXPERIMENT._create_run("run_experiment")
+    RUN = EXPERIMENT._create_run("run_experiment", info={"name": RUN_ID})
     RUN._id = RUN_ID
     RUN()
