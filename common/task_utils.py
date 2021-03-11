@@ -149,7 +149,7 @@ def get_finetune_string(
         '--total-num-update', f'{settings["total-num-update"]}',
         '--warmup-updates', f'{settings["warmup-updates"]}',
         '--threshold-loss-scale', '1',
-        '--max-epoch', {max_epochs},
+        '--max-epoch', f"{max_epochs}",
         '--find-unused-parameters',
         '--update-freq', f'{update_freq}'
     ]
