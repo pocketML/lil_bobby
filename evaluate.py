@@ -73,7 +73,7 @@ def main(args, sacred_experiment=None):
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("test.accuracy", accuracy)
     elif args.task in ['qqp']:
-        acc, f1 = evaluate_accuracy_f1(model, args.task)
+        accuracy, f1 = evaluate_accuracy_f1(model, args.task)
         print(f'| Accuracy: {accuracy:.4f}, f1: {f1:.4f}')
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("test.accuracy", accuracy)
