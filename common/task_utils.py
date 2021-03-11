@@ -113,7 +113,7 @@ def get_finetune_string(
     task_path, model_path, override_args, sacred_experiment=None
 ):
     task = override_args.task
-    arch = override_args.task
+    arch = override_args.arch
     batch_size = override_args.batch_size
     use_fp16 = not override_args.cpu
     settings = TASK_INFO[task]['settings']

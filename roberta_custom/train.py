@@ -147,7 +147,7 @@ def main(cfg: FairseqConfig, **kwargs) -> None:
         if experiment is not None:
             experiment.log_scalar("validation.loss", valid_losses[0])
             if not cfg.checkpoint.no_save:
-                experiment.add_artifact(f"{cfg.checkpoint.save_dir}/{epoch_itr.epoch}")
+                experiment.add_artifact(f"{cfg.checkpoint.save_dir}/checkpoint{epoch_itr.epoch}.pt")
 
         if should_stop:
             break
