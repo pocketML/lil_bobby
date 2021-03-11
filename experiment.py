@@ -6,6 +6,7 @@ from common.argparsers import args_experiment
 from finetune import main as finetune_main
 from compress import main as compress_main
 from evaluate import main as evaluate_main
+from misc import transponder
 
 OUTPUT_DIR = "experiments"
 
@@ -47,6 +48,14 @@ if __name__ == "__main__":
         "task_args": TASK_ARGS
     })
     EXPERIMENT.command(run_experiment)
+
+    transponder.TRANSPONDER_ACTIVE = EXPERIMENT_ARGS.transponder
+
+    if "finetune" in TASK_ARGS:
+        FINETUNE_ARGS = TASK_ARGS["finetune"]
+        transponder.send_train_start(
+            RUN_ID, FINETUNE_ARGS.model, FINETUNE_ARGS.task, FINETUNE_ARGS.max_epochs
+        )
 
     RUN = EXPERIMENT._create_run("run_experiment", info={"name": RUN_ID})
     RUN._id = RUN_ID

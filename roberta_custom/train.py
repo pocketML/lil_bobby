@@ -32,7 +32,7 @@ from fairseq.logging import meters, metrics, progress_bar
 from fairseq.model_parallel.megatron_trainer import MegatronTrainer
 from fairseq.trainer import Trainer
 from omegaconf import DictConfig, OmegaConf
-
+from misc import transponder
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -147,7 +147,7 @@ def main(cfg: FairseqConfig, **kwargs) -> None:
         if experiment is not None:
             experiment.log_scalar("validation.loss", valid_losses[0])
             if not cfg.checkpoint.no_save:
-                experiment.add_artifact(f"{cfg.checkpoint.save_dir}/{epoch_itr}")
+                experiment.add_artifact(f"{cfg.checkpoint.save_dir}/{epoch_itr.epoch}")
 
         if should_stop:
             break
@@ -424,7 +424,10 @@ def validate(
         stats = get_valid_stats(cfg, trainer, agg.get_smoothed_values())
         progress.print(stats, tag=subset, step=trainer.get_num_updates())
 
+        transponder.send_train_status(epoch_itr.epoch, stats["accuracy"])
+
         valid_losses.append(stats[cfg.checkpoint.best_checkpoint_metric])
+
     return valid_losses
 
 

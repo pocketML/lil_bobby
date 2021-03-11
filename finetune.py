@@ -7,12 +7,10 @@ def main(args, sacred_experiment=None):
     model = args.model
     task_path = get_dataset_path(task)
     model_path = get_model_path(model)
-    batch_size = args.batch_size
-    use_fp16 = not args.cpu
 
     finetune_args = task_utils.get_finetune_string(
-        task, task_path, model_path, batch_size,
-        use_fp16, sacred_experiment=sacred_experiment
+        task_path, model_path, args,
+        sacred_experiment=sacred_experiment
     )
     print(finetune_args)
 
