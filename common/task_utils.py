@@ -114,9 +114,13 @@ def get_finetune_string(
 ):
     task = override_args.task
     arch = override_args.task
-    batch_size = override_args.batch_size
     use_fp16 = not override_args.cpu
     settings = TASK_INFO[task]['settings']
+    
+    # setting batch_size to task default if nothing specified
+    batch_size = override_args.batch_size
+    batch_size = batch_size if batch_size is not None else settings['batch-size']
+
     data_path = f'{task_path}/processed/{task}-bin/'
     update_freq = int(settings['batch-size'] / batch_size)
     max_epochs = override_args.max_epochs

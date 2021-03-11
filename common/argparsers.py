@@ -46,7 +46,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--model", "-m", choices=MODEL_INFO.keys(), required=True)
     ap.add_argument("--arch", default="roberta_base")
-    ap.add_argument("--batch-size", type=int, default=2)
+    ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=10)
     ap.add_argument("--cpu", action='store_true')
 
