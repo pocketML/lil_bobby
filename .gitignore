@@ -4,6 +4,7 @@
 # Dataset and model files
 models/*
 data/*
+experiments/*
 
 # SLURM bash file
 submit.job

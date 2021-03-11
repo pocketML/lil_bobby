@@ -109,10 +109,18 @@ TASK_INFO = {
 def get_processed_path(task):
     return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
 
-def get_finetune_string(task, task_path, model_path, batch_size, use_fp16, arch='roberta_base'):
+def get_finetune_string(
+    task_path, model_path, override_args, sacred_experiment=None
+):
+    task = override_args.task
+    arch = override_args.task
+    batch_size = override_args.batch_size
+    use_fp16 = not override_args.cpu
     settings = TASK_INFO[task]['settings']
     data_path = f'{task_path}/processed/{task}-bin/'
     update_freq = int(settings['batch-size'] / batch_size)
+    max_epochs = override_args.max_epochs
+
     arguments = [
         f'{data_path}', # FILE
         '--restore-file', f'{model_path}',
@@ -141,7 +149,7 @@ def get_finetune_string(task, task_path, model_path, batch_size, use_fp16, arch=
         '--total-num-update', f'{settings["total-num-update"]}',
         '--warmup-updates', f'{settings["warmup-updates"]}',
         '--threshold-loss-scale', '1',
-        '--max-epoch', '10',
+        '--max-epoch', f"{max_epochs}",
         '--find-unused-parameters',
         '--update-freq', f'{update_freq}'
     ]
@@ -154,4 +162,8 @@ def get_finetune_string(task, task_path, model_path, batch_size, use_fp16, arch=
             '--fp16',
             '--fp16-init-scale', '4',
             '--fp16-scale-window', '128',])
+    if sacred_experiment is not None:
+        experiment_name = sacred_experiment.info["name"]
+        checkpoint_dir = f"checkpoints/{experiment_name}"
+        arguments.extend(['--save-dir', checkpoint_dir])
     return arguments

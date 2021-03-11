@@ -19,7 +19,7 @@ def prepare_eval_data(model, task, data_path):
     return eval_data
 
 def evaluate_sentence_prediction(model, task):
-    data_path = task_utils.TASK_INFO[ARGS.task]["path"] + '/dev.tsv'
+    data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv'
     eval_data = prepare_eval_data(model, task, data_path)
     ncorrect = 0
     nsamples = len(eval_data)
@@ -28,18 +28,27 @@ def evaluate_sentence_prediction(model, task):
         pred = model.predict('sentence_classification_head', encoded).argmax().item()
         pred_label = label_fn(pred)
         ncorrect += int(pred_label == target)
-    print(f'| Accuracy: {ncorrect/nsamples:.4f}')
+    return ncorrect/nsamples
+
+def main(args, sacred_experiment=None):
+    data_path = f'{task_utils.TASK_INFO[args.task]["path"]}/processed/{args.task}-bin/'
+
+    model = RobertaModel.from_pretrained(
+        'checkpoints',
+        checkpoint_file=args.model_name,
+        data_name_or_path=data_path
+    )
+    if not args.cpu:
+        model.cuda()
+    model.eval()
+    accuracy = evaluate_sentence_prediction(model, args.task)
+
+    if sacred_experiment is not None:
+        sacred_experiment.log_scalar("test.accuracy", accuracy)
+
+    print(f'| Accuracy: {accuracy:.4f}')
 
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()
-    DATA_PATH = f'{task_utils.TASK_INFO[ARGS.task]["path"]}/processed/{ARGS.task}-bin/'
 
-    MODEL = RobertaModel.from_pretrained(
-        'checkpoints',
-        checkpoint_file=ARGS.model_name,
-        data_name_or_path=DATA_PATH
-    )
-    if not ARGS.cpu:
-        MODEL.cuda()
-    MODEL.eval()
-    evaluate_sentence_prediction(MODEL, ARGS.task)
+    main(ARGS)
