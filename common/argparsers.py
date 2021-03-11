@@ -42,13 +42,14 @@ def args_evaluate(args=None, namespace=None, parse_known=False):
 
 def args_finetune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
+    arch_choices = ['roberta_base', 'roberta_large']
 
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
-    ap.add_argument("--model", "-m", choices=MODEL_INFO.keys(), required=True)
-    ap.add_argument("--arch", default="roberta_base")
+    ap.add_argument("--arch", choices=arch_choices, default="roberta_base")
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=10)
     ap.add_argument("--cpu", action='store_true')
+    ap.add_argument('--fp16', action='store_true')
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)

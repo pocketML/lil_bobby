@@ -6,7 +6,10 @@ def main(args, sacred_experiment=None):
     task = args.task
     model = args.model
     task_path = get_dataset_path(task)
-    model_path = get_model_path(model)
+    if args.arch == 'roberta_base':
+        model_path = get_model_path('base')
+    else:
+        model_path = get_model_path('large')
 
     finetune_args = task_utils.get_finetune_string(
         task_path, model_path, args,
