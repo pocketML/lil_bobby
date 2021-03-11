@@ -48,9 +48,9 @@ def evaluate_accuracy_f1(model, task):
         pred = model.predict('sentence_classification_head', encoded).argmax().item()
         pred_label = label_fn(pred)
         ncorrect += int(pred_label == target)
-        true_positives += int(pred_label == 1 and target == 1)
-        false_positives += int(pred_label == 1 and target == 0)
-        false_negatives += int(pred_label == 0 and target == 1)
+        true_positives += int(pred_label == '1' and target == '1')
+        false_positives += int(pred_label == '1' and target == '0')
+        false_negatives += int(pred_label == '0' and target == '1')
     accuracy = ncorrect / nsamples
     f1_score = true_positives / (true_positives + 0.5 * (false_positives + false_negatives))
     return (accuracy, f1_score)
