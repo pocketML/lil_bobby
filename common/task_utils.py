@@ -110,11 +110,11 @@ def get_processed_path(task):
     return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
 
 def get_finetune_string(
-    task_path, model_path, override_args, sacred_experiment=None
-):
+    task_path, model_path, override_args, sacred_experiment=None):
     task = override_args.task
-    arch = override_args.task
-    use_fp16 = not override_args.cpu
+    arch = override_args.arch
+    use_fp16 = override_args.fp16
+    use_cpu = override_args.cpu
     settings = TASK_INFO[task]['settings']
     
     # setting batch_size to task default if nothing specified
@@ -161,11 +161,13 @@ def get_finetune_string(
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
     else:
         arguments.extend(['--best-checkpoint-metric', 'accuracy', '--maximize-best-checkpoint-metric'])
-    if use_fp16:
+    if use_fp16 and not use_cpu:
         arguments.extend([
             '--fp16',
             '--fp16-init-scale', '4',
             '--fp16-scale-window', '128',])
+    if use_cpu:
+        arguments.extend(['--cpu'])
     if sacred_experiment is not None:
         experiment_name = sacred_experiment.info["name"]
         checkpoint_dir = f"checkpoints/{experiment_name}"
