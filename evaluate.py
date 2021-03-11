@@ -3,7 +3,7 @@ from common import argparsers, task_utils
 
 def prepare_eval_data(model, task, data_path):
     eval_data = []
-    with open(data_path) as fin:
+    with open(data_path, encoding="utf-8") as fin:
         fin.readline()
         for i, line in enumerate(fin):
             tokens = line.strip().split('\t')
@@ -14,6 +14,9 @@ def prepare_eval_data(model, task, data_path):
                 encoded = model.encode(sent)
             elif task == 'rte':
                 sent1, sent2, target = tokens[1], tokens[2], tokens[3]
+                encoded = model.encode(sent1, sent2)
+            elif task == 'qqp':
+                sent1, sent2, target = tokens[3], tokens[4], tokens[5]
                 encoded = model.encode(sent1, sent2)
             eval_data.append((encoded, target))
     return eval_data
