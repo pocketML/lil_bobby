@@ -1,9 +1,9 @@
 from fairseq.models.roberta import RobertaModel
 from common import argparsers, task_utils
 
-def prepare_eval_data(model, task, data_path):
+def prepare_eval_data(model, task, filepath):
     eval_data = []
-    with open(data_path) as fin:
+    with open(filepath, encoding="utf8") as fin:
         fin.readline()
         for i, line in enumerate(fin):
             tokens = line.strip().split('\t')
@@ -20,6 +20,7 @@ def prepare_eval_data(model, task, data_path):
                 encoded = model.encode(sent1, sent2)
             elif task == 'mnli':
                 sent1, sent2, target = tokens[8], tokens[9], tokens[15]
+                encoded = model.encode(sent1, sent2)
             eval_data.append((encoded, target))
     return eval_data
 
@@ -30,7 +31,7 @@ def update_f1_counts(pred, target, tp, fp, fn):
     return tp, fp, fn
 
 # f1 is the harmonic mean of the precision and recall
-def evaluate_accuracy(model, val_data_path, include_f1=False):
+def evaluate_accuracy(model, task, val_data_path, include_f1=False):
     eval_data = prepare_eval_data(model, task, val_data_path)
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
     ncorrect, tp, fp, fn = 0, 0, 0, 0
@@ -60,29 +61,30 @@ def main(args, sacred_experiment=None):
         model.cuda()
     model.eval()
 
-    val_data_path = task_utils.TASK_INFO[args.task]["path"] + '/dev.tsv'
+    task = args.task
+    val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv'
 
-    if args.task in ['sst-2', 'rte', 'mnli']:
-        accuracy = evaluate_accuracy(model, val_data_path)
+    if task in ['sst-2', 'rte']:
+        accuracy = evaluate_accuracy(model, task, val_data_path)
         print(f'| Accuracy: {accuracy:.4f}')
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("test.accuracy", accuracy)
-    elif args.task in ['mnli']:
+    elif task in ['mnli']:
         for subtask in ['matched', 'mismatched']:
-            val_data_path = task_utils.TASK_INFO[args.task]["path"] + f'/dev_{subtask}.tsv'
-            print(f'{args.task}-{subtask}')
-            accuracy = evaluate_accuracy(model, val_data_path)
+            val_data_path = task_utils.TASK_INFO[task]["path"] + f'/dev_{subtask}.tsv'
+            print(f'{task}-{subtask}')
+            accuracy = evaluate_accuracy(model, task, val_data_path)
             print(f'| Accuracy: {accuracy:.4f}')
             if sacred_experiment is not None:
                 sacred_experiment.log_scalar("test.accuracy", accuracy)
-    elif args.task in ['qqp']:
-        accuracy, f1 = evaluate_accuracy(model, val_data_path, include_f1=True)
+    elif task in ['qqp']:
+        accuracy, f1 = evaluate_accuracy(model, task, val_data_path, include_f1=True)
         print(f'| Accuracy: {accuracy:.4f}, f1: {f1:.4f}')
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("test.accuracy", accuracy)
             sacred_experiment.log_scalar("test.f1", f1)
     else:
-        raise Exception(f'task {args.task} not currently supported')
+        raise Exception(f'task {task} not currently supported')
 
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()
