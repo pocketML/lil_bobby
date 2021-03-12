@@ -24,7 +24,7 @@ def prepare_eval_data(model, task, filepath):
             eval_data.append((encoded, target))
     return eval_data
 
-def update_f1_counts(pred, target, tp, fp, fn):
+def update_f1_counts(pred_label, target, tp, fp, fn):
     tp += int(pred_label == '1' and target == '1')
     fp += int(pred_label == '1' and target == '0')
     fn += int(pred_label == '0' and target == '1')
