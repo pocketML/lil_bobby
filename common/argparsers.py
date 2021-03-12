@@ -48,6 +48,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
     ap.add_argument("--arch", choices=arch_choices, default="roberta_base")
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=10)
+    ap.add_argument("--model-parallel-size", type=int, default=1)
     ap.add_argument("--cpu", action='store_true')
     ap.add_argument('--fp16', action='store_true')
 
