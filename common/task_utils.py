@@ -155,7 +155,8 @@ def get_finetune_string(
         '--threshold-loss-scale', '1',
         '--max-epoch', f"{max_epochs}",
         '--find-unused-parameters',
-        '--update-freq', f'{update_freq}'
+        '--update-freq', f'{update_freq}',
+        '--no-epoch-checkpoints'
     ]
     if task == 'sts-b':
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
