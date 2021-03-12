@@ -144,10 +144,6 @@ def main(cfg: FairseqConfig, **kwargs) -> None:
         # train for one epoch
         valid_losses, should_stop = train(cfg, trainer, task, epoch_itr)
 
-        if epoch_itr.epoch > 1:
-            delete_old = epoch_itr.epoch - 2
-            os.remove(f"{cfg.checkpoint.save_dir}/checkpoint{delete_old}.pt")
-
         if experiment is not None:
             experiment.log_scalar("validation.loss", valid_losses[0])
             if not cfg.checkpoint.no_save:
