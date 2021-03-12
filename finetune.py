@@ -4,7 +4,6 @@ from roberta_custom.train import cli_main
 
 def main(args, sacred_experiment=None):
     task = args.task
-    model = args.model
     task_path = get_dataset_path(task)
     if args.arch == 'roberta_base':
         model_path = get_model_path('base')
