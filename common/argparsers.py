@@ -4,18 +4,35 @@ from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO
 from download import get_dataset_path
 
-compression_techniques = [
-    'prune-magnitude',
-    'quantize'
-]
+
 
 finetune_tasks = list(TASK_INFO.keys())
 
 # define arguments for model compression
 def args_compress(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
+    compression_techniques = [
+        'prune-magnitude',
+        'quantize'
+    ]
     ap.add_argument("--techniques", choices=compression_techniques, nargs="+", required=True)
     ap.add_argument("--pruning-threshold", type=float)
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+
+    return ap.parse_args(args=args, namespace=namespace)
+
+# define arguments for knowledge distillation
+def args_distill(args=None, namespace=None, parse_known=False):
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument("--task", choices=finetune_tasks, required=True)
+    ap.add_argument("--student-arch", choices=['kage'])
+    ap.add_argument("--distillation", action="store_true")
+    ap.add_argument("--generate-loss", action="store_true")
+    ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--cpu", action="store_true")
+
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
 
