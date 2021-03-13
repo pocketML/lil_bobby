@@ -116,6 +116,7 @@ def get_finetune_string(
     use_fp16 = override_args.fp16
     use_cpu = override_args.cpu
     settings = TASK_INFO[task]['settings']
+    seed = override_args.seed
     
     # setting batch_size to task default if nothing specified
     batch_size = override_args.batch_size
@@ -158,7 +159,8 @@ def get_finetune_string(
         '--find-unused-parameters',
         '--update-freq', f'{update_freq}',
         '--no-epoch-checkpoints',
-        '--model-parallel-size', f'{gpus}'
+        '--model-parallel-size', f'{gpus}',
+        '--seed', f'{seed}'
     ]
     if task == 'sts-b':
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
