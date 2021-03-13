@@ -146,7 +146,7 @@ def get_finetune_string(
         '--attention-dropout', '0.1',
         '--weight-decay', '0.1',
         '--optimizer', 'adam',
-        '--adam-betas', "(0.9,0.98)",
+        '--adam-betas', "(0.9, 0.98)",
         '--adam-eps', '1e-06',
         '--clip-norm', '0.0',
         '--lr-scheduler', 'polynomial_decay',
