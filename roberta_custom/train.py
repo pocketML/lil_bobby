@@ -145,7 +145,7 @@ def main(cfg: FairseqConfig, **kwargs) -> None:
         valid_losses, should_stop = train(cfg, trainer, task, epoch_itr)
 
         if experiment is not None:
-            experiment.log_scalar("validation.loss", valid_losses[0])
+            experiment.log_scalar("validation.acc", valid_losses[0])
             if not cfg.checkpoint.no_save:
                 if cfg.checkpoint.no_epoch_checkpoints:
                     experiment.add_artifact(f"{cfg.checkpoint.save_dir}/checkpoint_best.pt")
