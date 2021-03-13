@@ -3,7 +3,7 @@ from common import argparsers, task_utils
 
 def prepare_eval_data(model, task, filepath):
     eval_data = []
-    with open(data_path, encoding="utf-8") as fin:
+    with open(filepath, encoding="utf-8") as fin:
         fin.readline()
         for i, line in enumerate(fin):
             tokens = line.strip().split('\t')
