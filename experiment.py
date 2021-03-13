@@ -54,7 +54,7 @@ if __name__ == "__main__":
     if "finetune" in TASK_ARGS:
         FINETUNE_ARGS = TASK_ARGS["finetune"]
         transponder.send_train_start(
-            RUN_ID, FINETUNE_ARGS.model, FINETUNE_ARGS.task, FINETUNE_ARGS.max_epochs
+            RUN_ID, FINETUNE_ARGS.arch, FINETUNE_ARGS.task, FINETUNE_ARGS.max_epochs
         )
 
     RUN = EXPERIMENT._create_run("run_experiment", info={"name": RUN_ID})

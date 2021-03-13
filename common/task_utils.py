@@ -124,6 +124,7 @@ def get_finetune_string(
     data_path = f'{task_path}/processed/{task}-bin/'
     update_freq = int(settings['batch-size'] / batch_size)
     max_epochs = override_args.max_epochs
+    gpus = override_args.model_parallel_size
 
     arguments = [
         f'{data_path}', # FILE
@@ -156,7 +157,8 @@ def get_finetune_string(
         '--max-epoch', f"{max_epochs}",
         '--find-unused-parameters',
         '--update-freq', f'{update_freq}',
-        '--no-epoch-checkpoints'
+        '--no-epoch-checkpoints',
+        '--model-parallel-size', f'{gpus}'
     ]
     if task == 'sts-b':
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
