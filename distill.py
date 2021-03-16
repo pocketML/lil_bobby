@@ -1,17 +1,49 @@
 from common import argparsers
-from compression.distillation import loss_data, student_models
+from compression.distillation import data
+from compression.distillation.models import TangBILSTM, TangLoss, load_teacher
+import torch.nn as nn
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
 
+    device = 'cpu' if args.cpu else 'cuda:0'
     if args.generate_loss:
-        loss_data.generate(args)
+        data.generate_distillation_loss(args)
     if args.play:
-        model = student_models.TangBILSTM()
-        sent1 = "Herllo good friendy friend"
-        sent2 = "How are you doing today my good friend."
-        encoded = model.encode([sent1, sent2])
-        out = model(encoded)
+        task = args.task
+        teacher = load_teacher(task, args.cpu)
+        model = TangBILSTM(teacher.task.label_dictionary)
+        mse = nn.MSELoss()
+        ce = nn.CrossEntropyLoss()
+        
+        sents = [["hej, hej", "what what"]]
+        data = model.encode(sents)
+        print(data)
+        exit(0)
+
+        model.to(device)
+        mse.to(device)
+        ce.to(device)
+
+        criterion = TangLoss(0.5, mse, ce)
+        distillation_data = data.load_distillation_data(task)
+        val_data = data.load_val_data(task)
+        dataloaders = data.get_dataloaders(50, *distillation_data, *val_data)
+
+        for epoch in range(10):
+            for phase in ['train', 'val']:
+                if phase == 'train':
+                    model.train()
+                else:
+                    model.eval()
+                
+                running_loss = 0.0
+                running_corrects = 0.0
+
+
+
+        #encoded = model.encode([sent1, sent2])
+        #out = model(encoded)
         #print(out)
         #print(out.size())
 

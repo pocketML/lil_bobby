@@ -33,8 +33,10 @@ def get_hidden_zeros(use_gpu, batch_size, num_hidden_nodes):
 #  but with bytepair embeddings instead of the humongously
 #  sized word2vec GoogleNews pre-trained word embeddings yay
 class TangBILSTM(nn.Module):
-    def __init__(self):
+    def __init__(self, label_dictionary):
         super().__init__()
+
+        self.label_dict = {label_dictionary.symbols[i]: torch.Tensor([i - 4]) for i in range(len(label_dictionary.symbols))}
         self.embedding_size = 25
         self.num_hidden_features = 150
         self.num_layers = 1
@@ -54,7 +56,7 @@ class TangBILSTM(nn.Module):
         self.fc1 = nn.Linear(2 * self.num_hidden_features, self.out_features)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(self.out_features, self.num_classes)
-    
+
     def encode(self, sentences):
         if not isinstance(sentences, list):
             raise TypeError("Encode needs a list of strings")
@@ -79,3 +81,11 @@ class TangBILSTM(nn.Module):
         x = self.relu(x)
         x = self.fc2(x)
         return x
+
+def get_loss_function(alpha, criterion_distill, criterion_loss):
+    beta = 1 - alpha
+    def f(predicted_logits, target_logits, predicted_label, target_label):
+        distill = beta * criterion_distill(predicted_logits, target_logits)
+        loss = alpha * criterion_loss(predicted_label, target_label)
+        return distill + loss
+    return f
