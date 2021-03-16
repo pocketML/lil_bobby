@@ -32,6 +32,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--generate-loss", action="store_true")
     ap.add_argument("--augment", action="store_true")
     ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--play", action="store_true")
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
