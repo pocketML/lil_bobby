@@ -1,6 +1,7 @@
 from common.task_utils import TASK_INFO
 from fairseq.data.data_utils import collate_tokens
 from torch.utils.data import Dataset, DataLoader
+import torch
 import compression.distillation.models as models
 
 # returns sentences, labels
@@ -56,46 +57,97 @@ def generate_distillation_loss(args):
     generate_for_train_data(model, args)
     
 class DistillationData(Dataset):
-    def __init__(self, sents, labels, target_logits=None) -> None:
+    def __init__(self, sents, labels, logits=None) -> None:
         super().__init__()
         self.sents = sents
-        self.target_logits = target_logits
+        self.lengths = [torch.LongTensor([len(sent)]) for sent in self.sents]
         self.labels = labels
+        self.logits = logits if logits is not None else [None] * len(sents)
 
     def __len__(self):
         return len(self.sents)
 
-    def __getitem__(self, index):
-        if self.target_logits is None:
-            return self.sents[index], self.labels[index]
-        return self.sents[index], self.target_logits[index], self.labels[index]
+    def __getitem__(self, idx):
+        return self.sents[idx], self.lengths[idx], self.labels[idx], self.logits[idx]
 
-def get_dataloaders(batch_size, train_x, train_y, train_logits, val_x, val_y):
+class DistillationPairData(Dataset):
+    def __init__(self, sents1, sents2, labels, logits=None) -> None:
+        super().__init__()
+        self.sents1 = sents1
+        self.sents2 = sents2
+        self.lens1 = [torch.LongTensor(len(sent)) for sent in self.sents1]
+        self.lens2 = [torch.LongTensor(len(sent)) for sent in self.sents2]
+        self.labels = labels
+        self.logits = logits if logits is not None else [None] * len(sents1)
+
+    def __len__(self):
+        return len(self.sents1)
+
+    def __getitem__(self, idx):
+        return self.sents1[idx], self.lens1[idx], self.sents2[idx], self.lens2[idx], self.labels[idx], self.logits[idx]
+
+def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
+    label_tensors = [torch.LongTensor([model.label_dict[x.strip()]]) for x in labels]
+    logit_tensors = None if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
+    sents1_tensors = [torch.LongTensor(model.bpe.encode_ids(sent)) for sent in sentences1]
+    if sentences2 is not None:
+        sents2_tensors = [torch.LongTensor(model.bpe.encode_ids(sent)) for sent in sentences2]
+        return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors)
+    else:
+        return DistillationData(sents1_tensors, label_tensors, logit_tensors)
+
+def get_dataloader_dict(model, distillation_data, validation_data, use_sentence_pairs=False):
     datasets = {}
-    datasets['train'] = DistillationData(train_x, train_y, target_logits=train_logits)
-    datasets['val'] = DistillationData(val_x, val_y)
-    dataloaders = {
-        x: DataLoader(
+    if use_sentence_pairs:
+        train_x1, train_x2, train_labels, train_logits = distillation_data
+        val_x1, val_x2, val_labels = validation_data
+        datasets['train'] = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits)
+        datasets['val'] = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
+    else:
+        train_x1, train_labels, train_logits = distillation_data
+        val_x1, val_labels = validation_data
+        datasets['train'] = get_datasets(model, train_x1, train_labels, logits=train_logits)
+        datasets['val'] = get_datasets(model, val_x1, val_labels)
+    dataloaders = {x: DataLoader(
             datasets[x],
-            batch_size=batch_size,
+            batch_size=model.batch_size,
             shuffle=True,
-            drop_last=True
-        ) for x in ('train', 'val')
-    }
+            drop_last=True,
+            collate_fn=collate_fn) for x in ['train', 'val']}
     return dataloaders
 
+# pads sentences in a batch to equal length
+# code inspired by https://github.com/hpanwar08/sentence-classification-pytorch/
+def collate_fn(data):
+    data.sort(key=lambda x: len(x[0]), reverse=True)
+    if len(data[0]) == 4: # single sentence
+        lens = [len(sent) for sent,_,_,_ in data]
+        labels, all_logits, lengths = [], [], []
+        padded_sents = torch.empty(len(data), max(lens)).long().fill_(50000)
+        for i, (sent, length, label, logits) in enumerate(data):
+            padded_sents[i,:lens[i]] = sent
+            labels.append(label)
+            all_logits.append(logits)
+            lengths.append(length)
+        all_logits = torch.stack(all_logits) if all_logits[0] is not None else all_logits
+        return (padded_sents, 
+            torch.cat(lengths), 
+            torch.stack(labels), 
+            all_logits )#torch.stack(all_logits))
+    else:
+        raise Exception("please don't be here")
+
 # returns sentences, labels, logits
-def load_distillation_data(path):
+def load_distillation_data(task):
+    path = f'{TASK_INFO[task]["path"]}/distillation_data/train.tsv'
+
     with open(path, encoding="utf-8") as fip:
-        lines = [x.split("\t") for x in fip.readlines()]
+        lines = [x.strip().split("\t") for x in fip.readlines()]
         unzipped = list(zip(*lines))
         if len(unzipped) == 4:
-            return zip(unzipped[0], unzipped[1]), unzipped[2], unzipped[3]
+            return unzipped[0], unzipped[1], unzipped[2], unzipped[3]
         else:
-            return unzipped
+            return unzipped[0], unzipped[1], unzipped[2]
 
 def load_val_data(task):
-    return load_train_data(task, ds_type="val")
-
-def data_to_tensors(sentences, labels, model, logits=None):
-    pass
+    return load_train_data(task, ds_type="dev")
