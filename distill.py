@@ -15,20 +15,20 @@ def main(args, sacred_experiment=None):
         torch.manual_seed(233)
         task = args.task
         model = TangBILSTM(task, use_gpu=(not args.cpu), use_sentence_pairs=False)
-        mse = nn.MSELoss()
-        ce = nn.CrossEntropyLoss()
+        distillation_data = data.load_distillation_data(task)
+        val_data = data.load_val_data(task)
         
+        mse, ce = nn.MSELoss(), nn.CrossEntropyLoss()
         model.to(device)
         mse.to(device)
         ce.to(device)
 
         criterion = TangLoss(0.5, mse, ce)
-        distillation_data = data.load_distillation_data(task)
-        val_data = data.load_val_data(task)
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
         optim = torch.optim.Adadelta(model.parameters())
         train_loop(model, criterion, optim, dataloaders, device)
 
+# only works for single sentence prediction
 def train_loop(model, criterion, optim, dl, device, num_epochs=10):
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
@@ -66,12 +66,7 @@ def train_loop(model, criterion, optim, dl, device, num_epochs=10):
             running_corrects += torch.sum(preds == target_labels.data)
         print(f'|--> val accuracy: {running_corrects / len(dl["val"])}')
 
-def train_pair_loop():
-    pass
 
 if __name__ == "__main__":
     ARGS = argparsers.args_distill()
-
     main(ARGS)
-
-# -5.6615e-02, -1.4662e-01,  9.1819e-02,  8.9149e-02, -1.0267e-02

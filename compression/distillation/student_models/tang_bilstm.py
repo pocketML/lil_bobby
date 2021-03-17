@@ -6,19 +6,6 @@ from bpemb import BPEmb
 import torch.nn.functional as F
 from common.task_utils import TASK_LABEL_DICT
 
-class BILSTMConfig:
-    def __init__(self):
-        self.lr = 1e-4
-        self.batch_size = 64
-        self.dropout_keep_prob = 0.5
-        self.embedding_size = 300
-        self.num_classes = 2
-        self.num_hidden_nodes = 150
-        self.hidden_dim2 = 128
-        self.num_layers = 1
-        self.bidirectional = True
-        self.vocab_size = 50000
-
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
 #  but with bytepair embeddings instead of the humongously
 #  sized word2vec GoogleNews pre-trained word embeddings yay
@@ -28,12 +15,12 @@ class TangBILSTM(nn.Module):
         self.label_dict = TASK_LABEL_DICT[task]
         self.use_sentence_pairs = use_sentence_pairs
         self.batch_size = 50
-        self.embedding_size = 100
+        self.embedding_size = 25
         self.vocab_size = 50000
-        self.num_hidden_features = 300 #150
+        self.num_hidden_features = 150
         self.num_layers = 1
         self.use_gpu = use_gpu
-        self.out_features = 2000
+        self.out_features = 200
         self.num_classes = 2
 
         self.bpe = BPEmb(lang="en", dim=self.embedding_size, vs=self.vocab_size, add_pad_emb=True)
@@ -92,10 +79,6 @@ class TangBILSTM(nn.Module):
         x = self.relu(x)
         x = self.fc2(x)
         return x
-
-    # encodes a single sentence as BPE and morphs it into a torch tensor
-    def encode(self, sentence):
-        return torch.Tensor(self.bpe.embed(sentence))
 
 def get_loss_function(alpha, criterion_distill, criterion_loss):
     beta = 1 - alpha
