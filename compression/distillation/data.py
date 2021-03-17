@@ -121,7 +121,7 @@ def get_dataloader_dict(model, distillation_data, validation_data, use_sentence_
 def collate_fn(data):
     data.sort(key=lambda x: len(x[0]), reverse=True)
     if len(data[0]) == 4: # single sentence
-        lens = [len(sent) for sent,_,_,_ in data]
+        lens = [length for _,length,_,_ in data]
         labels, all_logits, lengths = [], [], []
         padded_sents = torch.empty(len(data), max(lens)).long().fill_(50000)
         for i, (sent, length, label, logits) in enumerate(data):
@@ -130,24 +130,16 @@ def collate_fn(data):
             all_logits.append(logits)
             lengths.append(length)
         all_logits = torch.stack(all_logits) if all_logits[0] is not None else all_logits
-        return (padded_sents, 
-            torch.cat(lengths), 
-            torch.stack(labels), 
-            all_logits )#torch.stack(all_logits))
+        return padded_sents, torch.cat(lengths), torch.stack(labels), all_logits 
     else:
         raise Exception("please don't be here")
 
 # returns sentences, labels, logits
 def load_distillation_data(task):
     path = f'{TASK_INFO[task]["path"]}/distillation_data/train.tsv'
-
     with open(path, encoding="utf-8") as fip:
         lines = [x.strip().split("\t") for x in fip.readlines()]
-        unzipped = list(zip(*lines))
-        if len(unzipped) == 4:
-            return unzipped[0], unzipped[1], unzipped[2], unzipped[3]
-        else:
-            return unzipped[0], unzipped[1], unzipped[2]
+        return list(zip(*lines))
 
 def load_val_data(task):
     return load_train_data(task, ds_type="dev")
