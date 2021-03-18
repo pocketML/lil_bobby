@@ -1,5 +1,12 @@
 GLUE_URL = "https://dl.fbaipublicfiles.com/glue/data"
 
+TASK_LABEL_DICT = {
+    'sst-2': {
+        '1': 0,
+        '0': 1,
+    }
+}
+
 TASK_INFO = {
     'mnli' : {
         'path': 'data/glue/MNLI',
