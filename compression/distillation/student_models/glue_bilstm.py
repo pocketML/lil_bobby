@@ -7,12 +7,12 @@ from bpemb import BPEmb
 class BILSTMConfig():
     def __init__(self,
         task,
+        use_gpu, 
         batch_size=50, 
-        use_gpu=True, 
         enc_hidden_dim=300, 
         bidirectional=True,
         embedding_dim=25,
-        vocab_size=5000,
+        vocab_size=50000,
         num_layers=1,
         batch_first=True,
         dropout=0.2,
@@ -54,7 +54,7 @@ def pack_bilstm_unpack(bilstm, cfg, embedded, lens):
         return (h, c)
 
     packed = pack_padded_sequence(embedded, lens, batch_first=cfg.batch_first)
-    out, _ = bilstm(packed, init_hidden(cfg))
+    out, _ = bilstm(packed, init_hidden())
     unpacked, _ = pad_packed_sequence(out, batch_first=cfg.batch_first)
     return unpacked
 
@@ -72,7 +72,8 @@ def get_lstm(cfg):
 
 def choose_hidden_state(hidden_states, lens=None, decision='max'):
     if decision == 'max':
-        return hidden_states.max(dim=1)
+        h, _ =  hidden_states.max(dim=1)
+        return h
     elif decision == 'last':
         batch_size = hidden_states.shape[0]
         batch_idx = torch.LongTensor([i for i in range(batch_size)])
@@ -83,12 +84,13 @@ def choose_hidden_state(hidden_states, lens=None, decision='max'):
 # Model inspired by https://openreview.net/pdf?id=rJ4km2R5t7
 # https://github.com/nyu-mll/GLUE-baselines/tree/master/src
 class GlueBILSTM(nn.Module):
-    def __init__(self, task):
+    def __init__(self, task, use_gpu):
         super().__init__()
         self.label_dict = TASK_LABEL_DICT[task]
-        self.cfg = BILSTMConfig(task)
-        self.cfg.num_layers = 2
+        self.cfg = BILSTMConfig(task, use_gpu)
+        self.cfg.num_layers = 1
         self.cfg.enc_hidden_dim = 1500
+        self.cfg.batch_size = 128
         self.dropout = nn.Dropout(p=self.cfg.dropout) if self.cfg.dropout else lambda x: x
 
         # embedding
@@ -99,35 +101,29 @@ class GlueBILSTM(nn.Module):
         self.bilstm = get_lstm(self.cfg)
 
         # classifier/mlp
-        inp_d = self.cfg.enc_hidden_dim * 8 if self.cfg.use_sentence_pairs else self.cfg.enc_hidden_dim * 2
-        self.cls = nn.Sequential(
+        inp_d = self.cfg.enc_hidden_dim * 4 if self.cfg.use_sentence_pairs else self.cfg.enc_hidden_dim
+        inp_d = inp_d * 2 if self.cfg.bidirectional else inp_d
+        self.classifier = nn.Sequential(
             nn.Linear(inp_d, self.cfg.cls_hidden_dim),
             nn.Tanh(), 
             nn.Linear(self.cfg.cls_hidden_dim, self.cfg.num_classes))
 
     def forward(self, x, lens):
-        if not self.cfg.use_sentence_pairs:
+        def embed_enc_sents(sents, lengths):
             #embedding
-            emb = self.embedding(x).float()
+            emb = self.embedding(sents).float()
             emb = self.dropout(emb)
             # encoding
-            h = pack_bilstm_unpack(self.bilstm, self.cfg, emb, lens)
+            h = pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths)
             h = self.dropout(h)
-            # max pooling
-            x = choose_hidden_state(h)
+            return choose_hidden_state(h, decision='max')
+        
+        if not self.cfg.use_sentence_pairs: 
+            x = embed_enc_sents(x, lens)
         else:
-            # embeddings
-            emb1, emb2 = self.embedding(x[0]).float(), self.embedding(x[1]).float()
-            emb1, emb2 = self.dropout(emb1), self.dropout(emb2)
-            lens1, lens2 = lens[0], lens[1]
-            # encoding
-            h1 = pack_bilstm_unpack(self.bilstm, self.cfg, emb1, lens1)
-            h2 = pack_bilstm_unpack(self.bilstm, self.cfg, emb2, lens2)
-            out1, out2 = self.dropout(h1), self.dropout(h2)
-            # max pooling
-            x1 = choose_hidden_state(h1, decision='max')
-            x2 = choose_hidden_state(h2, decision='max')
+            x1 = embed_enc_sents(x[0], lens[0])
+            x2 = embed_enc_sents(x[1], lens[1])
             x = cat_cmp(x1, x2)
         # classifier
-        x = self.cls(x)
+        x = self.classifier(x)
         return x
