@@ -172,16 +172,23 @@ def get_finetune_string(
     if task == 'sts-b':
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])
     else:
-        arguments.extend(['--best-checkpoint-metric', 'accuracy', '--maximize-best-checkpoint-metric'])
+        arguments.extend([
+            '--best-checkpoint-metric', 'accuracy',
+            '--maximize-best-checkpoint-metric'
+        ])
+
     if use_fp16 and not use_cpu:
         arguments.extend([
             '--fp16',
             '--fp16-init-scale', '4',
             '--fp16-scale-window', '128',])
+
     if use_cpu:
         arguments.extend(['--cpu'])
+
     if sacred_experiment is not None:
         experiment_name = sacred_experiment.info["name"]
-        checkpoint_dir = f"checkpoints/{experiment_name}"
+        checkpoint_dir = f"models/experiments/{experiment_name}"
         arguments.extend(['--save-dir', checkpoint_dir])
+
     return arguments
