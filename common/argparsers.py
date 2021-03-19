@@ -30,7 +30,8 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--student-arch", choices=['kage'])
     ap.add_argument("--distillation", action="store_true")
     ap.add_argument("--generate-loss", action="store_true")
-    ap.add_argument("--augment", action="store_true")
+    augmenters = ["tinybert", "masked", "pos", "ngram"]
+    ap.add_argument("--augment", type=str, choices=augmenters)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--play", action="store_true")
 
