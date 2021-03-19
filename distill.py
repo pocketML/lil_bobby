@@ -1,7 +1,12 @@
 from common import argparsers
 from compression.distillation import data
 from compression.distillation import data_augment
-from compression.distillation.models import TangBILSTM, TangLoss, load_teacher
+from compression.distillation.models import (
+    TangBILSTM, 
+    GlueBILSTM,
+    DistLossFunction,
+    load_teacher
+)
 import torch.nn as nn
 import torch
 from common.task_utils import TASK_INFO
@@ -60,6 +65,7 @@ def train_loop(model, criterion, optim, dl, device, num_epochs=10):
             x1 = x1.to(device)
             target_labels = target_labels.to(device)
             optim.zero_grad()
+            torch.set_grad_enabled(False)
             out_logits = model(x1, lens)
             _, preds = torch.max(out_logits, 1)
             target_labels = target_labels.squeeze()
