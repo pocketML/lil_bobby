@@ -1,10 +1,7 @@
 from common import argparsers
 from compression.distillation import data
-from compression.distillation.models import (
-    TangBILSTM, 
-    GlueBILSTM,
-    DistLossFunction, 
-)
+from compression.distillation import data_augment
+from compression.distillation.models import TangBILSTM, TangLoss, load_teacher
 import torch.nn as nn
 import torch
 from common.task_utils import TASK_INFO
@@ -15,6 +12,8 @@ def main(args, sacred_experiment=None):
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     if args.generate_loss:
         data.generate_distillation_loss(args)
+    if args.augment:
+        data_augment.augment(args.task, args.augment)
     if args.play:
         torch.manual_seed(233)
         task = args.task
