@@ -1,9 +1,10 @@
 from fairseq.models.roberta import RobertaModel
 from common.task_utils import TASK_INFO
 
-from compression.distillation.student_models.tang_bilstm import (
-    TangBILSTM,
-    get_loss_function as TangLoss
+from compression.distillation.student_models.tang_bilstm import TangBILSTM
+from compression.distillation.student_models.glue_bilstm import (
+    GlueBILSTM,
+    get_loss_function as DistLossFunction
 )
 
 def load_teacher(task, use_cpu=False):

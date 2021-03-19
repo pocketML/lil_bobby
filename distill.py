@@ -1,6 +1,10 @@
 from common import argparsers
 from compression.distillation import data
-from compression.distillation.models import TangBILSTM, TangLoss, load_teacher
+from compression.distillation.models import (
+    TangBILSTM, 
+    GlueBILSTM,
+    DistLossFunction, 
+)
 import torch.nn as nn
 import torch
 from common.task_utils import TASK_INFO
@@ -8,24 +12,21 @@ from common.task_utils import TASK_INFO
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
 
-    device = 'cpu' if args.cpu else 'cuda:0'
+    device = torch.device('cpu') if args.cpu else torch.device('cuda')
     if args.generate_loss:
         data.generate_distillation_loss(args)
     if args.play:
         torch.manual_seed(233)
         task = args.task
-        model = TangBILSTM(task, use_gpu=(not args.cpu), use_sentence_pairs=False)
+        model = GlueBILSTM(task) #TangBILSTM(task)
+        model.to(device)
         distillation_data = data.load_distillation_data(task)
         val_data = data.load_val_data(task)
-        
-        mse, ce = nn.MSELoss(), nn.CrossEntropyLoss()
-        model.to(device)
-        mse.to(device)
-        ce.to(device)
 
-        criterion = TangLoss(0.5, mse, ce)
+        criterion = DistLossFunction(0.5, nn.MSELoss(), nn.CrossEntropyLoss(), device)
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
-        optim = torch.optim.Adadelta(model.parameters())
+        #optim = torch.optim.Adadelta(model.parameters())
+        optim = torch.optim.SGD(model.parameters())
         train_loop(model, criterion, optim, dataloaders, device)
 
 # only works for single sentence prediction
