@@ -1,5 +1,6 @@
 from common import argparsers
 from compression.distillation import data
+from compression.distillation import data_augment
 from compression.distillation.models import TangBILSTM, TangLoss, load_teacher
 import torch.nn as nn
 import torch
@@ -11,6 +12,8 @@ def main(args, sacred_experiment=None):
     device = 'cpu' if args.cpu else 'cuda:0'
     if args.generate_loss:
         data.generate_distillation_loss(args)
+    if args.augment:
+        data_augment.augment(args.task, args.augment)
     if args.play:
         torch.manual_seed(233)
         task = args.task
