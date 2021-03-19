@@ -17,7 +17,7 @@ TASK_INFO = {
             'batch-size': 32,
             'total-num-update': 123873,
             'warmup-updates': 7432,
-            'use-sentences-pairs' : True,
+            'use-sentence-pairs' : True,
         }
     },
     'qnli' : {
@@ -29,7 +29,7 @@ TASK_INFO = {
             'batch-size': 32,
             'total-num-update': 33112,
             'warmup-updates': 1986,
-            'use-sentences-pairs' : True,
+            'use-sentence-pairs' : True,
         }
     },
     'qqp' : {
@@ -41,7 +41,7 @@ TASK_INFO = {
             'batch-size': 32,
             'total-num-update': 113272,
             'warmup-updates': 28318,
-            'use-sentences-pairs' : True,
+            'use-sentence-pairs' : True,
         }
     },
     'rte' : {
@@ -53,7 +53,7 @@ TASK_INFO = {
             'batch-size': 16,
             'total-num-update': 2036,
             'warmup-updates': 122,
-            'use-sentences-pairs' : True,
+            'use-sentence-pairs' : True,
         }
     },
     'sst-2' : {
@@ -65,7 +65,7 @@ TASK_INFO = {
             'batch-size': 32,
             'total-num-update': 20935,
             'warmup-updates': 1256,
-            'use-sentences-pairs' : False,
+            'use-sentence-pairs' : False,
         }
     },
     'mrpc' : {
