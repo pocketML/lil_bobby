@@ -3,6 +3,7 @@ import random
 import os
 import numpy as np
 from fairseq.models.roberta import RobertaModel
+from fairseq.data.data_utils import collate_tokens
 from common.task_utils import TASK_INFO
 from compression.distillation.data import load_train_data
 
@@ -20,7 +21,7 @@ STOP_WORDS = [
     'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't", "'s", "'re"
 ]
 
-VOCAB_SIZE = 10_000
+VOCAB_SIZE = 100_000
 
 def load_glove():
     words = []
@@ -51,15 +52,18 @@ def load_glove():
     emb_norm = (emb_matrix.T / d).T
     return emb_norm, vocab, ids_to_tokens
 
-def load_language_model(task):
-    # Might be used later
+def load_model(task):
     data_path = "."
+    model_path = "models/roberta.base"
+    model_name = "model.pt"
     if task is not None:
         data_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
-    model = None
+        model_path = "checkpoints"
+        model_name = "checkpoint_best.pt"
+
     model = RobertaModel.from_pretrained(
-        'models/roberta.base',
-        checkpoint_file="model.pt",
+        model_path,
+        checkpoint_file=model_name,
         data_name_or_path=data_path
     )
     model.eval()
@@ -72,8 +76,8 @@ class Augmenter:
 
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
-        self.masked_lm = load_language_model(None)
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
+        self.masked_lm = load_model(None)
         # Initialize augment parameters.
         self.p_threshold = 0.4 # Threshold probability.
         self.n_samples = 20 # Number of augmented samples per examples.
@@ -143,7 +147,7 @@ class TinyBertAugmenter(Augmenter):
 
                 x = random.random()
                 if x < self.p_threshold:
-                    new_sent[idx] = word_candidate
+                    new_sent[idx] = word_candidate.strip()
 
             if " ".join(new_sent) not in sent_candidates:
                 sent_candidates.append(" ".join(new_sent))
@@ -176,27 +180,64 @@ def augment(task, augment_technique):
     if not os.path.exists(base_path):
         os.mkdir(base_path)
 
-    augment_class = classes[augment_technique]()
+    model = load_model(task)
+
+    augmenter = classes[augment_technique]()
 
     training_data = load_train_data(task)
     sentence_pairs = len(training_data) == 3
     output_path = f"{base_path}/{augment_technique}.tsv"
-    max_stuff = 0
+    label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
+
+    prev_pct = 0
+    print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)
+
     with open(output_path, "w", encoding="utf-8") as fp:
-        for train_example in zip(*training_data):
+        for index, train_example in enumerate(zip(*training_data)):
             sentences = [train_example[0]]
-            label = train_example[1]
             if sentence_pairs: # Augment both sentences in sentence-pair classification.
                 sentences.append(train_example[2])
 
-            augmented_sentence_output = []
-            
-            for sent in sentences:
-                augmented_sentences = augment_class.augment(sent.strip())
-                augmented_sentence_output.append(augmented_sentences)
+            output_sentences = []
 
-            for sample in augmented_sentence_output[0]:
-                fp.write(f"{sample}\n")
-            max_stuff += 1
-            if max_stuff == 10:
-                break
+            for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
+                output_sentences.append(augmenter.augment(sent.strip()))
+
+            if sentence_pairs: # Create batch for prediction of label for new sentence.
+                batch = collate_tokens(
+                    [model.encode(sent1, sent2) for sent1, sent2 in zip(*output_sentences)],
+                    pad_idx=1
+                )
+            else:
+                batch = collate_tokens(
+                    [model.encode(sent) for sent in output_sentences[0]],
+                    pad_idx=1
+                )
+
+            batch_logits = model.predict( # Predict logits for new sentence.
+                "sentence_classification_head", batch, return_logits=True
+            )
+            labels = [label_fn(label) for label in batch_logits.argmax(dim=1).tolist()]
+
+            if sentence_pairs:
+                iterator = zip(
+                    output_sentences[0], output_sentences[1],
+                    labels, batch_logits.tolist()
+                )
+                for sent1, sent2, target, logits in iterator:
+                    logits_str = ','.join([str(x) for x in logits])
+                    fp.write(f'{sent1.strip()}\t{sent2.strip()}\t{target.strip()}\t{logits_str}\n')
+            else:
+                iterator = zip(
+                    output_sentences[0], labels, batch_logits.tolist()
+                )
+                for sent, target, logits in iterator:
+                    logits_str = ','.join([str(x) for x in logits])
+                    fp.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
+
+            pct_done = int((index / len(training_data[0])) * 100)
+            if pct_done > prev_pct:
+                print(f"Augmenting dataset: {pct_done}% complete...", end="\r", flush=True)
+                prev_pct = pct_done
+
+print()
