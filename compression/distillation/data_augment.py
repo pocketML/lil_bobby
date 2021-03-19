@@ -133,7 +133,7 @@ class TinyBertAugmenter(Augmenter):
 
     def augment(self, sentence):
         tokens = sentence.split(" ")
-        sent_candidates = [sentence]
+        sent_candidates = []
         word_candidates = {}
         for (idx, word) in enumerate(tokens):
             if word not in STOP_WORDS:
