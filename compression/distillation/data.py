@@ -3,6 +3,7 @@ from fairseq.data.data_utils import collate_tokens
 from torch.utils.data import Dataset, DataLoader
 import torch
 import compression.distillation.models as models
+import os
 
 # returns sentences, labels
 def load_train_data(task, ds_type='train'):
@@ -13,16 +14,20 @@ def load_train_data(task, ds_type='train'):
         with open(folder + files[2], encoding='utf-8') as targets:
             try:
                 with open(folder + files[1], encoding="utf-8") as sentences2:
-                    return zip(sentences.readlines(), sentences2.readlines()), targets.readlines()
+                    return sentences.readlines(), targets.readlines(), sentences2.readlines()
             except FileNotFoundError:
                 return sentences.readlines(), targets.readlines()
 
 def generate_for_train_data(model, args):
     data = load_train_data(args.task)
-    batch_size = 32
+    batch_size = 8
     n = len(data[0])
     sentence_pairs = len(data) == 3
     output_path = f'{TASK_INFO[args.task]["path"]}/distillation_data/'
+
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+
     with open(output_path + 'train.tsv', 'w', encoding='utf-8') as out:
         for i in range(int((n - 1) / batch_size) + 1):
             start = i * batch_size
@@ -55,6 +60,7 @@ def generate_for_train_data(model, args):
 def generate_distillation_loss(args):
     model = models.load_teacher(args.task, args.cpu)
     generate_for_train_data(model, args)
+
     
 class DistillationData(Dataset):
     def __init__(self, sents, labels, logits=None) -> None:

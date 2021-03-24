@@ -5,7 +5,8 @@ import numpy as np
 from fairseq.models.roberta import RobertaModel
 from fairseq.data.data_utils import collate_tokens
 from common.task_utils import TASK_INFO
-from compression.distillation.data import load_train_data
+from compression.distillation import data
+from compression.distillation import models
 
 STOP_WORDS = [
     'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours',
@@ -52,23 +53,6 @@ def load_glove():
     emb_norm = (emb_matrix.T / d).T
     return emb_norm, vocab, ids_to_tokens
 
-def load_model(task):
-    data_path = "."
-    model_path = "models/roberta.base"
-    model_name = "model.pt"
-    if task is not None:
-        data_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
-        model_path = "checkpoints"
-        model_name = "checkpoint_best.pt"
-
-    model = RobertaModel.from_pretrained(
-        model_path,
-        checkpoint_file=model_name,
-        data_name_or_path=data_path
-    )
-    model.eval()
-    return model
-
 class Augmenter:
     @abstractmethod
     def augment(self, sentence):
@@ -77,7 +61,7 @@ class Augmenter:
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
-        self.masked_lm = load_model(None)
+        self.masked_lm = models.load_roberta_model('roberta_large')
         # Initialize augment parameters.
         self.p_threshold = 0.4 # Threshold probability.
         self.n_samples = 20 # Number of augmented samples per examples.
@@ -175,16 +159,16 @@ def augment(task, augment_technique):
         "pos": PoSAugmenter, "ngram": NGramAugmenter
     }
 
-    base_path = f"{TASK_INFO[task]['path']}/augmented_data"
+    base_path = f"{TASK_INFO[task]['path']}/distillation_data" #/augmented_data"
 
     if not os.path.exists(base_path):
         os.mkdir(base_path)
 
-    model = load_model(task)
+    model = models.load_teacher(task)
 
     augmenter = classes[augment_technique]()
 
-    training_data = load_train_data(task)
+    training_data = data.load_train_data(task)
     sentence_pairs = len(training_data) == 3
     output_path = f"{base_path}/{augment_technique}.tsv"
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
@@ -193,7 +177,7 @@ def augment(task, augment_technique):
     print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)
 
     with open(output_path, "w", encoding="utf-8") as fp:
-        for index, train_example in enumerate(zip(*training_data)):
+        for index, train_example in enumerate(training_data):
             sentences = [train_example[0]]
             if sentence_pairs: # Augment both sentences in sentence-pair classification.
                 sentences.append(train_example[2])
