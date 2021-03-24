@@ -40,7 +40,7 @@ def generate_for_train_data(model, args):
                     [model.encode(sent1, sent2) for sent1, sent2 in zip(batch_sents, batch_sents2)],
                     pad_idx=1
                 )
-            else: 
+            else:
                 batch = collate_tokens(
                     [model.encode(sent) for sent in batch_sents], 
                     pad_idx=1
@@ -144,11 +144,10 @@ def create_collate_fn(pad_idx):
     return collate_fn
 
 # returns sentences, labels, logits
-def load_distillation_data(task):
-    path = f'{TASK_INFO[task]["path"]}/distillation_data/train.tsv'
+def load_distillation_data(path):
     with open(path, encoding="utf-8") as fip:
         lines = [x.strip().split("\t") for x in fip.readlines()]
-        return list(zip(*lines))
+        return [list(x) for x in list(zip(*lines))]
 
 def load_val_data(task):
     return load_train_data(task, ds_type="dev")
