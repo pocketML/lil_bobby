@@ -96,9 +96,9 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
     else:
         return DistillationData(sents1_tensors, label_tensors, logit_tensors)
 
-def get_dataloader_dict(model, distillation_data, validation_data, use_sentence_pairs=False):
+def get_dataloader_dict(model, distillation_data, validation_data):
     datasets = {}
-    if use_sentence_pairs:
+    if len(distillation_data) > 3:
         train_x1, train_x2, train_labels, train_logits = distillation_data
         val_x1, val_x2, val_labels = validation_data
         datasets['train'] = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits)
@@ -110,29 +110,32 @@ def get_dataloader_dict(model, distillation_data, validation_data, use_sentence_
         datasets['val'] = get_datasets(model, val_x1, val_labels)
     dataloaders = {x: DataLoader(
             datasets[x],
-            batch_size=model.batch_size,
+            batch_size=model.cfg.batch_size,
             shuffle=True,
             drop_last=True,
-            collate_fn=collate_fn) for x in ['train', 'val']}
+            collate_fn=create_collate_fn(model.cfg.vocab_size)) for x in ['train', 'val']}
     return dataloaders
 
 # pads sentences in a batch to equal length
 # code inspired by https://github.com/hpanwar08/sentence-classification-pytorch/
-def collate_fn(data):
-    data.sort(key=lambda x: len(x[0]), reverse=True)
-    if len(data[0]) == 4: # single sentence
-        lens = [length for _,length,_,_ in data]
-        labels, all_logits, lengths = [], [], []
-        padded_sents = torch.empty(len(data), max(lens)).long().fill_(50000)
-        for i, (sent, length, label, logits) in enumerate(data):
-            padded_sents[i,:lens[i]] = sent
-            labels.append(label)
-            all_logits.append(logits)
-            lengths.append(length)
-        all_logits = torch.stack(all_logits) if all_logits[0] is not None else all_logits
-        return padded_sents, torch.cat(lengths), torch.stack(labels), all_logits 
-    else:
-        raise Exception("please don't be here")
+# TODO: remember to make this function, or a similar for sentence pairs
+def create_collate_fn(pad_idx):
+    def collate_fn(data):
+        data.sort(key=lambda x: len(x[0]), reverse=True)
+        if len(data[0]) == 4: # single sentence
+            lens = [length for _,length,_,_ in data]
+            labels, all_logits, lengths = [], [], []
+            padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
+            for i, (sent, length, label, logits) in enumerate(data):
+                padded_sents[i,:lens[i]] = sent
+                labels.append(label)
+                all_logits.append(logits)
+                lengths.append(length)
+            all_logits = torch.stack(all_logits) if all_logits[0] is not None else all_logits
+            return padded_sents, torch.cat(lengths), torch.stack(labels), all_logits 
+        else:
+            raise Exception("please don't be here")
+    return collate_fn
 
 # returns sentences, labels, logits
 def load_distillation_data(task):
