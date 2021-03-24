@@ -20,7 +20,7 @@ def main(args, sacred_experiment=None):
         model = TangBILSTM(task, use_gpu=(not args.cpu), use_sentence_pairs=False)
         distillation_data = data.load_distillation_data(task)
         val_data = data.load_val_data(task)
-        
+
         mse, ce = nn.MSELoss(), nn.CrossEntropyLoss()
         model.to(device)
         mse.to(device)
