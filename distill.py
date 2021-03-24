@@ -2,6 +2,7 @@ from glob import glob
 from common import argparsers
 from compression.distillation import data
 from compression.distillation import data_augment
+from analysis import parameters
 import torch.nn as nn
 import torch
 from common.task_utils import TASK_INFO
@@ -10,13 +11,14 @@ from compression.distillation.models import (
     GlueBILSTM,
     BPE_FFN,
     DistLossFunction,
-    load_teacher
+    LabelLossFunction
 )
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
+    use_gpu = not args.use_cpu
     
     if args.generate_loss:
         data.generate_distillation_loss(args)
@@ -25,9 +27,22 @@ def main(args, sacred_experiment=None):
     if args.play:
         torch.manual_seed(233)
         task = args.task
-        model = BPE_FFN(task, not args.cpu) #TangBILSTM(task)
-        base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
+        student_type = args.student_arch
 
+        if student_type == 'glue':
+            model = GlueBILSTM(task, use_gpu)
+        elif student_type == 'tang':
+            model = TangBILSTM(task, use_gpu)
+        elif student_type == 'wasserblat-ffn':
+            model = BPE_FFN(task, use_gpu)
+
+        if args.size:
+            total_params, total_bits = parameters.get_model_size(model)
+            print(type(model))
+            print(f'total params: {total_params / 1000}K)')
+            print(f'total size:   {total_bits / 8000000:.2f}MB')
+
+        base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
         distillation_data = []
         train_files = glob(f"{base_path}/*.tsv")
         for filename in train_files:

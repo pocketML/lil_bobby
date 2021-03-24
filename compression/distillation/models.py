@@ -5,7 +5,7 @@ import download
 from compression.distillation.student_models.tang_bilstm import TangBILSTM
 from compression.distillation.student_models.glue_bilstm import (
     GlueBILSTM,
-    get_loss_function as DistLossFunction
+    get_dist_loss_function as DistLossFunction
 )
 from compression.distillation.student_models.bpe_ffn import BPE_FFN
 
