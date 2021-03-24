@@ -4,12 +4,12 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from common.task_utils import TASK_INFO, TASK_LABEL_DICT
 from bpemb import BPEmb
 
-class BILSTMConfig():
+class StudentConfig():
     def __init__(self,
         task,
-        use_gpu, 
+        use_gpu,
         batch_size=50, 
-        enc_hidden_dim=300, 
+        enc_hidden_dim=300,
         bidirectional=True,
         embedding_dim=25,
         vocab_size=50000,
@@ -24,16 +24,18 @@ class BILSTMConfig():
         self.batch_size = batch_size
         self.use_gpu = use_gpu
         self.enc_hidden_dim = enc_hidden_dim
-        self.bidirectional = bidirectional
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
+        self.dropout = dropout
+
+        # === Bi-LSTM specific settings ===
+        self.bidirectional = bidirectional 
         self.num_layers = num_layers
         self.cls_hidden_dim = cls_hidden_dim
         self.batch_first = batch_first
-        self.dropout = dropout
 
 # combines distillation loss function with label loss function
-def get_loss_function(alpha, criterion_distill, criterion_label, device=torch.device('cuda')):
+def get_dist_loss_function(alpha, criterion_distill, criterion_label, device=torch.device('cuda')):
     beta = 1 - alpha
     criterion_distill.to(device)
     criterion_label.to(device)
@@ -87,8 +89,8 @@ class GlueBILSTM(nn.Module):
     def __init__(self, task, use_gpu):
         super().__init__()
         self.label_dict = TASK_LABEL_DICT[task]
-        self.cfg = BILSTMConfig(task, use_gpu)
-        
+        self.cfg = StudentConfig(task, use_gpu)
+
         # all based on reported params from the paper
         self.cfg.num_layers = 1
         self.cfg.enc_hidden_dim = 1500

@@ -3,6 +3,7 @@ import torch.nn as nn
 from bpemb import BPEmb
 from common.task_utils import TASK_LABEL_DICT
 import compression.distillation.student_models.glue_bilstm as glue
+from compression.distillation.student_models.glue_bilstm import StudentConfig
 
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
 #  but with bytepair embeddings instead of the humongously
@@ -11,7 +12,7 @@ class TangBILSTM(nn.Module):
     def __init__(self, task, use_gpu):
         super().__init__()
         self.label_dict = TASK_LABEL_DICT[task]
-        self.cfg = glue.BILSTMConfig(task, use_gpu)
+        self.cfg = StudentConfig(task, use_gpu)
         self.cfg.batch_size = 50
 
         # embedding
@@ -36,8 +37,7 @@ class TangBILSTM(nn.Module):
             # encoding
             h = glue.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths)
             return glue.choose_hidden_state(h, lens=lengths, decision='last')
-        
-        og = x
+
         if not self.cfg.use_sentence_pairs:
             x = embed_encode_sents(x, lens)
         else:
@@ -45,21 +45,4 @@ class TangBILSTM(nn.Module):
             x2 = embed_encode_sents(x[1], lens[1])
             x = glue.cat_cmp(x1, x2)
         # classification
-        x_out = self.classifier(x)
-        if torch.sum(torch.isnan(x)) > 0:
-            print(f'**** original ****')
-            print(og)
-            print(f'**** lens ****')
-            print(lens)
-            emb = self.embedding(og).float()
-            print(f'**** emb ****')
-            print(emb)
-            print(f'**** h ****')
-            h = glue.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lens)
-            print(h)
-            print(f'**** last ****')
-            print(x)
-            print(f'**** classified ****')
-            print(x_out)
-            exit()
-        return x_out
+        return self.classifier(x)

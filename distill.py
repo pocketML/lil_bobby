@@ -1,20 +1,24 @@
+from glob import glob
 from common import argparsers
 from compression.distillation import data
 from compression.distillation import data_augment
+from analysis import parameters
 import torch.nn as nn
 import torch
 from common.task_utils import TASK_INFO
 from compression.distillation.models import (
-    TangBILSTM, 
+    TangBILSTM,
     GlueBILSTM,
+    BPE_FFN,
     DistLossFunction,
-    load_teacher
+    LabelLossFunction
 )
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
+    use_gpu = not args.use_cpu
     
     if args.generate_loss:
         data.generate_distillation_loss(args)
@@ -23,8 +27,36 @@ def main(args, sacred_experiment=None):
     if args.play:
         torch.manual_seed(233)
         task = args.task
-        model = GlueBILSTM(task, not args.cpu) #TangBILSTM(task)
-        distillation_data = data.load_distillation_data(task)
+        student_type = args.student_arch
+
+        if student_type == 'glue':
+            model = GlueBILSTM(task, use_gpu)
+        elif student_type == 'tang':
+            model = TangBILSTM(task, use_gpu)
+        elif student_type == 'wasserblat-ffn':
+            model = BPE_FFN(task, use_gpu)
+
+        if args.size:
+            total_params, total_bits = parameters.get_model_size(model)
+            print(type(model))
+            print(f'total params: {total_params / 1000}K)')
+            print(f'total size:   {total_bits / 8000000:.2f}MB')
+
+        base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
+        distillation_data = []
+        train_files = glob(f"{base_path}/*.tsv")
+        for filename in train_files:
+            distill_data = data.load_distillation_data(filename)
+
+            if distillation_data == []:
+                distillation_data = distill_data
+            else:
+                distillation_data[0].extend(distill_data[0])
+                distillation_data[1].extend(distill_data[1])
+                distillation_data[2].extend(distill_data[2])
+                if len(distillation_data) > 3:
+                    distillation_data[3].extend(distill_data[3])
+
         val_data = data.load_val_data(task)
         model.to(device)
 
@@ -38,7 +70,7 @@ def main(args, sacred_experiment=None):
 def train_loop(model, criterion, optim, dl, device, num_epochs=10):
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
-        
+
         # train phase
         model.train()
         running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0
