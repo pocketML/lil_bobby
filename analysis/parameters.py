@@ -21,7 +21,7 @@ def dtype_bits(param):
 def get_model_size(model):
     total_params = 0
     total_bits = 0
-    for name, param in model.named_parameters():
+    for _, param in model.named_parameters():
         size = list(param.size())
         num_weights = reduce(lambda acc, x: acc * x, size, 1)
         total_params += num_weights
