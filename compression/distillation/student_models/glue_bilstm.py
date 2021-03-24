@@ -88,9 +88,14 @@ class GlueBILSTM(nn.Module):
         super().__init__()
         self.label_dict = TASK_LABEL_DICT[task]
         self.cfg = BILSTMConfig(task, use_gpu)
+        
+        # all based on reported params from the paper
         self.cfg.num_layers = 1
         self.cfg.enc_hidden_dim = 1500
         self.cfg.batch_size = 128
+        self.cfg.embedding_dim = 300
+        self.cfg.cls_hidden_dim = 512
+
         self.dropout = nn.Dropout(p=self.cfg.dropout) if self.cfg.dropout else lambda x: x
 
         # embedding

@@ -15,6 +15,7 @@ def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
+    
     if args.generate_loss:
         data.generate_distillation_loss(args)
     if args.augment:
