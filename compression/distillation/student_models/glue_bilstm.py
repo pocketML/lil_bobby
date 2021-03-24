@@ -35,7 +35,7 @@ class StudentConfig():
         self.batch_first = batch_first
 
 # combines distillation loss function with label loss function
-def get_loss_function(alpha, criterion_distill, criterion_label, device=torch.device('cuda')):
+def get_dist_loss_function(alpha, criterion_distill, criterion_label, device=torch.device('cuda')):
     beta = 1 - alpha
     criterion_distill.to(device)
     criterion_label.to(device)
