@@ -7,6 +7,7 @@ from compression.distillation.student_models.glue_bilstm import (
     GlueBILSTM,
     get_loss_function as DistLossFunction
 )
+from compression.distillation.student_models.bpe_ffn import BPE_FFN
 
 def load_teacher(task, use_cpu=False):
     bin_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'

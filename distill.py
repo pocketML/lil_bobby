@@ -1,3 +1,4 @@
+from glob import glob
 from common import argparsers
 from compression.distillation import data
 from compression.distillation import data_augment
@@ -5,8 +6,9 @@ import torch.nn as nn
 import torch
 from common.task_utils import TASK_INFO
 from compression.distillation.models import (
-    TangBILSTM, 
+    TangBILSTM,
     GlueBILSTM,
+    BPE_FFN,
     DistLossFunction,
     load_teacher
 )
@@ -23,8 +25,23 @@ def main(args, sacred_experiment=None):
     if args.play:
         torch.manual_seed(233)
         task = args.task
-        model = GlueBILSTM(task, not args.cpu) #TangBILSTM(task)
-        distillation_data = data.load_distillation_data(task)
+        model = BPE_FFN(task, not args.cpu) #TangBILSTM(task)
+        base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
+
+        distillation_data = []
+        train_files = glob(f"{base_path}/*.tsv")
+        for filename in train_files:
+            distill_data = data.load_distillation_data(filename)
+
+            if distillation_data == []:
+                distillation_data = distill_data
+            else:
+                distillation_data[0].extend(distill_data[0])
+                distillation_data[1].extend(distill_data[1])
+                distillation_data[2].extend(distill_data[2])
+                if len(distillation_data) > 3:
+                    distillation_data[3].extend(distill_data[3])
+
         val_data = data.load_val_data(task)
         model.to(device)
 
@@ -38,7 +55,7 @@ def main(args, sacred_experiment=None):
 def train_loop(model, criterion, optim, dl, device, num_epochs=10):
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
-        
+
         # train phase
         model.train()
         running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0

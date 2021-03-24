@@ -22,7 +22,7 @@ STOP_WORDS = [
     'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't", "'s", "'re"
 ]
 
-VOCAB_SIZE = 100_000
+VOCAB_SIZE = 10_000
 
 def load_glove():
     words = []
@@ -159,7 +159,7 @@ def augment(task, augment_technique):
         "pos": PoSAugmenter, "ngram": NGramAugmenter
     }
 
-    base_path = f"{TASK_INFO[task]['path']}/distillation_data" #/augmented_data"
+    base_path = f"{TASK_INFO[task]['path']}/distillation_data"
 
     if not os.path.exists(base_path):
         os.mkdir(base_path)
@@ -177,7 +177,7 @@ def augment(task, augment_technique):
     print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)
 
     with open(output_path, "w", encoding="utf-8") as fp:
-        for index, train_example in enumerate(training_data):
+        for index, train_example in enumerate(zip(*training_data)):
             sentences = [train_example[0]]
             if sentence_pairs: # Augment both sentences in sentence-pair classification.
                 sentences.append(train_example[2])
