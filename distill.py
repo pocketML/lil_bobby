@@ -1,15 +1,15 @@
 from common import argparsers
 from compression.distillation import data
 from compression.distillation import data_augment
+import torch.nn as nn
+import torch
+from common.task_utils import TASK_INFO
 from compression.distillation.models import (
     TangBILSTM, 
     GlueBILSTM,
     DistLossFunction,
     load_teacher
 )
-import torch.nn as nn
-import torch
-from common.task_utils import TASK_INFO
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
