@@ -3,10 +3,10 @@ from glob import glob
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
+from common import transponder
 from finetune import main as finetune_main
 from compress import main as compress_main
 from evaluate import main as evaluate_main
-from misc import transponder
 
 OUTPUT_DIR = "experiments"
 

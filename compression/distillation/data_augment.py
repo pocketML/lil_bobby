@@ -63,6 +63,7 @@ class Augmenter:
 
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
+        random.seed(1337)
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
         self.masked_lm = models.load_roberta_model('roberta_large')
         # Initialize augment parameters.
