@@ -22,7 +22,7 @@ STOP_WORDS = [
     'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't", "'s", "'re"
 ]
 
-VOCAB_SIZE = 10_000
+VOCAB_SIZE = 100_000
 
 def load_glove():
     words = []
@@ -35,7 +35,10 @@ def load_glove():
             split = line.split()
             word = split[0]
             words.append(word)
-            embedding = np.array([float(value) for value in split[1:]])
+            try:
+                embedding = np.array([float(value) for value in split[1:]])
+            except ValueError:
+                pass # This happens once or twice for some reason.
             embeddings[word] = embedding
 
     vocab = {w: idx for idx, w in enumerate(words)}
