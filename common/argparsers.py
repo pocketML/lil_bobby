@@ -27,12 +27,13 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--task", choices=finetune_tasks, required=True)
+    ap.add_argument("--epochs", type=int, default=10)
     ap.add_argument("--teacher-arch", choices=["roberta_large", "roberta_base"], )
     ap.add_argument("--distillation", action="store_true")
     ap.add_argument("--generate-loss", action="store_true")
     augmenters = ["tinybert", "masked", "pos", "ngram"]
-    students = ["glue", "wassenblat-ffn", "tang"]
-    ap.add_argument("--student-arch", type=str, choices=students)
+    students = ["glue", "wasserblat-ffn", "tang"]
+    ap.add_argument("--student-arch", type=str, choices=students, default="glue")
     ap.add_argument("--augment", type=str, choices=augmenters)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--play", action="store_true")
