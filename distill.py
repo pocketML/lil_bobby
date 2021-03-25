@@ -87,16 +87,16 @@ def main(args, sacred_experiment=None):
         distillation_data = []
         train_files = glob(f"{base_path}/*.tsv")
         for filename in train_files:
-            distill_data = data.load_distillation_data(filename)
+            loaded_data = data.load_distillation_data(filename)
 
             if distillation_data == []:
-                distillation_data = distill_data
+                distillation_data = loaded_data
             else:
-                distillation_data[0].extend(distill_data[0])
-                distillation_data[1].extend(distill_data[1])
-                distillation_data[2].extend(distill_data[2])
+                distillation_data[0].extend(loaded_data[0])
+                distillation_data[1].extend(loaded_data[1])
+                distillation_data[2].extend(loaded_data[2])
                 if len(distillation_data) > 3:
-                    distillation_data[3].extend(distill_data[3])
+                    distillation_data[3].extend(loaded_data[3])
 
         print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
 
