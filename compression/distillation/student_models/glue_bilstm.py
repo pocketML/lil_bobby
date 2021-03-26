@@ -1,38 +1,9 @@
 import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from common.task_utils import TASK_INFO, TASK_LABEL_DICT
 from bpemb import BPEmb
-
-class StudentConfig():
-    def __init__(self,
-        task,
-        use_gpu,
-        batch_size=50, 
-        enc_hidden_dim=300,
-        bidirectional=True,
-        embedding_dim=25,
-        vocab_size=50000,
-        num_layers=1,
-        batch_first=True,
-        dropout=0.2,
-        cls_hidden_dim=512,
-        ):
-
-        self.num_classes = TASK_INFO[task]['settings']['num-classes']
-        self.use_sentence_pairs = TASK_INFO[task]['settings']['use-sentence-pairs']
-        self.batch_size = batch_size
-        self.use_gpu = use_gpu
-        self.enc_hidden_dim = enc_hidden_dim
-        self.embedding_dim = embedding_dim
-        self.vocab_size = vocab_size
-        self.dropout = dropout
-
-        # === Bi-LSTM specific settings ===
-        self.bidirectional = bidirectional 
-        self.num_layers = num_layers
-        self.cls_hidden_dim = cls_hidden_dim
-        self.batch_first = batch_first
+from common.task_utils import TASK_LABEL_DICT
+from compression.distillation.student_models.base import StudentModel
 
 # combines distillation loss function with label loss function
 def get_dist_loss_function(alpha, criterion_distill, criterion_label, device=torch.device('cuda')):
@@ -85,11 +56,9 @@ def choose_hidden_state(hidden_states, lens=None, decision='max'):
 
 # Model inspired by https://openreview.net/pdf?id=rJ4km2R5t7
 # https://github.com/nyu-mll/GLUE-baselines/tree/master/src
-class GlueBILSTM(nn.Module):
+class GlueBILSTM(StudentModel):
     def __init__(self, task, use_gpu):
-        super().__init__()
-        self.label_dict = TASK_LABEL_DICT[task]
-        self.cfg = StudentConfig(task, use_gpu)
+        super().__init__(task, use_gpu)
 
         # all based on reported params from the paper
         self.cfg.num_layers = 1
