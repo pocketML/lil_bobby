@@ -64,8 +64,8 @@ class Augmenter:
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
-        self.masked_lm = models.load_roberta_model('roberta_base')#('roberta_large')
-        self.masked_lm.half()
+        self.masked_lm = models.load_roberta_model('roberta_large')
+        #self.masked_lm.half()
         # Initialize augment parameters.
         self.p_threshold = 0.4 # Threshold probability.
         self.n_samples = 20 # Number of augmented samples per examples.
@@ -164,69 +164,34 @@ def augment(task, augment_technique, seed):
         "pos": PoSAugmenter, "ngram": NGramAugmenter
     }
 
-    base_path = f"{TASK_INFO[task]['path']}/distillation_data"
-
-    if not os.path.exists(base_path):
-        os.mkdir(base_path)
-
-    model = models.load_teacher(task)
+    augment_dir = f"{TASK_INFO[task]['path']}/augment_data"
+    os.makedirs(augment_dir, exist_ok=True)
 
     augmenter = classes[augment_technique]()
 
     training_data = data.load_train_data(task)
     sentence_pairs = len(training_data) == 3
-    output_path = f"{base_path}/{augment_technique}.tsv"
-    label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
-
     prev_pct = 0
     print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)
+    with open(augment_dir + f'/{augment_technique}.input0', 'w', encoding='utf-8') as out1:
+        with open(augment_dir + f'/{augment_technique}.input1', 'w', encoding='utf-8') as out2:
+            for index, train_example in enumerate(zip(*training_data)):
+                sentences = [train_example[0], train_example[2]] if sentence_pairs else [train_example[0]]
+                output_sentences = []
+                for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
+                    output_sentences.append(augmenter.augment(sent.strip()))
 
-    with open(output_path, "w", encoding="utf-8") as fp:
-        for index, train_example in enumerate(zip(*training_data)):
-            sentences = [train_example[0]]
-            if sentence_pairs: # Augment both sentences in sentence-pair classification.
-                sentences.append(train_example[2])
+                if sentence_pairs: # Create batch for prediction of label for new sentence.
+                    for sent1, sent2 in zip(*output_sentences):
+                        out1.write(f'{sent1.strip()}\n')
+                        out2.write(f'{sent2.strip()}\n')
+                else:
+                    for sent in output_sentences[0]:
+                        out1.write(f'{sent.strip()}\n')
 
-            output_sentences = []
-
-            for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
-                output_sentences.append(augmenter.augment(sent.strip()))
-
-            if sentence_pairs: # Create batch for prediction of label for new sentence.
-                batch = collate_tokens(
-                    [model.encode(sent1, sent2) for sent1, sent2 in zip(*output_sentences)],
-                    pad_idx=1
-                )
-            else:
-                batch = collate_tokens(
-                    [model.encode(sent) for sent in output_sentences[0]],
-                    pad_idx=1
-                )
-
-            batch_logits = model.predict( # Predict logits for new sentence.
-                "sentence_classification_head", batch, return_logits=True
-            )
-            labels = [label_fn(label) for label in batch_logits.argmax(dim=1).tolist()]
-
-            if sentence_pairs:
-                iterator = zip(
-                    output_sentences[0], output_sentences[1],
-                    labels, batch_logits.tolist()
-                )
-                for sent1, sent2, target, logits in iterator:
-                    logits_str = ','.join([str(x) for x in logits])
-                    fp.write(f'{sent1.strip()}\t{sent2.strip()}\t{target.strip()}\t{logits_str}\n')
-            else:
-                iterator = zip(
-                    output_sentences[0], labels, batch_logits.tolist()
-                )
-                for sent, target, logits in iterator:
-                    logits_str = ','.join([str(x) for x in logits])
-                    fp.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
-
-            pct_done = int((index / len(training_data[0])) * 100)
-            if pct_done > prev_pct:
-                print(f"Augmenting dataset: {pct_done}% complete...", end="\r", flush=True)
-                prev_pct = pct_done
+                pct_done = int((index / len(training_data[0])) * 100)
+                if pct_done > prev_pct:
+                    print(f"Augmenting dataset: {pct_done}% complete...", end="\r", flush=True)
+                    prev_pct = pct_done
 
 print()
