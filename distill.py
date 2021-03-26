@@ -60,13 +60,19 @@ def main(args, sacred_experiment=None):
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     use_gpu = not args.cpu
     epochs = args.epochs
+
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
     
     if args.generate_loss:
         data.generate_distillation_loss(args)
     elif args.augment:
-        data_augment.augment(args.task, args.augment)
+        data_augment.augment(args.task, args.augment, args.seed)
+    elif args.augment2:
+        import compression.distillation.data_augment2 as data_augment2
+        data_augment2.augment(args.task, args.augment2, args.seed)
     elif args.play:
-        torch.manual_seed(233)
         task = args.task
         student_type = args.student_arch
 

@@ -32,9 +32,11 @@ def args_distill(args=None, namespace=None, parse_known=False):
     students = ["glue", "wasserblat-ffn", "tang"]
     ap.add_argument("--student-arch", type=str, choices=students, default="glue")
     ap.add_argument("--augment", type=str, choices=augmenters)
+    ap.add_argument("--augment2", type=str, choices=augmenters)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--play", action="store_true")
     ap.add_argument("--size", action="store_true")
+    ap.add_argument("--seed", type=int, default=1337)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -65,7 +67,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
     arch_choices = ['roberta_base', 'roberta_large']
 
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
-    ap.add_argument("--arch", choices=arch_choices, default="roberta_base")
+    ap.add_argument("--arch", choices=arch_choices, default="roberta_large")
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=10)
     ap.add_argument("--model-parallel-size", type=int, default=1)
