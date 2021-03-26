@@ -1,18 +1,15 @@
 import torch
 import torch.nn as nn
 from bpemb import BPEmb
-from common.task_utils import TASK_LABEL_DICT
 import compression.distillation.student_models.glue_bilstm as glue
-from compression.distillation.student_models.glue_bilstm import StudentConfig
+from compression.distillation.student_models.base import StudentModel, StudentConfig
 
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
 #  but with bytepair embeddings instead of the humongously
 #  sized word2vec GoogleNews pre-trained word embeddings yay
-class TangBILSTM(nn.Module):
+class TangBILSTM(StudentModel):
     def __init__(self, task, use_gpu):
-        super().__init__()
-        self.label_dict = TASK_LABEL_DICT[task]
-        self.cfg = StudentConfig(task, use_gpu)
+        super().__init__(task, use_gpu)
         self.cfg.batch_size = 50
 
         # embedding
