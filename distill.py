@@ -108,7 +108,7 @@ def main(args, sacred_experiment=None):
         criterion = DistLossFunction(0.5, nn.MSELoss(), nn.CrossEntropyLoss(), device)
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
         #optim = torch.optim.Adadelta(model.parameters())
-        optim = torch.optim.Adam(model.parameters(), lr=1e-4)
+        optim = model.get_optimizer()
         train_loop(model, criterion, optim, dataloaders, device, epochs)
 
 if __name__ == "__main__":
