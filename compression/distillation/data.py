@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch
 import compression.distillation.models as models
 import os
+from glob import glob
 
 # returns sentences, labels
 def load_train_data(task, ds_type='train'):
@@ -17,6 +18,23 @@ def load_train_data(task, ds_type='train'):
                     return sentences.readlines(), targets.readlines(), sentences2.readlines()
             except FileNotFoundError:
                 return sentences.readlines(), targets.readlines()
+
+def load_all_distillation_data(task):
+    base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
+    distillation_data = []
+    train_files = glob(f"{base_path}/*.tsv")
+    for filename in train_files:
+        loaded_data = load_distillation_data(filename)
+
+        if distillation_data == []:
+            distillation_data = loaded_data
+        else:
+            distillation_data[0].extend(loaded_data[0])
+            distillation_data[1].extend(loaded_data[1])
+            distillation_data[2].extend(loaded_data[2])
+            if len(distillation_data) > 3:
+                distillation_data[3].extend(loaded_data[3])
+    return distillation_data
 
 def generate_for_train_data(model, args):
     data = load_train_data(args.task)

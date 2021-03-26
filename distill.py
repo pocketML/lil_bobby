@@ -83,20 +83,7 @@ def main(args, sacred_experiment=None):
             print(f'total params: {total_params / 1000}K)')
             print(f'total size:   {total_bits / 8000000:.2f}MB')
 
-        base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
-        distillation_data = []
-        train_files = glob(f"{base_path}/*.tsv")
-        for filename in train_files:
-            loaded_data = data.load_distillation_data(filename)
-
-            if distillation_data == []:
-                distillation_data = loaded_data
-            else:
-                distillation_data[0].extend(loaded_data[0])
-                distillation_data[1].extend(loaded_data[1])
-                distillation_data[2].extend(loaded_data[2])
-                if len(distillation_data) > 3:
-                    distillation_data[3].extend(loaded_data[3])
+        distillation_data = data.load_all_distillation_data(task)
 
         print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
 
