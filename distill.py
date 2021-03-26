@@ -60,13 +60,19 @@ def main(args, sacred_experiment=None):
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     use_gpu = not args.cpu
     epochs = args.epochs
+
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
     
     if args.generate_loss:
         data.generate_distillation_loss(args)
     elif args.augment:
-        data_augment.augment(args.task, args.augment)
+        data_augment.augment(args.task, args.augment, args.seed)
+    elif args.augment2:
+        import compression.distillation.data_augment2 as data_augment2
+        data_augment2.augment(args.task, args.augment2, args.seed)
     elif args.play:
-        torch.manual_seed(233)
         task = args.task
         student_type = args.student_arch
 
@@ -83,20 +89,7 @@ def main(args, sacred_experiment=None):
             print(f'total params: {total_params / 1000}K)')
             print(f'total size:   {total_bits / 8000000:.2f}MB')
 
-        base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
-        distillation_data = []
-        train_files = glob(f"{base_path}/*.tsv")
-        for filename in train_files:
-            distill_data = data.load_distillation_data(filename)
-
-            if distillation_data == []:
-                distillation_data = distill_data
-            else:
-                distillation_data[0].extend(distill_data[0])
-                distillation_data[1].extend(distill_data[1])
-                distillation_data[2].extend(distill_data[2])
-                if len(distillation_data) > 3:
-                    distillation_data[3].extend(distill_data[3])
+        distillation_data = data.load_all_distillation_data(task)
 
         print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
 

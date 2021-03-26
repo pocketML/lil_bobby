@@ -172,7 +172,8 @@ def get_finetune_string(
         '--update-freq', f'{update_freq}',
         '--no-epoch-checkpoints',
         '--model-parallel-size', f'{gpus}',
-        '--seed', f'{seed}'
+        '--seed', f'{seed}',
+        '--no-save-optimizer-state'
     ]
     if task == 'sts-b':
         arguments.extend(['--regression-target', '--best-checkpoint-metric', 'loss'])

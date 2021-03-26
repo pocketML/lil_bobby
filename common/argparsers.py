@@ -2,9 +2,6 @@ import argparse
 from fairseq import options
 from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO
-from download import get_dataset_path
-
-
 
 finetune_tasks = list(TASK_INFO.keys())
 
@@ -35,9 +32,11 @@ def args_distill(args=None, namespace=None, parse_known=False):
     students = ["glue", "wasserblat-ffn", "tang"]
     ap.add_argument("--student-arch", type=str, choices=students, default="glue")
     ap.add_argument("--augment", type=str, choices=augmenters)
+    ap.add_argument("--augment2", type=str, choices=augmenters)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--play", action="store_true")
     ap.add_argument("--size", action="store_true")
+    ap.add_argument("--seed", type=int, default=1337)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -68,7 +67,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
     arch_choices = ['roberta_base', 'roberta_large']
 
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
-    ap.add_argument("--arch", choices=arch_choices, default="roberta_base")
+    ap.add_argument("--arch", choices=arch_choices, default="roberta_large")
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=10)
     ap.add_argument("--model-parallel-size", type=int, default=1)
@@ -120,28 +119,3 @@ def args_experiment():
             task_args["evaluate"] = evaluate_args
 
     return experiment_args, task_args
-
-def parse_roberta_args(parser):
-    args = parser.parse_args()
-
-    input_args = load_config_file(args.config)
-
-    try:
-        dataset = get_dataset_path(args.finetune_before)
-    except KeyError:
-        print(f"Error: Task '{args.finetune_before}' is not valid.")
-        exit(0)
-
-    input_args.append(dataset)
-    input_args.extend(["--task", args.finetune_before])
-
-    roberta_parser = options.get_training_parser()
-    return options.parse_args_and_arch(roberta_parser, input_args=input_args)
-
-def load_config_file(filename):
-    with open(filename, encoding="utf-8") as fp:
-        args = []
-        for line in fp:
-            stripped = line.strip()
-            args.extend(stripped.split(" "))
-        return args

@@ -32,7 +32,7 @@ from fairseq.logging import meters, metrics, progress_bar
 from fairseq.model_parallel.megatron_trainer import MegatronTrainer
 from fairseq.trainer import Trainer
 from omegaconf import DictConfig, OmegaConf
-from misc import transponder
+from common import transponder
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -464,6 +464,27 @@ def cli_main(
     else:
         distributed_utils.call_main(cfg, main, sacred_experiment=sacred_experiment)
 
+
+def get_trainer(input_args) -> Trainer:
+    parser = options.get_training_parser()
+    args = options.parse_args_and_arch(parser, input_args=input_args)
+    cfg = convert_namespace_to_omegaconf(args)
+    utils.import_user_module(cfg.common)
+    metrics.reset()
+    np.random.seed(cfg.common.seed)
+    utils.set_torch_seed(cfg.common.seed)
+    # Setup task, e.g., translation, language modeling, etc.
+    task = tasks.setup_task(cfg.task)
+    # Load valid dataset (we load training data below, based on the latest checkpoint)
+    for valid_sub_split in cfg.dataset.valid_subset.split(","):
+        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    assert cfg.criterion, "Please specify criterion to train a model"
+    # Build model and criterion
+    model = task.build_model(cfg.model)
+    criterion = task.build_criterion(cfg.criterion)
+    quantizer = None
+    # Build trainer
+    return Trainer(cfg, task, model, criterion, quantizer)
 
 if __name__ == "__main__":
     cli_main()
