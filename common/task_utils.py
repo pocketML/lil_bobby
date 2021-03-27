@@ -194,7 +194,7 @@ def get_finetune_string(
 
     if sacred_experiment is not None:
         experiment_name = sacred_experiment.info["name"]
-        checkpoint_dir = f"models/experiments/{experiment_name}"
+        checkpoint_dir = f"models/finetuned/{task}/{experiment_name}"
         arguments.extend(['--save-dir', checkpoint_dir])
 
     return arguments

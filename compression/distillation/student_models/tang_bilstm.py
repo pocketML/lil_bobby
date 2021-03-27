@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from bpemb import BPEmb
 import compression.distillation.student_models.glue_bilstm as glue
-from compression.distillation.student_models.base import StudentModel, StudentConfig
+from compression.distillation.student_models.base import StudentModel
 
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
 #  but with bytepair embeddings instead of the humongously

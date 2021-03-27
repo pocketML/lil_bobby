@@ -1,9 +1,8 @@
 from abc import abstractmethod
 import random
 import os
+import re
 import numpy as np
-from fairseq.models.roberta import RobertaModel
-from fairseq.data.data_utils import collate_tokens
 from common.task_utils import TASK_INFO
 from compression.distillation import data
 from compression.distillation import models
@@ -55,6 +54,9 @@ def load_glove():
     d = (np.sum(emb_matrix ** 2, 1) ** 0.5)
     emb_norm = (emb_matrix.T / d).T
     return emb_norm, vocab, ids_to_tokens
+
+def is_valid(word):
+    return True if not re.search('[^a-zA-Z]', word) else False
 
 class Augmenter:
     @abstractmethod
@@ -124,7 +126,7 @@ class TinyBertAugmenter(Augmenter):
         sent_candidates = []
         word_candidates = {}
         for (idx, word) in enumerate(tokens):
-            if word not in STOP_WORDS:
+            if is_valid(word) and word not in STOP_WORDS:
                 word_candidates[idx] = self.augment_word(sentence, idx, word)
 
         for _ in range(self.n_samples):
