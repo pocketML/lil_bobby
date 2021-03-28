@@ -1,11 +1,9 @@
-from glob import glob
-from common import argparsers
+from common import argparsers, transponder
 from compression.distillation import data
 from compression.distillation import data_augment
 from analysis import parameters
 import torch.nn as nn
 import torch
-from common.task_utils import TASK_INFO
 from compression.distillation.models import (
     TangBILSTM,
     GlueBILSTM,
@@ -14,45 +12,42 @@ from compression.distillation.models import (
 )
 
 # only works for single sentence prediction
-def train_loop(model, criterion, optim, dl, device, num_epochs=10):
+def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experiment=None):
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
 
-        # train phase
-        model.train()
-        running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0
-        for x1, lens, target_labels, target_logits in dl['train']:
-            x1 = x1.to(device)
-            target_labels = target_labels.to(device)
-            target_logits = target_logits.to(device)
-            optim.zero_grad()
-            torch.set_grad_enabled(True)
-            out_logits = model(x1, lens)
-            _, preds = torch.max(out_logits, 1)
-            target_labels = target_labels.squeeze()
-            loss = criterion(out_logits, target_logits, target_labels.squeeze())
-            loss.backward()
-            optim.step()
-            running_loss += loss.item()
-            running_corrects += torch.sum(preds == target_labels.data)
-            num_examples += len(lens)
-        print(f'|--> train loss: {running_loss / num_examples:.4f}')
-        print(f'|--> train accuracy: {running_corrects / num_examples:.4f}')
-        
-        # validation phase
-        model.eval()
-        running_corrects, num_examples = 0.0, 0.0
-        for x1, lens, target_labels, _ in dl['val']:
-            x1 = x1.to(device)
-            target_labels = target_labels.to(device)
-            optim.zero_grad()
-            torch.set_grad_enabled(False)
-            out_logits = model(x1, lens)
-            _, preds = torch.max(out_logits, 1)
-            target_labels = target_labels.squeeze()
-            running_corrects += torch.sum(preds == target_labels.data)
-            num_examples += len(lens)
-        print(f'|--> val accuracy: {running_corrects / num_examples:.4f}')
+        for phase in ("train", "val"):
+            if phase == "train":
+                model.train()
+            else:
+                model.eval()
+
+            running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0
+            for x1, lens, target_labels, target_logits in dl[phase]:
+                x1 = x1.to(device)
+                target_labels = target_labels.to(device)
+                if phase == "train":
+                    target_logits = target_logits.to(device)
+                optim.zero_grad()
+                torch.set_grad_enabled(phase == "train")
+                out_logits = model(x1, lens)
+                _, preds = torch.max(out_logits, 1)
+                target_labels = target_labels.squeeze()
+                if phase == "train":
+                    loss = criterion(out_logits, target_logits, target_labels.squeeze())
+                    loss.backward()
+                    optim.step()
+                    running_loss += loss.item()
+                running_corrects += torch.sum(preds == target_labels.data)
+                num_examples += len(lens)
+            accuracy = running_corrects / num_examples
+            if phase == "train":
+                print(f'|--> train loss: {running_loss / num_examples:.4f}')
+            else:
+                transponder.send_train_status(epoch, accuracy)
+                if sacred_experiment is not None:
+                    sacred_experiment.log_scalar("validation.acc", accuracy)
+            print(f'|--> {phase} accuracy: {accuracy:.4f}')
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
@@ -72,7 +67,7 @@ def main(args, sacred_experiment=None):
     elif args.augment2:
         import compression.distillation.data_augment2 as data_augment2
         data_augment2.augment(args.task, args.augment2, args.seed)
-    elif args.play:
+    elif args.distillation:
         task = args.task
         student_type = args.student_arch
 
@@ -102,7 +97,19 @@ def main(args, sacred_experiment=None):
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
         #optim = torch.optim.Adadelta(model.parameters())
         optim = model.get_optimizer()
-        train_loop(model, criterion, optim, dataloaders, device, epochs)
+        try:
+            train_loop(
+                model, criterion, optim, dataloaders, device,
+                epochs, sacred_experiment=sacred_experiment
+            )
+        finally:
+            model_name = (
+                sacred_experiment.info["name"] if sacred_experiment is not None
+                else args.student_arch
+            )
+            model.save(task, model_name)
+            model_path = f"{model.get_model_path()}/{model_name}.pt"
+            sacred_experiment.add_artifact(model_path)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_distill()

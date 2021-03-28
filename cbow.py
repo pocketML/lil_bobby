@@ -1,10 +1,10 @@
 import torch
+from common import argparsers, transponder
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from collections import Counter
 import unicodedata
-from common.task_utils import TASK_INFO
 from compression.distillation import data
 
 class CBOWEmbeddings():
@@ -24,8 +24,6 @@ class CBOWEmbeddings():
             out.append(str(word))
         return out
 
-# by deriving a set from raw_text, we deduplicate the array
-
 class CBOW(nn.Module):
     def __init__(self, vocab_size, embedding_dim, context_size, specials):
         super().__init__()
@@ -42,6 +40,26 @@ class CBOW(nn.Module):
         x = self.fc2(x)
         log_probs = self.activation(x)
         return log_probs
+
+def train_loop(train_data, model, cwemb, criterion, num_epochs, optimizer):
+    for epoch in range(num_epochs):
+        print(f'* Epoch {epoch + 1}')
+        total_loss = 0.0
+        for sent_data in train_data:
+            sent_loss = 0.0
+            model.zero_grad()
+            for ctx, target in sent_data:
+                ctx_idxs = torch.LongTensor([cwemb.word_to_idx.get(w, cwemb.specials['unknown']) for w in ctx])
+
+                log_probs = model(ctx_idxs)
+
+                loss = criterion(log_probs, torch.LongTensor([cwemb.word_to_idx.get(target, cwemb.specials['unknown'])]))
+
+                sent_loss += loss
+            sent_loss.backward()
+            optimizer.step()
+            total_loss += sent_loss
+        print(f'|--> Loss {total_loss / len(train_data):.4f}')
 
 def get_pretrained_cbow(context_size, task, embedding_dim, vocab_size, num_epochs=50):
     # load data
@@ -88,25 +106,12 @@ def get_pretrained_cbow(context_size, task, embedding_dim, vocab_size, num_epoch
     
     return cwobemb
 
-def train_loop(train_data, model, cwemb, criterion, num_epochs, optimizer):
-    for epoch in range(num_epochs):
-        print(f'* Epoch {epoch + 1}')
-        total_loss = 0.0
-        for sent_data in train_data:
-            sent_loss = 0.0
-            model.zero_grad()
-            for ctx, target in sent_data:
-                ctx_idxs = torch.LongTensor([cwemb.word_to_idx.get(w, cwemb.specials['unknown']) for w in ctx])
+def main(args, sacred_experiment=None):
+    cwobemb = get_pretrained_cbow(
+        args.context_size, args.task, args.embed_dim,
+        args.vocab_size, args.epochs
+    )
 
-                log_probs = model(ctx_idxs)
-
-                loss = criterion(log_probs, torch.LongTensor([cwemb.word_to_idx.get(target, cwemb.specials['unknown'])]))
-
-                sent_loss += loss
-            sent_loss.backward()
-            optimizer.step()
-            total_loss += sent_loss
-        print(f'|--> Loss {total_loss / len(train_data):.4f}')
-
-
-cwobemb = get_pretrained_cbow(2, 'sst-2', 16, 1000, 10)
+if __name__ == "__main__":
+    ARGS = argparsers.args_cbow()
+    main(ARGS)

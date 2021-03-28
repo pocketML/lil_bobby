@@ -7,12 +7,13 @@ from common import transponder
 from finetune import main as finetune_main
 from compress import main as compress_main
 from evaluate import main as evaluate_main
+from distill import main as distill_main
 
 OUTPUT_DIR = "experiments"
 
 TASK_FUNCS = {
     "finetune": finetune_main, "compress": compress_main,
-    "evaluate": evaluate_main
+    "evaluate": evaluate_main, "distill": distill_main
 }
 
 def run_experiment(task_args, _run):
@@ -51,11 +52,29 @@ if __name__ == "__main__":
 
     transponder.TRANSPONDER_ACTIVE = EXPERIMENT_ARGS.transponder
 
+    transponder_args = None
+    max_epochs = None
+
     if "finetune" in TASK_ARGS:
         FINETUNE_ARGS = TASK_ARGS["finetune"]
-        transponder.send_train_start(
-            RUN_ID, FINETUNE_ARGS.arch, FINETUNE_ARGS.task, FINETUNE_ARGS.max_epochs
-        )
+        max_epochs = FINETUNE_ARGS.max_epochs
+        transponder_args = dict(FINETUNE_ARGS.__dict__)
+        del transponder_args["max_epochs"]
+    elif "distill" in TASK_ARGS and TASK_ARGS["distill"].distillation:
+        DISTILLATION_ARGS = TASK_ARGS["distill"]
+        max_epochs = DISTILLATION_ARGS.epochs
+        transponder_args = dict(DISTILLATION_ARGS.__dict__)
+        del transponder_args["epochs"]
+        args_to_delete = ["size"]
+        for arg in transponder_args:
+            if transponder_args[arg] == False or transponder_args[arg] is None:
+                args_to_delete.append(arg)
+        for arg in args_to_delete:
+            if arg in transponder_args:
+                del transponder_args[arg]
+
+    if transponder_args is not None:
+        transponder.send_train_start(RUN_ID, transponder_args, max_epochs)
 
     RUN = EXPERIMENT._create_run("run_experiment", info={"name": RUN_ID})
     RUN._id = RUN_ID

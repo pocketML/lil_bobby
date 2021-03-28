@@ -19,22 +19,36 @@ def args_compress(args=None, namespace=None, parse_known=False):
 
     return ap.parse_args(args=args, namespace=namespace)
 
+def args_cbow(args=None, namespace=None, parse_known=False):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task", choices=finetune_tasks, required=True)
+    ap.add_argument("--context-size", type=int, default=2)
+    ap.add_argument("--embed-dim", type=int, default=16)
+    ap.add_argument("--vocab-size", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--seed", type=int, default=1337)
+
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+
+    return ap.parse_args(args=args, namespace=namespace)
+
 # define arguments for knowledge distillation
 def args_distill(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--task", choices=finetune_tasks, required=True)
     ap.add_argument("--epochs", type=int, default=10)
-    ap.add_argument("--teacher-arch", choices=["roberta_large", "roberta_base"], )
+    ap.add_argument("--teacher-arch", choices=["roberta_large", "roberta_base"], default="roberta_large")
     ap.add_argument("--distillation", action="store_true")
     ap.add_argument("--generate-loss", action="store_true")
+    ap.add_argument("--train-cbow", action="store_true")
     augmenters = ["tinybert", "masked", "pos", "ngram"]
     students = ["glue", "wasserblat-ffn", "tang"]
     ap.add_argument("--student-arch", type=str, choices=students, default="glue")
     ap.add_argument("--augment", type=str, choices=augmenters)
     ap.add_argument("--augment2", type=str, choices=augmenters)
     ap.add_argument("--cpu", action="store_true")
-    ap.add_argument("--play", action="store_true")
     ap.add_argument("--size", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
 
@@ -98,8 +112,8 @@ def args_analyze():
 def args_experiment():
     ap = argparse.ArgumentParser()
 
-    task_choices = ("finetune", "compress", "evaluate", "analyze")
-    ap.add_argument("tasks", nargs="+", choices=task_choices)
+    task_choices = ("finetune", "compress", "evaluate", "analyze", "distill")
+    ap.add_argument("jobs", nargs="+", choices=task_choices)
     ap.add_argument("--name", type=str, required=True)
     ap.add_argument("--transponder", action="store_true")
     ap.add_argument("--output-path", type=str)
@@ -107,15 +121,18 @@ def args_experiment():
     task_args = {}
 
     experiment_args, args_remain = ap.parse_known_args()
-    for task in experiment_args.tasks:
+    for task in experiment_args.jobs:
         if task == "finetune":
-            finetune_args, args_remain = args_finetune(args_remain, parse_known=True)
+            finetune_args = args_finetune(args_remain, parse_known=True)[0]
             task_args["finetune"] = finetune_args
         if task == "compress":
-            compress_args, args_remain = args_compress(args_remain, parse_known=True)
+            compress_args = args_compress(args_remain, parse_known=True)[0]
             task_args["compress"] = compress_args
         if task == "evaluate":
-            evaluate_args, args_remain = args_evaluate(args_remain, parse_known=True)
+            evaluate_args = args_evaluate(args_remain, parse_known=True)[0]
             task_args["evaluate"] = evaluate_args
+        if task == "distill":
+            distill_args = args_distill(args_remain, parse_known=True)[0]
+            task_args["distill"] = distill_args
 
     return experiment_args, task_args
