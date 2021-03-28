@@ -1,4 +1,6 @@
 from abc import abstractmethod
+import os
+import torch
 from torch import nn
 from torch.optim import Adam
 from common.task_utils import TASK_LABEL_DICT, TASK_INFO
@@ -16,7 +18,8 @@ class StudentConfig():
         batch_first=True,
         dropout=0.2,
         cls_hidden_dim=512,
-        lr=1e-4
+        lr=1e-4,
+        weight_decay=0
         ):
 
         self.num_classes = TASK_INFO[task]['settings']['num-classes']
@@ -28,6 +31,7 @@ class StudentConfig():
         self.vocab_size = vocab_size
         self.dropout = dropout
         self.lr = lr
+        self.weight_decay=weight_decay
 
         # === Bi-LSTM specific settings ===
         self.bidirectional = bidirectional 
@@ -42,8 +46,25 @@ class StudentModel(nn.Module):
         self.cfg = StudentConfig(task, use_gpu)
 
     def get_optimizer(self):
-        return Adam(self.parameters(), lr=self.cfg.lr)
+        return Adam(
+            self.parameters(), lr=self.cfg.lr,
+            weight_decay=self.cfg.weight_decay
+        )
 
     @abstractmethod
     def forward(self, sents, lens):
         pass
+
+    def get_model_path(self, task):
+        return f"models/distilled/{task}"
+
+    def save(self, task, model_name):
+        model_path = self.get_model_path(task)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path, exist_ok=True)
+        torch.save(self.state_dict(), f"{model_path}/{model_name}.pt")
+
+    def load(self, task, model_name):
+        model_path = self.get_model_path(task)
+        self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
+        self.eval()
