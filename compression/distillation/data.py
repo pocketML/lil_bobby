@@ -7,9 +7,9 @@ import os
 from glob import glob
 
 # returns sentences, labels
-def load_train_data(task, ds_type='train'):
+def load_train_data(task, ds_type='train', data_folder="processed"):
     files = [ds_type + x for x in ['.raw.input0', '.raw.input1', '.label']]
-    folder = f'{TASK_INFO[task]["path"]}/processed/'
+    folder = f'{TASK_INFO[task]["path"]}/{data_folder}/'
 
     with open(folder + files[0], encoding='utf-8') as sentences:
         with open(folder + files[2], encoding='utf-8') as targets:
@@ -37,7 +37,9 @@ def load_all_distillation_data(task):
     return distillation_data
 
 def generate_for_train_data(model, args):
-    data = load_train_data(args.task)
+    default_data = args.generate_loss == "default"
+    input_folder = "processed" if default_data else "augment_data"
+    data = load_train_data(args.task, data_folder=input_folder)
     batch_size = 8
     n = len(data[0])
     sentence_pairs = len(data) == 3
@@ -46,7 +48,9 @@ def generate_for_train_data(model, args):
     if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    with open(output_path + 'train.tsv', 'w', encoding='utf-8') as out:
+    output_file = "train.tsv" if default_data else "augmented.tsv"
+
+    with open(output_path + output_file, 'w', encoding='utf-8') as out:
         for i in range(int((n - 1) / batch_size) + 1):
             start = i * batch_size
             end = start + batch_size if (start + batch_size) < n else n
@@ -74,12 +78,10 @@ def generate_for_train_data(model, args):
                     logits_str = ','.join([str(x) for x in logits])
                     out.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
 
-
 def generate_distillation_loss(args):
     model = models.load_teacher(args.task, args.cpu)
     generate_for_train_data(model, args)
-
-    
+ 
 class DistillationData(Dataset):
     def __init__(self, sents, labels, logits=None) -> None:
         super().__init__()

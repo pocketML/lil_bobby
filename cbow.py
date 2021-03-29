@@ -1,11 +1,11 @@
 import torch
-from common import argparsers, transponder
+from common import argparsers
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from collections import Counter
 import unicodedata
 from compression.distillation import data
+from common.task_utils import get_model_path
 
 class CBOWEmbeddings():
     def __init__(self, embedding_dim):
@@ -40,6 +40,15 @@ class CBOW(nn.Module):
         x = self.fc2(x)
         log_probs = self.activation(x)
         return log_probs
+
+    def save(self, task):
+        model_path = get_model_path(task, "cbow")
+        torch.save(self.state_dict(), f"{model_path}/embeddings.pt")
+
+    def load(self, task):
+        model_path = get_model_path(task, "cbow")
+        self.load_state_dict(torch.load(f"{model_path}/embeddings.pt"))
+        self.eval()
 
 def train_loop(train_data, model, cwemb, criterion, num_epochs, optimizer):
     for epoch in range(num_epochs):
@@ -101,13 +110,16 @@ def get_pretrained_cbow(context_size, task, embedding_dim, vocab_size, num_epoch
     print(f'Sentences after prep:  {len(train_data)}')
 
     # 100 baby squats
-    train_loop(train_data, model, cwobemb, criterion, num_epochs, optimizer)
-    cwobemb.vectors = model.embeddings.weight
+    try:
+        train_loop(train_data, model, cwobemb, criterion, num_epochs, optimizer)
+    finally:
+        cwobemb.vectors = model.embeddings.weight
+        model.save(task)
     
     return cwobemb
 
 def main(args, sacred_experiment=None):
-    cwobemb = get_pretrained_cbow(
+    cbowemb = get_pretrained_cbow(
         args.context_size, args.task, args.embed_dim,
         args.vocab_size, args.epochs
     )
