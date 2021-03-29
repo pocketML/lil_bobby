@@ -42,12 +42,12 @@ class CBOW(nn.Module):
         return log_probs
 
     def save(self, task):
-        model_path = get_model_path(task, "cbow")
-        torch.save(self.state_dict(), f"{model_path}/embeddings.pt")
+        model_path = get_model_path(task, "embeddings")
+        torch.save(self.state_dict(), f"{model_path}/cbow.pt")
 
     def load(self, task):
-        model_path = get_model_path(task, "cbow")
-        self.load_state_dict(torch.load(f"{model_path}/embeddings.pt"))
+        model_path = get_model_path(task, "embeddings")
+        self.load_state_dict(torch.load(f"{model_path}/cbow.pt"))
         self.eval()
 
 def train_loop(train_data, model, cwemb, criterion, num_epochs, optimizer):

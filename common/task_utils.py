@@ -128,7 +128,7 @@ def get_model_path(task, model_type):
     Returns a path to where a type of model is saved.
     F.x. models/sst-2/finetuned.
     """
-    if model_type not in ("finetuned", "distilled", "cbow"):
+    if model_type not in ("finetuned", "distilled", "embeddings"):
         raise ValueError("Invalid model type.")
 
     model_path = f"models/{model_type}/{task}"
