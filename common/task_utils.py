@@ -1,3 +1,5 @@
+import os
+
 GLUE_URL = "https://dl.fbaipublicfiles.com/glue/data"
 
 TASK_LABEL_DICT = {
@@ -121,6 +123,25 @@ TASK_INFO = {
 def get_processed_path(task):
     return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
 
+def get_model_path(task, model_type):
+    """
+    Returns a path to where a type of model is saved.
+    F.x. models/sst-2/finetuned.
+    """
+    if model_type not in ("finetuned", "distilled"):
+        raise ValueError("Invalid model type.")
+
+    model_path = f"models/{model_type}/{task}"
+    hpc_shared_path = "/home/data_shares/lil_bobby"
+
+    if os.path.exists(hpc_shared_path):
+        model_path = f"{hpc_shared_path}/{model_path}"
+
+    if not os.path.exists(model_path):
+        os.makedirs(model_path, exist_ok=True)
+
+    return model_path
+
 def get_finetune_string(
     task_path, model_path, override_args, sacred_experiment=None):
     task = override_args.task
@@ -194,7 +215,8 @@ def get_finetune_string(
 
     if sacred_experiment is not None:
         experiment_name = sacred_experiment.info["name"]
-        checkpoint_dir = f"models/finetuned/{task}/{experiment_name}"
+        base_dir = get_model_path(task, "finetuned")
+        checkpoint_dir = f"{base_dir}/{experiment_name}"
         arguments.extend(['--save-dir', checkpoint_dir])
 
     return arguments
