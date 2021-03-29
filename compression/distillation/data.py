@@ -37,8 +37,7 @@ def load_all_distillation_data(task):
     return distillation_data
 
 def generate_for_train_data(model, args):
-    default_data = args.generate_loss == "default"
-    input_folder = "processed" if default_data else "augment_data"
+    input_folder = args.generate_loss
     data = load_train_data(args.task, data_folder=input_folder)
     batch_size = 8
     n = len(data[0])
@@ -48,7 +47,7 @@ def generate_for_train_data(model, args):
     if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    output_file = "train.tsv" if default_data else "augmented.tsv"
+    output_file = "train.tsv" if input_folder == "processed" else input_folder
 
     with open(output_path + output_file, 'w', encoding='utf-8') as out:
         for i in range(int((n - 1) / batch_size) + 1):
