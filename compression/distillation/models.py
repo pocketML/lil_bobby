@@ -9,10 +9,10 @@ from compression.distillation.student_models.glue_bilstm import (
 )
 from compression.distillation.student_models.bpe_ffn import BPE_FFN
 
-def load_teacher(task, use_cpu=False):
+def load_teacher(task, checkpoint_path, use_cpu=False):
     bin_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
     model = RobertaModel.from_pretrained(
-        "checkpoints", #f'models/experiments/finetune_{task}',
+        checkpoint_path, #f'models/experiments/finetune_{task}',
         checkpoint_file='checkpoint_best.pt',
         data_name_or_path=bin_path
     )

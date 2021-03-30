@@ -26,6 +26,7 @@ def args_cbow(args=None, namespace=None, parse_known=False):
     ap.add_argument("--embed-dim", type=int, default=16)
     ap.add_argument("--vocab-size", type=int, default=1000)
     ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
 
     if parse_known:
@@ -39,6 +40,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
 
     ap.add_argument("--task", choices=finetune_tasks, required=True)
     ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--checkpoint-path", default="checkpoints")
     ap.add_argument("--teacher-arch", choices=["roberta_large", "roberta_base"], default="roberta_large")
     ap.add_argument("--distillation", action="store_true")
     ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"))
