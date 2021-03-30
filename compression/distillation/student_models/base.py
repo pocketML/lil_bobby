@@ -3,7 +3,7 @@ import os
 import torch
 from torch import nn
 from torch.optim import Adam
-from common.task_utils import TASK_LABEL_DICT, TASK_INFO
+from common.task_utils import TASK_LABEL_DICT, TASK_INFO, get_model_path
 
 class StudentConfig():
     def __init__(self,
@@ -55,16 +55,11 @@ class StudentModel(nn.Module):
     def forward(self, sents, lens):
         pass
 
-    def get_model_path(self, task):
-        return f"models/distilled/{task}"
-
     def save(self, task, model_name):
-        model_path = self.get_model_path(task)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path, exist_ok=True)
+        model_path = get_model_path(task, "distilled")
         torch.save(self.state_dict(), f"{model_path}/{model_name}.pt")
 
     def load(self, task, model_name):
-        model_path = self.get_model_path(task)
+        model_path = get_model_path(task, "distilled")
         self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
         self.eval()

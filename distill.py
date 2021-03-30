@@ -60,7 +60,7 @@ def main(args, sacred_experiment=None):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
     
-    if args.generate_loss:
+    if args.generate_loss is not None:
         data.generate_distillation_loss(args)
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)

@@ -32,7 +32,7 @@ def load_glove():
             if count == VOCAB_SIZE:
                 break
             split = line.split()
-            word = split[0]
+            word = split[0].lower() # Uncased
             words.append(word)
             try:
                 embedding = np.array([float(value) for value in split[1:]])
@@ -81,7 +81,7 @@ class TinyBertAugmenter(Augmenter):
         if word not in self.glove_vocab:
             return []
 
-        word_idx = self.glove_vocab[word]
+        word_idx = self.glove_vocab[word.lower()]
         word_emb = self.glove_normed[word_idx]
 
         dist = np.dot(self.glove_normed, word_emb.T)
