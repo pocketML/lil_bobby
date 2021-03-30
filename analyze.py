@@ -1,19 +1,26 @@
 from fairseq.models.roberta import RobertaModel
 from analysis import parameters
-from common import argparsers, task_utils
+from common import argparsers, task_utils, model_utils
+from compression.distillation import models as distill_models
 
 def main(args, sacred_experiment=None):
     data_path = task_utils.get_processed_path(args.task)
-    model = RobertaModel.from_pretrained(
-        'checkpoints',
-        checkpoint_file=args.model_name,
-        data_name_or_path=data_path
-    )
+    finetuned_model = args.arch in model_utils.MODEL_INFO.keys()
+
+    if finetuned_model:
+        model = RobertaModel.from_pretrained(
+            'checkpoints',
+            checkpoint_file=args.model_name,
+            data_name_or_path=data_path
+        )
+    else: # is in compressions.distillation.models.STUDENT_MODELS.keys()
+        model = distill_models.load_student(args.task, args.arch, False, load_saved_model=args.model_name)
+
     model.eval()
 
     if args.model_size:
         parameters.print_model_size(model)
-    if args.weight_hist:
+    if args.weight_hist and finetuned_model:
         parameters.weight_histogram_for_all_transformers(model)
     if args.layer_weight_hist:
         pass
