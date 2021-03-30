@@ -41,7 +41,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--epochs", type=int, default=10)
     ap.add_argument("--teacher-arch", choices=["roberta_large", "roberta_base"], default="roberta_large")
     ap.add_argument("--distillation", action="store_true")
-    ap.add_argument("--generate-loss", action="store_true")
+    ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"))
     ap.add_argument("--train-cbow", action="store_true")
     augmenters = ["tinybert", "masked", "pos", "ngram"]
     students = ["glue", "wasserblat-ffn", "tang"]
