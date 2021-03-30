@@ -64,9 +64,6 @@ def main(args, sacred_experiment=None):
         data.generate_distillation_loss(args)
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)
-    elif args.augment2:
-        import compression.distillation.data_augment2 as data_augment2
-        data_augment2.augment(args.task, args.augment2, args.seed)
     elif args.distillation:
         task = args.task
         student_type = args.student_arch

@@ -101,7 +101,7 @@ def generate_for_train_data(model, args):
                     out.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
 
 def generate_distillation_loss(args):
-    model = models.load_teacher(args.task, args.cpu)
+    model = models.load_teacher(args.task, args.checkpoint_path, args.cpu)
     generate_for_train_data(model, args)
  
 class DistillationData(Dataset):
