@@ -49,7 +49,6 @@ def args_distill(args=None, namespace=None, parse_known=False):
     students = ["glue", "wasserblat-ffn", "tang"]
     ap.add_argument("--student-arch", type=str, choices=students, default="glue")
     ap.add_argument("--augment", type=str, choices=augmenters)
-    ap.add_argument("--augment2", type=str, choices=augmenters)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--size", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
