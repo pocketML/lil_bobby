@@ -48,6 +48,7 @@ def weight_histogram_for_layer(layer, num_bins=1000):
     plt.hist(weights, bins=num_bins)
     plt.show()
 
+# TODO: only works for RoBERTa models at the moment
 def weight_histogram_for_all_transformers(model, num_bins=2000):
     layers = model_utils.group_params_by_layer(model)
     transformers = [layer for layer in layers.keys() if 'layer_' in layer]
@@ -65,6 +66,7 @@ def weight_histogram_for_all_transformers(model, num_bins=2000):
         ax.label_outer()
     plt.show()
 
+# TODO: only works for RoBERTa models at the moment
 def print_threshold_stats(model):
     layers = model_utils.group_params_by_layer(model)
     transformers = [layer for layer in layers.keys() if 'layer_' in layer]
