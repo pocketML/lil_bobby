@@ -21,13 +21,13 @@ def main(args, sacred_experiment=None):
     if args.model_size:
         parameters.print_model_size(model)
     if args.weight_hist and finetuned_model:
-        parameters.weight_histogram_for_all_transformers(model)
+        parameters.weight_histogram_for_all_transformers(model, args.arch)
     if args.layer_weight_hist:
         pass
     if args.named_params:
-        parameters.print_named_params(model)
+        parameters.print_named_params(model, args.arch)
     if args.weight_thresholds:
-        parameters.print_threshold_stats(model)
+        parameters.print_threshold_stats(model, args.arch)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_analyze()

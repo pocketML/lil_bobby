@@ -49,8 +49,8 @@ def weight_histogram_for_layer(layer, num_bins=1000):
     plt.show()
 
 # TODO: only works for RoBERTa models at the moment
-def weight_histogram_for_all_transformers(model, num_bins=2000):
-    layers = model_utils.group_params_by_layer(model)
+def weight_histogram_for_all_transformers(model, arch, num_bins=2000):
+    layers = model_utils.group_params_by_layer(model, arch)
     transformers = [layer for layer in layers.keys() if 'layer_' in layer]
     n = len(transformers)
     ncols = 4
@@ -66,14 +66,11 @@ def weight_histogram_for_all_transformers(model, num_bins=2000):
         ax.label_outer()
     plt.show()
 
-# TODO: only works for RoBERTa models at the moment
-def print_threshold_stats(model):
-    layers = model_utils.group_params_by_layer(model)
-    transformers = [layer for layer in layers.keys() if 'layer_' in layer]
+def print_threshold_stats(model, arch):
+    layers = model_utils.group_params_by_layer(model, arch)
     thresholds = [0.001, 0.005, 0.01, 0.05, 0.1]
-    for layer_name in transformers:
+    for layer_name, layer in layers.items():
         print(layer_name)
-        layer = layers[layer_name]
         for threshold in thresholds:
             below, total = count_below_threshold_in_layer(layer, threshold)
             print(f'below {threshold} in {layer_name}: {below}/{total} ({below/total:.4f})')
@@ -86,8 +83,8 @@ def print_model_size(model):
     print(f'size in MBs: {total_bits/8000000:.1f}')
     print('-'*20)
 
-def print_named_params(model):
-    layers = model_utils.group_params_by_layer(model)
+def print_named_params(model, arch):
+    layers = model_utils.group_params_by_layer(model, arch)
     for layer, children in layers.items():
         print(f'* {layer}')
         for name, param in children:
