@@ -14,7 +14,7 @@ def main(args, sacred_experiment=None):
             data_name_or_path=data_path
         )
     else: # is in compressions.distillation.models.STUDENT_MODELS.keys()
-        model = distill_models.load_student(args.task, args.arch, False, load_saved_model=args.model_name)
+        model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
 
     model.eval()
 

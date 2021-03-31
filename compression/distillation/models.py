@@ -34,13 +34,13 @@ def load_roberta_model(arch, use_cpu=False):
     model.eval()
     return model
 
-def load_student(task, student_type, use_gpu, load_saved_model=None):
-    cfg = base.get_default_config(task, student_type, use_gpu=use_gpu, model_name=load_saved_model)
+def load_student(task, student_type, use_gpu, model_name=None):
+    cfg = base.get_default_config(task, student_type, use_gpu=use_gpu, model_name=model_name)
     try:
         model = STUDENT_MODELS[student_type](cfg)
     except:
         raise Exception(f'Student type "{student_type}" not recognized')
     # load state dict
-    if load_saved_model is not None:
-        model.load(load_saved_model)
+    if model_name is not None:
+        model.load(model_name)
     return model
