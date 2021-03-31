@@ -8,6 +8,7 @@ class WASSERBLAT_FFN(StudentModel):
         super().__init__(cfg)
 
         self.max_seq_len = 100
+        self.hidden_units = 64
 
         # embedding
         self.bpe = BPEmb(
@@ -17,10 +18,8 @@ class WASSERBLAT_FFN(StudentModel):
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors))
 
         self.dropout_1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
+        self.avg_pool = nn.AvgPool1d(1)
 
-        self.avg_pool = nn.AvgPool1d(2)
-
-        self.hidden_units = 64
 
         self.dense_1 = nn.Linear(self.max_seq_len * (self.cfg['embedding-dim'] // 2), self.hidden_units)
         self.relu_1 = nn.ReLU()

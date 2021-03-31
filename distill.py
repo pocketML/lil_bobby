@@ -4,13 +4,7 @@ from compression.distillation import data_augment
 from analysis import parameters
 import torch.nn as nn
 import torch
-from compression.distillation.models import (
-    TangBILSTM,
-    GlueBILSTM,
-    BPE_FFN,
-    DistLossFunction,
-    load_student
-)
+from compression.distillation.models import DistLossFunction, load_student
 
 # only works for single sentence prediction
 def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experiment=None):

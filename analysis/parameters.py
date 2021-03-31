@@ -88,4 +88,4 @@ def print_named_params(model, arch):
     for layer, children in layers.items():
         print(f'* {layer}')
         for name, param in children:
-            print(f'| --> {name}, {param.size()}')
+            print(f'| --> {name}, {param.size()}, {param.dtype}')
