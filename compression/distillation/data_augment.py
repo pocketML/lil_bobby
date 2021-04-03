@@ -183,17 +183,17 @@ def augment(task, augment_technique, seed):
                 for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
                     output_sentences.append(augmenter.augment(sent.strip()))
 
-                if sentence_pairs: # Create batch for prediction of label for new sentence.
-                    for sent1, sent2 in zip(*output_sentences):
-                        out1.write(f'{sent1.strip()}\n')
+                for sent in output_sentences[0]:
+                    out1.write(f'{sent.strip()}\n')
+                if sentence_pairs:
+                    for sent2 in output_sentences[1]:
                         out2.write(f'{sent2.strip()}\n')
-                else:
-                    for sent in output_sentences[0]:
-                        out1.write(f'{sent.strip()}\n')
 
                 pct_done = int((index / len(training_data[0])) * 100)
                 if pct_done > prev_pct:
                     print(f"Augmenting dataset: {pct_done}% complete...", end="\r", flush=True)
                     prev_pct = pct_done
-
-print()
+        print()
+        # remove input1 if not sentence pairs
+        if not sentence_pairs:
+            os.remove(augment_dir + f'/{augment_technique}.input1')

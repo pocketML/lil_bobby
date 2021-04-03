@@ -1,15 +1,10 @@
-from common import argparsers, transponder
+from common import argparsers, transponder, task_utils
 from compression.distillation import data
 from compression.distillation import data_augment
 from analysis import parameters
 import torch.nn as nn
 import torch
-from compression.distillation.models import (
-    TangBILSTM,
-    GlueBILSTM,
-    BPE_FFN,
-    DistLossFunction
-)
+from compression.distillation.models import DistLossFunction, load_student
 
 # only works for single sentence prediction
 def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experiment=None):
@@ -49,12 +44,33 @@ def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experi
                     sacred_experiment.log_scalar("validation.acc", accuracy)
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
 
+def evaluate_distilled_model(model, dl, device, sacred_experiment=None):
+    model.eval()
+    running_corrects, num_examples = 0.0, 0.0
+    for x1, lens, target_labels, _ in dl['val']:
+        x1 = x1.to(device)
+        target_labels = target_labels.to(device)
+        torch.set_grad_enabled(False)
+        out_logits = model(x1, lens)
+        _, preds = torch.max(out_logits, 1)
+        target_labels = target_labels.squeeze()
+        running_corrects += torch.sum(preds == target_labels.data)
+        num_examples += len(lens)
+    accuracy = running_corrects / num_examples
+    if sacred_experiment is not None:
+        sacred_experiment.log_scalar("validation.acc", accuracy)
+    print(f'|--> val accuracy: {accuracy:.4f}')
+
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     use_gpu = not args.cpu
     epochs = args.epochs
+    task = args.task
+    student_type = args.student_arch
+    print_size = args.size
+    temperature = args.temperature
 
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
@@ -64,18 +80,10 @@ def main(args, sacred_experiment=None):
         data.generate_distillation_loss(args)
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)
-    elif args.distillation:
-        task = args.task
-        student_type = args.student_arch
+    elif args.distill:
+        model = load_student(task, student_type, use_gpu=use_gpu)
 
-        if student_type == 'glue':
-            model = GlueBILSTM(task, use_gpu)
-        elif student_type == 'tang':
-            model = TangBILSTM(task, use_gpu)
-        elif student_type == 'wasserblat-ffn':
-            model = BPE_FFN(task, use_gpu)
-
-        if args.size:
+        if print_size:
             total_params, total_bits = parameters.get_model_size(model)
             print(type(model))
             print(f'total params: {total_params / 1000}K)')
@@ -90,7 +98,13 @@ def main(args, sacred_experiment=None):
 
         print(f"*** Loaded {len(val_data[0])} validation data samples ***")
 
-        criterion = DistLossFunction(0.5, nn.MSELoss(), nn.CrossEntropyLoss(), device)
+        criterion = DistLossFunction(
+            0.5, 
+            nn.MSELoss(), 
+            nn.CrossEntropyLoss(), 
+            temperature=temperature,
+            device=device
+        )
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
         #optim = torch.optim.Adadelta(model.parameters())
         optim = model.get_optimizer()
@@ -104,9 +118,11 @@ def main(args, sacred_experiment=None):
                 sacred_experiment.info["name"] if sacred_experiment is not None
                 else args.student_arch
             )
-            model.save(task, model_name)
-            model_path = f"{model.get_model_path()}/{model_name}.pt"
-            sacred_experiment.add_artifact(model_path)
+            model.save(model_name)
+            if sacred_experiment:
+                model_dir = task_utils.get_model_path(model.cfg["task"], "distilled")
+                model_path = f'{model_dir}/{model_name}.pt'
+                sacred_experiment.add_artifact(model_path)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_distill()
