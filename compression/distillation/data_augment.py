@@ -1,9 +1,8 @@
 from abc import abstractmethod
 import random
 import os
+import re
 import numpy as np
-from fairseq.models.roberta import RobertaModel
-from fairseq.data.data_utils import collate_tokens
 from common.task_utils import TASK_INFO
 from compression.distillation import data
 from compression.distillation import models
@@ -33,7 +32,7 @@ def load_glove():
             if count == VOCAB_SIZE:
                 break
             split = line.split()
-            word = split[0]
+            word = split[0].lower() # Uncased
             words.append(word)
             try:
                 embedding = np.array([float(value) for value in split[1:]])
@@ -56,6 +55,9 @@ def load_glove():
     emb_norm = (emb_matrix.T / d).T
     return emb_norm, vocab, ids_to_tokens
 
+def is_valid(word):
+    return True if not re.search('[^a-zA-Z]', word) else False
+
 class Augmenter:
     @abstractmethod
     def augment(self, sentence):
@@ -64,8 +66,8 @@ class Augmenter:
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
-        self.masked_lm = models.load_roberta_model('roberta_base')#('roberta_large')
-        self.masked_lm.half()
+        self.masked_lm = models.load_roberta_model('roberta_large')
+        #self.masked_lm.half()
         # Initialize augment parameters.
         self.p_threshold = 0.4 # Threshold probability.
         self.n_samples = 20 # Number of augmented samples per examples.
@@ -79,7 +81,7 @@ class TinyBertAugmenter(Augmenter):
         if word not in self.glove_vocab:
             return []
 
-        word_idx = self.glove_vocab[word]
+        word_idx = self.glove_vocab[word.lower()]
         word_emb = self.glove_normed[word_idx]
 
         dist = np.dot(self.glove_normed, word_emb.T)
@@ -124,7 +126,7 @@ class TinyBertAugmenter(Augmenter):
         sent_candidates = []
         word_candidates = {}
         for (idx, word) in enumerate(tokens):
-            if word not in STOP_WORDS:
+            if is_valid(word) and word not in STOP_WORDS:
                 word_candidates[idx] = self.augment_word(sentence, idx, word)
 
         for _ in range(self.n_samples):
@@ -164,69 +166,34 @@ def augment(task, augment_technique, seed):
         "pos": PoSAugmenter, "ngram": NGramAugmenter
     }
 
-    base_path = f"{TASK_INFO[task]['path']}/distillation_data"
-
-    if not os.path.exists(base_path):
-        os.mkdir(base_path)
-
-    model = models.load_teacher(task)
+    augment_dir = f"{TASK_INFO[task]['path']}/augment_data"
+    os.makedirs(augment_dir, exist_ok=True)
 
     augmenter = classes[augment_technique]()
 
     training_data = data.load_train_data(task)
     sentence_pairs = len(training_data) == 3
-    output_path = f"{base_path}/{augment_technique}.tsv"
-    label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
-
     prev_pct = 0
     print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)
+    with open(augment_dir + f'/{augment_technique}.input0', 'w', encoding='utf-8') as out1:
+        with open(augment_dir + f'/{augment_technique}.input1', 'w', encoding='utf-8') as out2:
+            for index, train_example in enumerate(zip(*training_data)):
+                sentences = [train_example[0], train_example[2]] if sentence_pairs else [train_example[0]]
+                output_sentences = []
+                for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
+                    output_sentences.append(augmenter.augment(sent.strip()))
 
-    with open(output_path, "w", encoding="utf-8") as fp:
-        for index, train_example in enumerate(zip(*training_data)):
-            sentences = [train_example[0]]
-            if sentence_pairs: # Augment both sentences in sentence-pair classification.
-                sentences.append(train_example[2])
+                for sent in output_sentences[0]:
+                    out1.write(f'{sent.strip()}\n')
+                if sentence_pairs:
+                    for sent2 in output_sentences[1]:
+                        out2.write(f'{sent2.strip()}\n')
 
-            output_sentences = []
-
-            for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
-                output_sentences.append(augmenter.augment(sent.strip()))
-
-            if sentence_pairs: # Create batch for prediction of label for new sentence.
-                batch = collate_tokens(
-                    [model.encode(sent1, sent2) for sent1, sent2 in zip(*output_sentences)],
-                    pad_idx=1
-                )
-            else:
-                batch = collate_tokens(
-                    [model.encode(sent) for sent in output_sentences[0]],
-                    pad_idx=1
-                )
-
-            batch_logits = model.predict( # Predict logits for new sentence.
-                "sentence_classification_head", batch, return_logits=True
-            )
-            labels = [label_fn(label) for label in batch_logits.argmax(dim=1).tolist()]
-
-            if sentence_pairs:
-                iterator = zip(
-                    output_sentences[0], output_sentences[1],
-                    labels, batch_logits.tolist()
-                )
-                for sent1, sent2, target, logits in iterator:
-                    logits_str = ','.join([str(x) for x in logits])
-                    fp.write(f'{sent1.strip()}\t{sent2.strip()}\t{target.strip()}\t{logits_str}\n')
-            else:
-                iterator = zip(
-                    output_sentences[0], labels, batch_logits.tolist()
-                )
-                for sent, target, logits in iterator:
-                    logits_str = ','.join([str(x) for x in logits])
-                    fp.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
-
-            pct_done = int((index / len(training_data[0])) * 100)
-            if pct_done > prev_pct:
-                print(f"Augmenting dataset: {pct_done}% complete...", end="\r", flush=True)
-                prev_pct = pct_done
-
-print()
+                pct_done = int((index / len(training_data[0])) * 100)
+                if pct_done > prev_pct:
+                    print(f"Augmenting dataset: {pct_done}% complete...", end="\r", flush=True)
+                    prev_pct = pct_done
+        print()
+        # remove input1 if not sentence pairs
+        if not sentence_pairs:
+            os.remove(augment_dir + f'/{augment_technique}.input1')

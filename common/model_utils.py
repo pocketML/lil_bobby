@@ -14,15 +14,20 @@ MODEL_INFO = {
 # returns a dictionary with entries for all layers
 # key is layer name, either encoding_layer, layer_i, or classification head name
 # value is list of subcomponents (each a tuple of name and parameters)
-def group_params_by_layer(model):
+def group_params_by_layer(model, arch):
     layers = {}
     for name, param in model.named_parameters():
-        if 'classification_heads' in name:
-            key = name.split('classification_heads.')[1].split('.')[0]
-        elif 'layers.' in name:
-            key = 'layer_' + (name.split('layers.')[1].split('.')[0])
-        else:
-            key = 'encoding_layer'
+        if arch in MODEL_INFO.keys():
+            if 'classification_heads' in name:
+                key = name.split('classification_heads.')[1].split('.')[0]
+            elif 'layers.' in name:
+                key = 'layer_' + (name.split('layers.')[1].split('.')[0])
+            elif 'sentence_encoder' in name:
+                key = 'sentence_encoder'
+            else:
+                key = 'lm_head'
+        else: # we have a studen model
+            key = name.split('.')[0]
         values = layers.get(key, [])
         values.append((name,param))
         layers[key] = values
