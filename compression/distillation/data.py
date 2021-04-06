@@ -158,10 +158,10 @@ def get_dataloader_dict(model, distillation_data, validation_data):
         datasets['val'] = get_datasets(model, val_x1, val_labels)
     dataloaders = {x: DataLoader(
             datasets[x],
-            batch_size=model.cfg.batch_size,
+            batch_size=model.cfg['batch-size'],
             shuffle=True,
             drop_last=True,
-            collate_fn=create_collate_fn(model.cfg.vocab_size)) for x in ['train', 'val']}
+            collate_fn=create_collate_fn(model.cfg['vocab-size'])) for x in ['train', 'val']}
     return dataloaders
 
 # pads sentences in a batch to equal length
