@@ -1,5 +1,4 @@
 import argparse
-from fairseq import options
 from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO
 from compression.distillation.models import STUDENT_MODELS

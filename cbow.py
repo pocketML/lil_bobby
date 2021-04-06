@@ -115,8 +115,11 @@ def get_pretrained_cbow(
         batch_size=32, use_cpu=False
 ):
     # load data
-    loaded_data = data.load_all_distillation_data(task)
-    loaded_data = loaded_data[0] if len(loaded_data) == 3 else loaded_data[0] + loaded_data[1]
+    train_data = data.load_train_data(task)
+    train_data = train_data[0] if len(train_data) == 2 else train_data[0] + train_data[2]
+    augment_data = data.load_augment_data(task, "tinybert")
+    augment_data = augment_data[0] if len(augment_data) == 1 else augment_data[0] + augment_data[1]
+    loaded_data = train_data + augment_data
     print("Data loaded...")
 
     # found perfect vocab content
