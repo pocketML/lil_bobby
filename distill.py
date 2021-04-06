@@ -7,8 +7,20 @@ import torch
 from compression.distillation.models import DistLossFunction, load_student
 from tqdm import tqdm
 
+def save_checkpoint(model, student_arch, sacred_experiment=None):
+    model_name = (
+        sacred_experiment.info["name"] if sacred_experiment is not None
+        else student_arch
+    )
+    model.save(model_name)
+    if sacred_experiment:
+        model_dir = task_utils.get_model_path(model.cfg["task"], "distilled")
+        model_path = f'{model_dir}/{model_name}.pt'
+        sacred_experiment.add_artifact(model_path)
+
 # only works for single sentence prediction
-def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experiment=None):
+def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):
+    best_val_acc = 0
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
 
@@ -40,6 +52,10 @@ def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experi
             if phase == "train":
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')
             else:
+                if accuracy > best_val_acc:
+                    best_val_acc = accuracy
+                    save_checkpoint(model, args.student_arch, sacred_experiment)
+
                 transponder.send_train_status(epoch, accuracy)
                 if sacred_experiment is not None:
                     sacred_experiment.log_scalar("validation.acc", accuracy)
@@ -106,21 +122,10 @@ def main(args, sacred_experiment=None):
         print(f'*** Dataloaders created ***')
         #optim = torch.optim.Adadelta(model.parameters())
         optim = model.get_optimizer()
-        try:
-            train_loop(
-                model, criterion, optim, dataloaders, device,
-                epochs, sacred_experiment=sacred_experiment
-            )
-        finally:
-            model_name = (
-                sacred_experiment.info["name"] if sacred_experiment is not None
-                else args.student_arch
-            )
-            model.save(model_name)
-            if sacred_experiment:
-                model_dir = task_utils.get_model_path(model.cfg["task"], "distilled")
-                model_path = f'{model_dir}/{model_name}.pt'
-                sacred_experiment.add_artifact(model_path)
+        train_loop(
+            model, criterion, optim, dataloaders, device,
+            args, epochs, sacred_experiment=sacred_experiment
+        )
 
 if __name__ == "__main__":
     ARGS = argparsers.args_distill()
