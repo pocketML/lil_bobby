@@ -18,7 +18,8 @@ class WASSERBLAT_FFN(StudentModel):
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors))
 
         self.dropout_1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
-        self.avg_pool = nn.AvgPool1d(1)
+
+        self.avg_pool = nn.AvgPool1d(2)
 
 
         self.dense_1 = nn.Linear(self.max_seq_len * (self.cfg['embedding-dim'] // 2), self.hidden_units)
