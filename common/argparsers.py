@@ -26,6 +26,7 @@ def args_cbow(args=None, namespace=None, parse_known=False):
     ap.add_argument("--embed-dim", type=int, default=16)
     ap.add_argument("--vocab-size", type=int, default=1000)
     ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
 
