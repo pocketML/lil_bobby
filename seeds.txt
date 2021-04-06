@@ -1,47 +1,47 @@
 ========================= SST-2 ===========================
-    Name		  Seed		 Acc.
+Name		            Seed		Acc.
 -----------------------------------------------------------
-Richard Feynman: 	08291959 = 	0.9633
-Chris Hadfield: 	01101938 = 	0.9644
-Donald Knuth: 		05111918 = 	0.9713 - Max
-Hayao Miyazaki: 	01051941 = 	0.9656
-MF Doom: 		07131971 = 	0.9587
+Chris Hadfield: 	    08291959 = 	0.9633
+Donald Knuth: 	        01101938 = 	0.9644
+Richard Feynman: 		05111918 = 	0.9713 - Max
+Hayao Miyazaki: 	    01051941 = 	0.9656
+MF Doom: 		        07131971 = 	0.9587
 Chester Bennington: 	03201976 = 	0.9644
 Federico García Lorca: 	06051898 = 	0.9690
-Neil Armstrong: 	08051930 = 	0.9656
-Cardi B: 		10111992 = 	0.9644
-Nina Simone: 		02211933 = 	0.9622
-Ada Lovelace:		12101815 =	0.9576
-Claude Shannon:		04301916 =	0.9587
+Neil Armstrong: 	    08051930 = 	0.9656
+Cardi B: 		        10111992 = 	0.9644
+Nina Simone: 		    02211933 = 	0.9622
+Ada Lovelace:		    12101815 =	0.9576
+Claude Shannon:		    04301916 =	0.9587
 
 ========================= MNLI ============================
-    Name		  Seed		Matched/Mismatched
+Name		            Seed		Matched/Mismatched
 -----------------------------------------------------------
-Richard Feynman: 	08291959 =	0.9035 / 0.9025	- Max avg.
-Chris Hadfield: 	01101938 =	0.9024 / 0.8993
-Donald Knuth:		05111918 =	0.9032 / 0.8978
-Hayao Miyazaki: 	01051941 =	0.9034 / 0.8994
-MF Doom: 		07131971 =	0.8993 / 0.8963
+Chris Hadfield: 	    08291959 =	0.9035 / 0.9025	- Max avg.
+Donald Knuth: 	        01101938 =	0.9024 / 0.8993
+Richard Feynman:		05111918 =	0.9032 / 0.8978
+Hayao Miyazaki: 	    01051941 =	0.9034 / 0.8994
+MF Doom: 		        07131971 =	0.8993 / 0.8963
 Chester Bennington: 	03201976 =	0.9045 / 0.9004 - Max Matched
 Federico García Lorca: 	06051898 =	0.9017 / 0.9029
-Neil Armstrong: 	08051930 =	0.9029 / 0.8941
-Cardi B: 		10111992 =	0.9020 / 0.8966
-Nina Simone: 		02211933 =	0.9030 / 0.9015
-Ada Lovelace:		12101815 =	0.9019 / 0.8992
-Claude Shannon:		04301916 =	0.9018 / 0.9029 - Max Mismatched
+Neil Armstrong: 	    08051930 =	0.9029 / 0.8941
+Cardi B: 		        10111992 =	0.9020 / 0.8966
+Nina Simone: 		    02211933 =	0.9030 / 0.9015
+Ada Lovelace:		    12101815 =	0.9019 / 0.8992
+Claude Shannon:		    04301916 =	0.9018 / 0.9029 - Max Mismatched
 
 ========================== QQP ============================
-    Name		  Seed		    Acc./F1
+Name		            Seed		Acc./F1
 -----------------------------------------------------------
-Richard Feynman: 	08291959 =	0.9227 / 0.8974
-Chris Hadfield: 	01101938 =	0.9209 / 0.8952
-Donald Knuth:		05111918 =	0.9211 / 0.8954
-Hayao Miyazaki: 	01051941 =	0.9218 / 0.8961
-MF Doom: 		07131971 =	0.9228 / 0.8973
+Chris Hadfield: 	    08291959 =	0.9227 / 0.8974
+Donald Knuth: 	        01101938 =	0.9209 / 0.8952
+Richard Feynman:		05111918 =	0.9211 / 0.8954
+Hayao Miyazaki: 	    01051941 =	0.9218 / 0.8961
+MF Doom: 		        07131971 =	0.9228 / 0.8973
 Chester Bennington: 	03201976 =	0.9217 / 0.8952
 Federico García Lorca: 	06051898 =	0.9226 / 0.8976
-Neil Armstrong: 	08051930 =	0.9228 / 0.8974
-Cardi B: 		10111992 =	0.9225 / 0.8969
-Nina Simone: 		02211933 =	0.9226 / 0.8972
-Ada Lovelace:		12101815 =	0.9237 / 0.8978 - MAX ALL!!!
-Claude Shannon:		04301916 =	0.9223 / 0.8969
+Neil Armstrong: 	    08051930 =	0.9228 / 0.8974
+Cardi B: 		        10111992 =	0.9225 / 0.8969
+Nina Simone: 		    02211933 =	0.9226 / 0.8972
+Ada Lovelace:		    12101815 =	0.9237 / 0.8978 - MAX ALL!!!
+Claude Shannon:		    04301916 =	0.9223 / 0.8969
