@@ -49,7 +49,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"))
     ap.add_argument("--student-arch", type=str, choices=student_archs, default="glue")
     ap.add_argument("--augment", type=str, choices=augmenters)
-    ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--temperature", type=int, default=1)
     ap.add_argument("--distill", action="store_true")
