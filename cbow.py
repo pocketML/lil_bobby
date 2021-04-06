@@ -65,7 +65,7 @@ class CBOW(nn.Module):
         self.load_state_dict(torch.load(f"{model_path}/cbow.pt"))
         self.eval()
 
-def train_loop(dataloader, model, criterion, num_epochs, optimizer, use_cpu=False):
+def train_loop(dataloader, model, criterion, num_epochs, optimizer, task, use_cpu=False):
     for epoch in range(num_epochs):
         print(f'* Epoch {epoch + 1}')
         total_loss = 0.0
@@ -85,6 +85,8 @@ def train_loop(dataloader, model, criterion, num_epochs, optimizer, use_cpu=Fals
 
             total_loss += loss
         print(f'|--> Loss {total_loss / len(dataloader.dataset):.4f}')
+
+        model.save(task)
 
 def get_dataloader(tokenized_data, cwemb, context_size, batch_size=32):
     context_idxs = [i for i in range(-context_size, context_size + 1) if i != 0]
@@ -115,8 +117,11 @@ def get_pretrained_cbow(
         batch_size=32, use_cpu=False
 ):
     # load data
-    loaded_data = data.load_all_distillation_data(task)
-    loaded_data = loaded_data[0] if len(loaded_data) == 3 else loaded_data[0] + loaded_data[1]
+    train_data = data.load_train_data(task)
+    train_data = train_data[0] if len(train_data) == 2 else train_data[0] + train_data[2]
+    augment_data = data.load_augment_data(task, "tinybert")
+    augment_data = augment_data[0] if len(augment_data) == 1 else augment_data[0] + augment_data[1]
+    loaded_data = train_data + augment_data
     print("Data loaded...")
 
     # found perfect vocab content
@@ -147,12 +152,8 @@ def get_pretrained_cbow(
     print(f'Sentences after prep:  {len(dataloader.dataset)}')
 
     # 100 baby squats
-    try:
-        train_loop(dataloader, model, criterion, num_epochs, optimizer)
-    finally:
-        cwobemb.vectors = model.embeddings.weight
-        print("Training interrupted, saving model to file...")
-        model.save(task)
+    train_loop(dataloader, model, criterion, num_epochs, optimizer, task, use_cpu)
+    cwobemb.vectors = model.embeddings.weight
 
     return cwobemb
 
