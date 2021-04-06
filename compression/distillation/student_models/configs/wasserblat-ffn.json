@@ -1,0 +1,7 @@
+{
+    "embedding-dim": 25,
+    "vocab-size": 1000,
+    "dropout": 0.3,
+    "lr": 1e-3,
+    "weight-decay": 1e-5
+}

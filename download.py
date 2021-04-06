@@ -99,7 +99,7 @@ def get_dataset_path(task):
 
     return folder
 
-def get_model_path(model_type):
+def get_roberta_path(model_type):
     folder = MODEL_INFO[model_type]["path"]
     if not path_exists(folder):
         urls = MODEL_DOWNLOAD_URLS[model_type]
