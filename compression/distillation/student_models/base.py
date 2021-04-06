@@ -30,6 +30,7 @@ def get_default_config(task, arch, model_name=None, use_gpu=True):
         'batch-first': True,
         'num-layers': 1,
         'batch-first': True,
+        'bidirectional': True
     }
     
     # update with base student model config settings

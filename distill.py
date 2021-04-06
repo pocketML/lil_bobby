@@ -5,6 +5,7 @@ from analysis import parameters
 import torch.nn as nn
 import torch
 from compression.distillation.models import DistLossFunction, load_student
+from tqdm import tqdm
 
 # only works for single sentence prediction
 def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experiment=None):
@@ -18,7 +19,7 @@ def train_loop(model, criterion, optim, dl, device, num_epochs=10, sacred_experi
                 model.eval()
 
             running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0
-            for x1, lens, target_labels, target_logits in dl[phase]:
+            for x1, lens, target_labels, target_logits in tqdm(dl[phase], leave=False):
                 x1 = x1.to(device)
                 target_labels = target_labels.to(device)
                 if phase == "train":
@@ -90,14 +91,10 @@ def main(args, sacred_experiment=None):
             print(f'total size:   {total_bits / 8000000:.2f}MB')
 
         distillation_data = data.load_all_distillation_data(task)
-
         print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
-
         val_data = data.load_val_data(task)
         model.to(device)
-
         print(f"*** Loaded {len(val_data[0])} validation data samples ***")
-
         criterion = DistLossFunction(
             0.5, 
             nn.MSELoss(), 
@@ -106,6 +103,7 @@ def main(args, sacred_experiment=None):
             device=device
         )
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
+        print(f'*** Dataloaders created ***')
         #optim = torch.optim.Adadelta(model.parameters())
         optim = model.get_optimizer()
         try:
