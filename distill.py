@@ -31,6 +31,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 model.eval()
 
             running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0
+            iter = 
             for x1, lens, target_labels, target_logits in tqdm(dl[phase], leave=False):
                 x1 = x1.to(device)
                 target_labels = target_labels.to(device)

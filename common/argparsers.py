@@ -56,6 +56,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--train-cbow", action="store_true")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--size", action="store_true")
+    ap.add_argument("--loadbar", action="store_true")
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
