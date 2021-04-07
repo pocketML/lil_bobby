@@ -59,9 +59,9 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     best_val_acc = accuracy
                     save_checkpoint(model, args.student_arch, sacred_experiment)
 
-                transponder.send_train_status(epoch, accuracy)
+                transponder.send_train_status(epoch, accuracy.item())
                 if sacred_experiment is not None:
-                    sacred_experiment.log_scalar("validation.acc", accuracy)
+                    sacred_experiment.log_scalar("validation.acc", accuracy.item())
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
 
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
