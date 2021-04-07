@@ -30,7 +30,7 @@ class TangBILSTM(base.StudentModel):
             #embedding
             emb = self.embedding(sents).float()
             # encoding
-            h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths)
+            h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
             return base.choose_hidden_state(h, lens=lengths, decision='last')
 
         if not self.cfg['use-sentence-pairs']:
