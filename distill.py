@@ -99,6 +99,8 @@ def main(args, sacred_experiment=None):
         data.generate_distillation_loss(args)
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)
+    elif args.eval is not None:
+        pass
     elif args.distill:
         model = load_student(task, student_type, use_gpu=use_gpu)
 
@@ -114,7 +116,7 @@ def main(args, sacred_experiment=None):
         model.to(device)
         print(f"*** Loaded {len(val_data[0])} validation data samples ***")
         criterion = DistLossFunction(
-            0.5, 
+            args.alpha, 
             nn.MSELoss(), 
             nn.CrossEntropyLoss(), 
             temperature=temperature,
