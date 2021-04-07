@@ -142,6 +142,21 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
     else:
         return DistillationData(sents1_tensors, label_tensors, logit_tensors)
 
+def get_dataloader_dict_val(model, validation_data):
+    if len(validation_data) > 2:
+        val_x1, val_x2, val_labels = validation_data
+        dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
+    else:
+        val_x1, val_labels = validation_data
+        dataset = get_datasets(model, val_x1, val_labels)
+    return DataLoader(
+            dataset,
+            batch_size=model.cfg['batch-size'],
+            shuffle=True,
+            drop_last=False,
+            collate_fn=create_collate_fn(model.cfg['vocab-size'])
+        )
+
 def get_dataloader_dict(model, distillation_data, validation_data):
     datasets = {}
     if len(distillation_data) > 3:
@@ -158,7 +173,7 @@ def get_dataloader_dict(model, distillation_data, validation_data):
             datasets[x],
             batch_size=model.cfg['batch-size'],
             shuffle=True,
-            drop_last=True,
+            drop_last=x == 'train',
             collate_fn=create_collate_fn(model.cfg['vocab-size'])) for x in ['train', 'val']}
     return dataloaders
 

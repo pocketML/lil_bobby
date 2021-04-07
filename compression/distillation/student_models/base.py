@@ -91,10 +91,10 @@ def get_dist_loss_function(alpha, criterion_distill, criterion_label, temperatur
     return loss
 
 # returns the last hidden state (both fw and bw) for each embedded sentence
-def pack_bilstm_unpack(bilstm, cfg, embedded, lens):
+def pack_bilstm_unpack(bilstm, cfg, embedded, lens, batch_size):
     def init_hidden():
-        h = torch.zeros(2, cfg['batch-size'], cfg['encoder-hidden-dim'])
-        c = torch.zeros(2, cfg['batch-size'], cfg['encoder-hidden-dim'])
+        h = torch.zeros(2, batch_size, cfg['encoder-hidden-dim'])
+        c = torch.zeros(2, batch_size, cfg['encoder-hidden-dim'])
         if cfg['use-gpu']:
             h = h.cuda()
             c = c.cuda()
