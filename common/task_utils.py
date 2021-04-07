@@ -134,8 +134,9 @@ def get_model_path(task, model_type):
     model_path = f"models/{model_type}/{task}"
     hpc_shared_path = "/home/data_shares/lil_bobby"
 
-    if os.path.exists(hpc_shared_path):
-        model_path = f"{hpc_shared_path}/{model_path}"
+    # Disabled for now cause of permission stuff
+    # if os.path.exists(hpc_shared_path):
+    #     model_path = f"{hpc_shared_path}/{model_path}"
 
     if not os.path.exists(model_path):
         os.makedirs(model_path, exist_ok=True)
