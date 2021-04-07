@@ -38,7 +38,7 @@ def load_student(task, student_type, use_gpu, model_name=None):
     cfg = base.get_default_config(task, student_type, use_gpu=use_gpu, model_name=model_name)
     try:
         model = STUDENT_MODELS[student_type](cfg)
-    except:
+    except KeyError:
         raise Exception(f'Student type "{student_type}" not recognized')
     # load state dict
     if model_name is not None:

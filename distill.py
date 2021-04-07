@@ -4,7 +4,7 @@ from compression.distillation import data_augment
 from analysis import parameters
 import torch.nn as nn
 import torch
-from compression.distillation.models import DistLossFunction, load_student
+from compression.distillation.models import DistLossFunction, load_student, load_teacher
 from tqdm import tqdm
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
@@ -59,9 +59,9 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     best_val_acc = accuracy
                     save_checkpoint(model, args.student_arch, sacred_experiment)
 
-                transponder.send_train_status(epoch, accuracy)
+                transponder.send_train_status(epoch, accuracy.item())
                 if sacred_experiment is not None:
-                    sacred_experiment.log_scalar("validation.acc", accuracy)
+                    sacred_experiment.log_scalar("validation.acc", accuracy.item())
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
 
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
@@ -97,10 +97,10 @@ def main(args, sacred_experiment=None):
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
-    
-    if args.generate_loss is not None:
-        data.generate_distillation_loss(args)
 
+    if args.generate_loss is not None:
+        teacher_model = load_teacher(args.task, args.checkpoint_path, args.cpu)
+        data.generate_distillation_loss(args, teacher_model)
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)
 
