@@ -55,6 +55,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')
             else:
                 if accuracy > best_val_acc:
+                    print(f'Saving new best model')
                     best_val_acc = accuracy
                     save_checkpoint(model, args.student_arch, sacred_experiment)
 
@@ -63,10 +64,13 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     sacred_experiment.log_scalar("validation.acc", accuracy)
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
 
-def evaluate_distilled_model(model, dl, device, sacred_experiment=None):
+def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
+    model.to(device)
     model.eval()
     running_corrects, num_examples = 0.0, 0.0
-    for x1, lens, target_labels, _ in dl['val']:
+    iterator = tqdm(dl, leave=False) if args.loadbar else dl
+
+    for x1, lens, target_labels, _ in iterator:
         x1 = x1.to(device)
         target_labels = target_labels.to(device)
         torch.set_grad_enabled(False)
@@ -75,6 +79,7 @@ def evaluate_distilled_model(model, dl, device, sacred_experiment=None):
         target_labels = target_labels.squeeze()
         running_corrects += torch.sum(preds == target_labels.data)
         num_examples += len(lens)
+
     accuracy = running_corrects / num_examples
     if sacred_experiment is not None:
         sacred_experiment.log_scalar("validation.acc", accuracy)
@@ -88,33 +93,32 @@ def main(args, sacred_experiment=None):
     epochs = args.epochs
     task = args.task
     student_type = args.student_arch
-    print_size = args.size
     temperature = args.temperature
-
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
     
     if args.generate_loss is not None:
         data.generate_distillation_loss(args)
+
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)
+
     elif args.eval is not None:
-        pass
+        model = load_student(task, student_type, use_gpu=use_gpu, model_name=args.eval)
+        val_data = data.load_val_data(task)
+        dl = data.get_dataloader_dict_val(model, val_data)
+        evaluate_distilled_model(model, dl, device, args, sacred_experiment)
+
     elif args.distill:
         model = load_student(task, student_type, use_gpu=use_gpu)
-
-        if print_size:
-            total_params, total_bits = parameters.get_model_size(model)
-            print(type(model))
-            print(f'total params: {total_params / 1000}K)')
-            print(f'total size:   {total_bits / 8000000:.2f}MB')
-
         distillation_data = data.load_all_distillation_data(task)
         print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
+
         val_data = data.load_val_data(task)
         model.to(device)
         print(f"*** Loaded {len(val_data[0])} validation data samples ***")
+
         criterion = DistLossFunction(
             args.alpha, 
             nn.MSELoss(), 
@@ -124,7 +128,7 @@ def main(args, sacred_experiment=None):
         )
         dataloaders = data.get_dataloader_dict(model, distillation_data, val_data)
         print(f'*** Dataloaders created ***')
-        #optim = torch.optim.Adadelta(model.parameters())
+
         optim = model.get_optimizer()
         train_loop(
             model, criterion, optim, dataloaders, device,
