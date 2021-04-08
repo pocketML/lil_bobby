@@ -97,7 +97,7 @@ def main(args, sacred_experiment=None):
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
-    
+
     if args.generate_loss is not None:
         teacher_model = load_teacher(args.task, args.checkpoint_path, args.cpu)
         data.generate_distillation_loss(args, teacher_model)
