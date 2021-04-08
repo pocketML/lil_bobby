@@ -17,8 +17,8 @@ def get_default_config(task, arch, model_name=None, use_gpu=True):
     base_path = f'compression/distillation/student_models/configs/base.json'
     cfg = update_config_from_file({}, base_path)
     cfg['task'] = task
-    cfg['num-classes'] = TASK_INFO[task]['settings']['num-classes'],
-    cfg['use-sentence-pairs'] = TASK_INFO[task]['settings']['use-sentence-pairs'],
+    cfg['num-classes'] = TASK_INFO[task]['settings']['num-classes']
+    cfg['use-sentence-pairs'] = TASK_INFO[task]['settings']['use-sentence-pairs']
     
     # update with base student model config settings
     filepath = f'compression/distillation/student_models/configs/{arch}.json'
