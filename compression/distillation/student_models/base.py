@@ -13,6 +13,7 @@ def update_config_from_file(cfg, path):
     return cfg
 
 def get_default_config(task, arch, model_name=None, use_gpu=True):
+    # get base config
     base_path = f'compression/distillation/student_models/configs/base.json'
     cfg = update_config_from_file({}, base_path)
     cfg['task'] = task
