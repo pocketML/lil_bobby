@@ -1,0 +1,17 @@
+{
+    "task": "sst-2",
+    "num-classes": 2,
+    "use-sentence-pairs": false,
+    "batch-size": 50,
+    "use-gpu": true,
+    "encoder-hidden-dim": 150,
+    "embedding-dim": 25,
+    "vocab-size": 5000,
+    "dropout": 0.1,
+    "lr": 5e-4,
+    "weight-decay": 1e-3,
+    "cls-hidden-dim": 200,
+    "batch-first": true,
+    "num-layers": 1,
+    "bidirectional": true
+}
