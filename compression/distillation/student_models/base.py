@@ -72,6 +72,8 @@ class StudentModel(nn.Module):
         self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
         self.eval()
 
+    def encode(self, sentence):
+        return self.bpe.encode_ids(sentence)
 
 # combines distillation loss function with label loss function
 def get_dist_loss_function(alpha, criterion_distill, criterion_label, temperature=1.0, device=torch.device('cuda')):
