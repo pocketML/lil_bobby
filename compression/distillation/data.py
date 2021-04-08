@@ -2,7 +2,6 @@ from common.task_utils import TASK_INFO
 from fairseq.data.data_utils import collate_tokens
 from torch.utils.data import Dataset, DataLoader
 import torch
-import compression.distillation.models as models
 import os
 from glob import glob
 
@@ -100,9 +99,8 @@ def generate_for_train_data(model, args):
                     logits_str = ','.join([str(x) for x in logits])
                     out.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
 
-def generate_distillation_loss(args):
-    model = models.load_teacher(args.task, args.checkpoint_path, args.cpu)
-    generate_for_train_data(model, args)
+def generate_distillation_loss(args, teacher):
+    generate_for_train_data(teacher, args)
  
 class DistillationData(Dataset):
     def __init__(self, sents, labels, logits=None) -> None:
@@ -137,9 +135,9 @@ class DistillationPairData(Dataset):
 def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
     label_tensors = [torch.LongTensor([model.label_dict[x.strip()]]) for x in labels]
     logit_tensors = None if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
-    sents1_tensors = [torch.LongTensor(model.bpe.encode_ids(sent)) for sent in sentences1]
+    sents1_tensors = [torch.LongTensor(model.encode(sent)) for sent in sentences1]
     if sentences2 is not None:
-        sents2_tensors = [torch.LongTensor(model.bpe.encode_ids(sent)) for sent in sentences2]
+        sents2_tensors = [torch.LongTensor(model.encode(sent)) for sent in sentences2]
         return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors)
     else:
         return DistillationData(sents1_tensors, label_tensors, logit_tensors)

@@ -4,7 +4,7 @@ from compression.distillation import data_augment
 from analysis import parameters
 import torch.nn as nn
 import torch
-from compression.distillation.models import DistLossFunction, load_student
+from compression.distillation.models import DistLossFunction, load_student, load_teacher
 from tqdm import tqdm
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
@@ -99,8 +99,8 @@ def main(args, sacred_experiment=None):
         torch.cuda.manual_seed(args.seed)
     
     if args.generate_loss is not None:
-        data.generate_distillation_loss(args)
-
+        teacher_model = load_teacher(args.task, args.checkpoint_path, args.cpu)
+        data.generate_distillation_loss(args, teacher_model)
     elif args.augment:
         data_augment.augment(args.task, args.augment, args.seed)
 

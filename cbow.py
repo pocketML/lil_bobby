@@ -1,5 +1,6 @@
-from os import X_OK
+import pickle
 import torch
+import numpy as np
 from common import argparsers
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
@@ -26,7 +27,7 @@ class CBOWEmbeddings():
         self.vectors = None
         self.word_to_idx = None
         self.embedding_dim = embedding_dim
-        self.specials = None
+        self.specials = {'unknown': 0, 'pad': 1}
 
     def tokenize(self, sentence):
         out = []
@@ -38,12 +39,42 @@ class CBOWEmbeddings():
             out.append(str(word))
         return out
 
+    def create_vocab(self, data, vocab_size):
+        tokenized_data = [self.tokenize(sent) for sent in data]
+        vocab_counts = Counter([x for xs in tokenized_data for x in xs])
+        vocab = list(vocab_counts.items())
+        vocab.sort(key=lambda x: x[1], reverse=True)
+        vocab = list(zip(*vocab[:vocab_size - 2]))[0]
+        print("Vocabulary generated...")
+
+        self.word_to_idx = {word: i + len(self.specials) for i, word in enumerate(vocab)}
+
+        return tokenized_data
+
+    def encode(self, sentence):
+        return torch.LongTensor([self.word_to_idx.get(w, self.specials['unknown']) for w in sentence])
+
+    def save(self, task):
+        model_path = get_model_path(task, "embeddings")
+        if self.vectors is None:
+            raise ValueError("Missing trained embeddings during save!")
+        np.save(f"{model_path}/vectors.npy", self.vectors)
+        with open(f"{model_path}/dict.bin", "wb") as fp:
+            pickle.dump(self.word_to_idx, fp)
+
+    def load(self, task):
+        model_path = get_model_path(task, "embeddings")
+        self.vectors = np.load(f"{model_path}/vectors.npy")
+        with open(f"{model_path}/dict.bin", "rb") as fp:
+            self.word_to_idx = pickle.load(fp)
+
 class CBOW(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, context_size, specials, batch_size=32):
+    def __init__(self, cbowemb, vocab_size, context_size, batch_size=32):
         super().__init__()
         self.batch_size = batch_size
-        self.embeddings = nn.Embedding(vocab_size, embedding_dim, padding_idx=specials['pad'])
-        self.fc1 = nn.Linear(context_size * embedding_dim * 2, 128)
+        self.cbowemb = cbowemb
+        self.embeddings = nn.Embedding(vocab_size, cbowemb.embedding_dim, padding_idx=cbowemb.specials['pad'])
+        self.fc1 = nn.Linear(context_size * cbowemb.embedding_dim * 2, 128)
         self.fc2 = nn.Linear(128, vocab_size)
         self.relu = nn.ReLU()
         self.activation = nn.LogSoftmax(dim=1)
@@ -59,6 +90,8 @@ class CBOW(nn.Module):
     def save(self, task):
         model_path = get_model_path(task, "embeddings")
         torch.save(self.state_dict(), f"{model_path}/cbow.pt")
+        self.cbowemb.vectors = self.embeddings.weight.detach().numpy()
+        self.cbowemb.save(task)
 
     def load(self, task):
         model_path = get_model_path(task, "embeddings")
@@ -88,7 +121,7 @@ def train_loop(dataloader, model, criterion, num_epochs, optimizer, task, use_cp
 
         model.save(task)
 
-def get_dataloader(tokenized_data, cwemb, context_size, batch_size=32):
+def get_dataloader(tokenized_data, cbowemb, context_size, batch_size=32):
     context_idxs = [i for i in range(-context_size, context_size + 1) if i != 0]
     train_x = []
     train_y = []
@@ -98,8 +131,8 @@ def get_dataloader(tokenized_data, cwemb, context_size, batch_size=32):
         for i in range(context_size, len(sent) - context_size):
             context = [sent[i + idx] for idx in context_idxs]
             target = sent[i]
-            x = torch.LongTensor([cwemb.word_to_idx.get(w, cwemb.specials['unknown']) for w in context])
-            y = torch.LongTensor([cwemb.word_to_idx.get(target, cwemb.specials['unknown'])])
+            x = cbowemb.encode(context)
+            y = cbowemb.encode([target])
             train_x.append(x)
             train_y.append(y)
 
@@ -111,7 +144,13 @@ def get_dataloader(tokenized_data, cwemb, context_size, batch_size=32):
         drop_last=True
     )
 
-def get_pretrained_cbow(
+def load_pretrained_embeddings(task, embedding_dim):
+    cbowemb = CBOWEmbeddings(embedding_dim)
+    cbowemb.load(task)
+
+    return cbowemb
+
+def train_embeddings(
         context_size, task, embedding_dim,
         vocab_size, num_epochs=50,
         batch_size=32, use_cpu=False
@@ -125,44 +164,35 @@ def get_pretrained_cbow(
     print("Data loaded...")
 
     # found perfect vocab content
-    cwobemb = CBOWEmbeddings(embedding_dim)
-    tokenized_data = [cwobemb.tokenize(sent) for sent in loaded_data]
-    vocab_counts = Counter([x for xs in tokenized_data for x in xs])
-    vocab = list(vocab_counts.items())
-    vocab.sort(key=lambda x: x[1], reverse=True)
-    vocab = list(zip(*vocab[:vocab_size - 2]))[0]
-    print("Vocabulary generated...")
-
-    # embeddings and model stuff
-    cwobemb.specials = {'unknown': 0, 'pad': 1}
-    cwobemb.word_to_idx = {word: i + len(cwobemb.specials) for i, word in enumerate(vocab)}
-    model = CBOW(vocab_size, embedding_dim, context_size, cwobemb.specials, batch_size)
+    cbowemb = CBOWEmbeddings(embedding_dim)
+    tokenized_data = cbowemb.create_vocab(loaded_data, vocab_size)
+    model = CBOW(cbowemb, vocab_size, context_size, batch_size)
     if not use_cpu:
         model = model.cuda()
 
     criterion = nn.NLLLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001)
-    
+
     print("Preparing to train the embeddings...")
 
     # prepare data for training
-    dataloader = get_dataloader(tokenized_data, cwobemb, context_size, batch_size)
+    dataloader = get_dataloader(tokenized_data, cbowemb, context_size, batch_size)
 
     print(f"Sentences before prep: {len(tokenized_data)}")
     print(f'Sentences after prep:  {len(dataloader.dataset)}')
 
     # 100 baby squats
     train_loop(dataloader, model, criterion, num_epochs, optimizer, task, use_cpu)
-    cwobemb.vectors = model.embeddings.weight
 
-    return cwobemb
+    return cbowemb
 
 def main(args, sacred_experiment=None):
-    cbowemb = get_pretrained_cbow(
-        args.context_size, args.task,
-        args.embed_dim, args.vocab_size,
-        args.epochs, args.batch_size, args.cpu
-    )
+    # cbowemb = train_embeddings(
+    #     args.context_size, args.task,
+    #     args.embed_dim, args.vocab_size,
+    #     args.epochs, args.batch_size, args.cpu
+    # )
+    load_pretrained_embeddings("sst-2", 16)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_cbow()

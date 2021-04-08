@@ -1,26 +1,26 @@
 import torch
 import torch.nn as nn
-from bpemb import BPEmb
+from cbow import load_pretrained_embeddings
 from compression.distillation.student_models.base import StudentModel
 
 class WASSERBLAT_FFN(StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.max_seq_len = 100
+        self.max_seq_len = 150
         self.hidden_units = 64
 
         # embedding
-        self.bpe = BPEmb(
-            lang="en", dim=self.cfg['embedding-dim'],
-            vs=self.cfg['vocab-size'], add_pad_emb=True
-        )
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors))
+        # self.bpe = BPEmb(
+        #     lang="en", dim=self.cfg['embedding-dim'],
+        #     vs=self.cfg['vocab-size'], add_pad_emb=True
+        # )
+        self.cbow = load_pretrained_embeddings(cfg["task"], cfg["embedding-dim"])
+        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.cbow.vectors))
 
         self.dropout_1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
 
         self.avg_pool = nn.AvgPool1d(2)
-
 
         self.dense_1 = nn.Linear(self.max_seq_len * (self.cfg['embedding-dim'] // 2), self.hidden_units)
         self.relu_1 = nn.ReLU()
@@ -54,3 +54,6 @@ class WASSERBLAT_FFN(StudentModel):
         x = self.dropout_3(x)
 
         return self.classifier(x)
+
+    def encode(self, sentence):
+        return self.cbow.encode(sentence)
