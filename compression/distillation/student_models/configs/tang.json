@@ -1,8 +1,11 @@
 {
-    "embedding-dim" : 25,
-    "vocab-size": 1000,
-    "dropout": 0.3,
-    "lr": 1e-3,
+    "embedding-dim" : 300,
+    "vocab-size": 3000,
+    "dropout": 0.1,
+    "lr": 1,
     "weight-decay": 1e-5,
-    "batch-size": 50
+    "batch-size": 50,
+    "cls-hidden-dim": 200,
+    "encoder-hidden-dim": 150,
+    "rho": 0.95
 }
