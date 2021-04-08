@@ -58,6 +58,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--loadbar", action="store_true")
     ap.add_argument("--eval", type=str, default=None)
     ap.add_argument("--alpha", type=float, default=0.5)
+    ap.add_argument("--early-stopping", type=int, default=5)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)

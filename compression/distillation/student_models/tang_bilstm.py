@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from bpemb import BPEmb
+from torch.optim.adadelta import Adadelta
 from compression.distillation.student_models import base
 
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
@@ -24,6 +25,13 @@ class TangBILSTM(base.StudentModel):
             nn.Linear(inp_d, self.cfg['cls-hidden-dim']),
             nn.ReLU(), 
             nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes']))
+
+    def get_optimizer(self):
+        return Adadelta(
+            self.parameters(), lr=self.cfg['lr'],
+            rho=self.cfg['rho']
+        )
+
 
     def forward(self, x, lens):
         def embed_encode_sents(sents, lengths):

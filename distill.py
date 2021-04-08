@@ -21,6 +21,7 @@ def save_checkpoint(model, student_arch, sacred_experiment=None):
 # only works for single sentence prediction
 def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):
     best_val_acc = 0
+    no_improvement = 0
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
 
@@ -58,11 +59,15 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     print(f'Saving new best model')
                     best_val_acc = accuracy
                     save_checkpoint(model, args.student_arch, sacred_experiment)
-
+                    no_improvement = 0
+                else:
+                    no_improvement += 1
                 transponder.send_train_status(epoch, accuracy.item())
                 if sacred_experiment is not None:
                     sacred_experiment.log_scalar("validation.acc", accuracy.item())
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
+            if no_improvement == args.early_stopping:
+                break
 
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
     model.to(device)
