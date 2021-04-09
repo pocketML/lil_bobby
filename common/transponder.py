@@ -22,6 +22,6 @@ def send_train_start(experiment, experiment_args, total_epochs=None):
 def send_train_status(epoch, acc=None):
     data = {"epoch": epoch}
     if acc is not None:
-        data["accuracy"] = f"{acc:.2f}"
+        data["accuracy"] = f"{acc:.4f}"
 
     make_request(URL, data)

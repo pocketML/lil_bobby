@@ -67,7 +67,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     sacred_experiment.log_scalar("validation.acc", accuracy.item())
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
             if no_improvement == args.early_stopping:
-                break
+                return
 
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
     model.to(device)
