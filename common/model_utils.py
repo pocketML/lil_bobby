@@ -1,5 +1,11 @@
-import torch
+import os
+from fairseq.models.roberta import RobertaModel
+from common import task_utils
+from compression.distillation.models import STUDENT_MODELS
+from compression.distillation.student_models import base
+from preprocess import download
 
+# roberta models
 MODEL_INFO = {
     "base": {
         "path": "models/roberta.base",
@@ -38,18 +44,57 @@ def get_transformer_layers(model):
     transformers = {k:v for k,v in layers.items() if 'layer_' in k}
     return transformers
 
-# assuming weights are stored in 2-dimensional tensor
-# opt is lambda that takes the old weight value and sets a new
-def map_weights_inplace(layer, opt):
-    for name, param in layer:
-        if 'weight' in name:
-            print(name, param.size())
-            with torch.no_grad():
-                size = list(param.size())
-                for i in range(size[0]):
-                    for j in range(size[1]):
-                        value = param[i,j]
-                        param[i][j] = opt(value)
+def get_model_path(task, model_type):
+    """
+    Returns a path to where a type of model is saved.
+    F.x. models/sst-2/finetuned.
+    """
+    if model_type not in ("finetuned", "distilled", "embeddings"):
+        raise ValueError("Invalid model type.")
 
-def get_roberta_base(path):
-    pass
+    model_path = f"models/{model_type}/{task}"
+
+    #hpc_shared_path = "/home/data_shares/lil_bobby"
+    # Disabled for now cause of permission stuff
+    # if os.path.exists(hpc_shared_path):
+    #     model_path = f"{hpc_shared_path}/{model_path}"
+
+    os.makedirs(model_path, exist_ok=True)
+    return model_path
+
+def load_teacher(task, checkpoint_path, use_cpu=False, model_name='checkpoint_best.pt'):
+    bin_path = task_utils.get_processed_path(task)
+    model = RobertaModel.from_pretrained(
+        checkpoint_path, #f'models/experiments/finetune_{task}',
+        checkpoint_file=model_name,
+        data_name_or_path=bin_path
+    )
+    model.eval()
+    if not use_cpu:
+        model.cuda()
+    return model
+
+def load_roberta_model(arch, use_cpu=False):
+    model_dir = download.get_roberta_path('base' if arch == 'roberta_base' else 'large')
+    model = RobertaModel.from_pretrained(model_dir, checkpoint_file='model.pt')
+    if not use_cpu:
+        model.cuda()
+    model.eval()
+    return model
+
+def load_student(task, student_type, use_gpu, model_name=None):
+    cfg = base.get_default_config(task, student_type, use_gpu=use_gpu, model_name=model_name)
+    try:
+        model = STUDENT_MODELS[student_type](cfg)
+    except KeyError:
+        raise Exception(f'Student type "{student_type}" not recognized')
+    # load state dict
+    if model_name is not None:
+        model.load(model_name)
+    return model
+
+def is_finetuned_model(arch):
+    return arch in MODEL_INFO.keys()
+
+def is_student_model(arch):
+    return arch in STUDENT_MODELS.keys()
