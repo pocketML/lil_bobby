@@ -8,7 +8,7 @@ import torch.optim as optim
 from collections import Counter
 import unicodedata
 from compression.distillation import data
-from common.task_utils import get_model_path
+from common.model_utils import get_model_path
 
 class CBOWDataset(Dataset):
     def __init__(self, sentences, targets):

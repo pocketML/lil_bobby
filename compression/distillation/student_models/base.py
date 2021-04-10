@@ -3,7 +3,8 @@ import json
 import torch
 from torch import nn
 from torch.optim import Adam
-from common.task_utils import TASK_LABEL_DICT, TASK_INFO, get_model_path
+from common.task_utils import TASK_LABEL_DICT, TASK_INFO
+from common.model_utils import get_model_path
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 def update_config_from_file(cfg, path):
