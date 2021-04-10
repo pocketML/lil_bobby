@@ -91,6 +91,7 @@ def download_and_process_data(task, folder):
     if task in GLUE_TASKS: # Glue task needs preprocessing.
         preprocess_glue_task(task)
 
+
 def get_dataset_path(task):
     folder = TASK_INFO[task]["path"]
     if not path_exists(folder):
