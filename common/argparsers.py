@@ -47,7 +47,7 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
     ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"), default=None)
     ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--seeed", type=int, default=1337)
+    ap.add_argument("--seed", type=int, default=1337)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
