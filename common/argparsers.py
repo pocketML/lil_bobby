@@ -42,11 +42,11 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
     augmenters = ["tinybert", "masked", "pos", "ngram"]
     teacher_archs = ["roberta_large", "roberta_base"]
 
-    ap.add_argument("--task-preprocess", action="store_true")
-    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
+    ap.add_argument("--glue-preprocess", action="store_true")
     ap.add_argument("--augment", type=str, choices=augmenters, default=None)
-    ap.add_argument("--generate-distillation-loss", type=str, choices=("processed", "tinybert"), default=None)
+    ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"), default=None)
+    ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
+    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--seeed", type=int, default=1337)
 
     if parse_known:
