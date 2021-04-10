@@ -28,8 +28,7 @@ if __name__ == "__main__":
     if EXPERIMENT_ARGS.output_path is not None:
         OUTPUT_DIR = EXPERIMENT_ARGS.output_path
 
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     OUTPUT_STORAGE = FileStorageObserver(OUTPUT_DIR)
 

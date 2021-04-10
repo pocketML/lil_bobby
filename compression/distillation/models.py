@@ -1,6 +1,3 @@
-from fairseq.models.roberta import RobertaModel
-from common.task_utils import TASK_INFO
-import download
 
 from compression.distillation.student_models.tang_bilstm import TangBILSTM
 from compression.distillation.student_models.glue_bilstm import GlueBILSTM
@@ -13,34 +10,3 @@ STUDENT_MODELS = {
     'wasserblat-ffn': WASSERBLAT_FFN,
     'tang': TangBILSTM
 }
-
-def load_teacher(task, checkpoint_path, use_cpu=False):
-    bin_path = f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
-    model = RobertaModel.from_pretrained(
-        checkpoint_path, #f'models/experiments/finetune_{task}',
-        checkpoint_file='checkpoint_best.pt',
-        data_name_or_path=bin_path
-    )
-    model.eval()
-    if not use_cpu:
-        model.cuda()
-    return model
-
-def load_roberta_model(arch, use_cpu=False):
-    model_dir = download.get_roberta_path('base' if arch == 'roberta_base' else 'large')
-    model = RobertaModel.from_pretrained(model_dir, checkpoint_file='model.pt')
-    if not use_cpu:
-        model.cuda()
-    model.eval()
-    return model
-
-def load_student(task, student_type, use_gpu, model_name=None):
-    cfg = base.get_default_config(task, student_type, use_gpu=use_gpu, model_name=model_name)
-    try:
-        model = STUDENT_MODELS[student_type](cfg)
-    except KeyError:
-        raise Exception(f'Student type "{student_type}" not recognized')
-    # load state dict
-    if model_name is not None:
-        model.load(model_name)
-    return model
