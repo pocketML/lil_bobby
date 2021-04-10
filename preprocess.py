@@ -7,7 +7,7 @@ def main(args):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
 
-    if args.task_preprocess:
+    if args.glue_preprocess:
         TARGET_FOLDER = download.TASK_INFO[args.task]["path"]
         download.download_and_process_data(args.task, TARGET_FOLDER)
     elif args.augment is not None:
