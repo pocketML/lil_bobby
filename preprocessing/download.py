@@ -1,7 +1,8 @@
 import os
 import shutil
 import requests
-from common import argparsers, preprocess_GLUE_tasks
+from common import argparsers
+from preprocess import preprocess_GLUE_tasks
 from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO
 
@@ -57,8 +58,7 @@ MODEL_PATHS = {
 
 def download_and_extract(urls, folder):
     base_folder = "/".join(folder.split("/")[:-1]) + "/"
-    if not os.path.exists(base_folder):
-        os.makedirs(base_folder)
+    os.makedirs(base_folder, exist_ok=True)
 
     for url in urls:
         print(f"Downloading '{url}' to '{base_folder}'...", flush=True)
@@ -71,8 +71,7 @@ def download_and_extract(urls, folder):
                 fp.write(chunk)
 
         if "json" in filetype or "tsv" in filetype or "txt" in filetype:
-            if not os.path.exists(folder):
-                os.mkdir(folder)
+            os.makedirs(folder, exist_ok=True)
             shutil.move(filename, f"{folder}/{filename}")
         else: # File is an archive.
             shutil.unpack_archive(filename, base_folder)

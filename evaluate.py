@@ -1,6 +1,8 @@
-from fairseq.models.roberta import RobertaModel
-from common import argparsers, task_utils
+from common import argparsers, task_utils, model_utils, data_utils
+from tqdm import tqdm
+import torch
 
+# for finetuned RobertaModel
 def prepare_eval_data(model, task, filepath):
     eval_data = []
     with open(filepath, encoding="utf-8") as fin:
@@ -31,6 +33,7 @@ def update_f1_counts(pred_label, target, tp, fp, fn):
     return tp, fp, fn
 
 # f1 is the harmonic mean of the precision and recall
+# only for roberta_model at the moment
 def evaluate_accuracy(model, task, val_data_path, include_f1=False):
     eval_data = prepare_eval_data(model, task, val_data_path)
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
@@ -49,42 +52,62 @@ def evaluate_accuracy(model, task, val_data_path, include_f1=False):
     else:
         return accuracy
 
-def main(args, sacred_experiment=None):
-    data_path = f'{task_utils.TASK_INFO[args.task]["path"]}/processed/{args.task}-bin/'
-
-    model = RobertaModel.from_pretrained(
-        'checkpoints', # TODO should be fixed eventually
-        checkpoint_file=args.model_name,
-        data_name_or_path=data_path
-    )
-    if not args.cpu:
-        model.cuda()
+def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
+    model.to(device)
     model.eval()
+    running_corrects, num_examples = 0.0, 0.0
+    iterator = tqdm(dl, leave=False) if args.loadbar else dl
 
+    for x1, lens, target_labels, _ in iterator:
+        x1 = x1.to(device)
+        target_labels = target_labels.to(device)
+        torch.set_grad_enabled(False)
+        out_logits = model(x1, lens)
+        _, preds = torch.max(out_logits, 1)
+        target_labels = target_labels.squeeze()
+        running_corrects += torch.sum(preds == target_labels.data)
+        num_examples += len(lens)
+
+    accuracy = running_corrects / num_examples
+    if sacred_experiment is not None:
+        sacred_experiment.log_scalar("validation.acc", accuracy)
+    print(f'|--> val accuracy: {accuracy:.4f}')
+
+def main(args, sacred_experiment=None):   
     task = args.task
-    val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv'
+    val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv' 
+    is_finetuned_model = model_utils.is_finetuned_model(args.arch)
+    device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
-    if task in ['sst-2', 'rte']:
-        accuracy = evaluate_accuracy(model, task, val_data_path)
-        print(f'| Accuracy: {accuracy:.4f}')
-        if sacred_experiment is not None:
-            sacred_experiment.log_scalar("test.accuracy", accuracy)
-    elif task in ['mnli']:
-        for subtask in ['matched', 'mismatched']:
-            val_data_path = task_utils.TASK_INFO[task]["path"] + f'/dev_{subtask}.tsv'
-            print(f'{task}-{subtask}')
+    if is_finetuned_model:
+        model = model_utils.load_teacher(args.task, 'checkpoints', use_cpu=args.cpu, model_name=args.model_name)
+        model.eval()
+        if task in ['sst-2', 'rte']:
             accuracy = evaluate_accuracy(model, task, val_data_path)
             print(f'| Accuracy: {accuracy:.4f}')
             if sacred_experiment is not None:
-                sacred_experiment.log_scalar(f"test.accuracy.{subtask}", accuracy)
-    elif task in ['qqp']:
-        accuracy, f1 = evaluate_accuracy(model, task, val_data_path, include_f1=True)
-        print(f'| Accuracy: {accuracy:.4f}, f1: {f1:.4f}')
-        if sacred_experiment is not None:
-            sacred_experiment.log_scalar("test.accuracy", accuracy)
-            sacred_experiment.log_scalar("test.f1", f1)
-    else:
-        raise Exception(f'task {task} not currently supported')
+                sacred_experiment.log_scalar("test.accuracy", accuracy)
+        elif task in ['mnli']:
+            for subtask in ['matched', 'mismatched']:
+                val_data_path = task_utils.TASK_INFO[task]["path"] + f'/dev_{subtask}.tsv'
+                print(f'{task}-{subtask}')
+                accuracy = evaluate_accuracy(model, task, val_data_path)
+                print(f'| Accuracy: {accuracy:.4f}')
+                if sacred_experiment is not None:
+                    sacred_experiment.log_scalar(f"test.accuracy.{subtask}", accuracy)
+        elif task in ['qqp']:
+            accuracy, f1 = evaluate_accuracy(model, task, val_data_path, include_f1=True)
+            print(f'| Accuracy: {accuracy:.4f}, f1: {f1:.4f}')
+            if sacred_experiment is not None:
+                sacred_experiment.log_scalar("test.accuracy", accuracy)
+                sacred_experiment.log_scalar("test.f1", f1)
+        else:
+            raise Exception(f'task {task} not currently supported')
+    else: # we have a student model
+        model = model_utils.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
+        val_data = data_utils.load_val_data(task)
+        dl = data_utils.get_dataloader_dict_val(model, val_data)
+        evaluate_distilled_model(model, dl, device, args, sacred_experiment)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()
