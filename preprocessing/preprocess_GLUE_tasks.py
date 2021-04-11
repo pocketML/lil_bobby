@@ -8,8 +8,7 @@ from common.task_utils import TASK_INFO
 BPEMB_PATH = f"data/bpemb"
 
 def download_bpemb_file(filename):
-    if not os.path.exists(BPEMB_PATH):
-        os.mkdir(BPEMB_PATH)
+    os.makedirs(BPEMB_PATH, exist_ok=True)
 
     filepath = f"{BPEMB_PATH}/{filename}"
     response = requests.get(f"https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/{filename}")

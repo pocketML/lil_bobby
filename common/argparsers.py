@@ -3,7 +3,8 @@ from common.task_utils import TASK_INFO
 from common.model_utils import MODEL_INFO
 from compression.distillation.models import STUDENT_MODELS
 
-finetune_tasks = list(TASK_INFO.keys())
+FINETUNE_TASKS = list(TASK_INFO.keys())
+MODEL_ARCHS = list(MODEL_INFO.keys()) + list(STUDENT_MODELS.keys())
 
 # define arguments for model compression
 def args_compress(args=None, namespace=None, parse_known=False):
@@ -21,7 +22,7 @@ def args_compress(args=None, namespace=None, parse_known=False):
 
 def args_cbow(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--task", choices=finetune_tasks, required=True)
+    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--context-size", type=int, default=2)
     ap.add_argument("--embed-dim", type=int, default=16)
     ap.add_argument("--vocab-size", type=int, default=1000)
@@ -35,20 +36,32 @@ def args_cbow(args=None, namespace=None, parse_known=False):
 
     return ap.parse_args(args=args, namespace=namespace)
 
+def args_preprocess(args=None, namespace=None, parse_known=False):
+    ap = argparse.ArgumentParser()
+
+    augmenters = ["tinybert", "masked", "pos", "ngram"]
+    teacher_archs = ["roberta_large", "roberta_base"]
+
+    ap.add_argument("--glue-preprocess", action="store_true")
+    ap.add_argument("--augment", type=str, choices=augmenters, default=None)
+    ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"), default=None)
+    ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
+    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
+    ap.add_argument("--seed", type=int, default=1337)
+
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+    return ap.parse_args(args=args, namespace=namespace)
+
 # define arguments for knowledge distillation
 def args_distill(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
-    augmenters = ["tinybert", "masked", "pos", "ngram"]
     student_archs = ["glue", "wasserblat-ffn", "tang"]
-    teacher_archs = ["roberta_large", "roberta_base"]
 
-    ap.add_argument("--task", choices=finetune_tasks, required=True)
-    ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
+    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--checkpoint-path", default="checkpoints")
-    ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"))
     ap.add_argument("--student-arch", type=str, choices=student_archs, default=None)
-    ap.add_argument("--augment", type=str, choices=augmenters)
     ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--temperature", type=int, default=1)
@@ -62,22 +75,14 @@ def args_distill(args=None, namespace=None, parse_known=False):
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
-
     return ap.parse_args(args=args, namespace=namespace)
-
-# download benchmark tasks, roberta models etc
-def args_download():
-    ap = argparse.ArgumentParser()
-    group = ap.add_mutually_exclusive_group(required=True)
-    group.add_argument("--task", "-t", choices=list(TASK_INFO.keys()) + ["glue"])
-    group.add_argument("--model", "-m", choices=MODEL_INFO.keys())
-    return ap.parse_args()
 
 def args_evaluate(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--model-name", type=str, required=True)
     ap.add_argument('--cpu', action='store_true')
+    ap.add_argument('--arch', choices=MODEL_ARCHS, required=True)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -103,11 +108,10 @@ def args_finetune(args=None, namespace=None, parse_known=False):
     return ap.parse_args(args=args, namespace=namespace)
 
 def args_analyze():
-    model_archs = list(MODEL_INFO.keys()) + list(STUDENT_MODELS.keys())
     ap = argparse.ArgumentParser()
 
     ap.add_argument('--model-name', type=str, default=None)
-    ap.add_argument('--arch', choices=model_archs, required=True)
+    ap.add_argument('--arch', choices=MODEL_ARCHS, required=True)
     ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
