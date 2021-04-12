@@ -66,13 +66,11 @@ if __name__ == "__main__":
         del transponder_args["compression_actions"]
         args_to_delete = ["size"]
         for arg in transponder_args:
-            if transponder_args[arg] == False or transponder_args[arg] is None:
+            if transponder_args[arg] is False or transponder_args[arg] is None:
                 args_to_delete.append(arg)
         for arg in args_to_delete:
             if arg in transponder_args:
                 del transponder_args[arg]
-
-    print(transponder_args)
 
     if transponder_args is not None:
         transponder.send_train_start(RUN_ID, transponder_args, max_epochs)
