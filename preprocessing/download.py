@@ -1,10 +1,7 @@
 import os
 import shutil
 import requests
-from common import argparsers
-from preprocess import preprocess_GLUE_tasks
-from common.task_utils import TASK_INFO
-from common.model_utils import MODEL_INFO
+from preprocessing import preprocess_GLUE_tasks
 
 # *===================================================================*
 # *                          DOWNLOAD URLS                            *
@@ -29,24 +26,7 @@ SQUAD_URL = "https://rajpurkar.github.io/SQuAD-explorer/dataset"
 #     "glue": [x[0] for x in GLUE_DOWNLOAD_URLS.values()]
 # }
 
-# Add download urls from TASK_INFO dictionary.
-DATASET_DOWNLOAD_URLS = {
-    task: TASK_INFO[task]["download_url"]
-    for task in TASK_INFO
-}
-
 GLUE_TASKS = ["mnli", "qnli", "qqp", "rte", "sst-2", "mrpc", "cola", "sts-b", "ax"]
-
-# Add 'glue' key that downloads all glue tasks in one go.
-DATASET_DOWNLOAD_URLS["glue"] = [
-    TASK_INFO[task]["download_url"]
-    for task in GLUE_TASKS
-]
-
-MODEL_DOWNLOAD_URLS = {
-    model: MODEL_INFO[model]["download_url"]
-    for model in MODEL_INFO
-}
 
 # *===================================================================*
 # *                            DATA PATHS                             *
@@ -85,35 +65,23 @@ def preprocess_glue_task(task):
 def path_exists(folder):
     return os.path.exists(folder)
 
-def download_and_process_data(task, folder):
-    urls = DATASET_DOWNLOAD_URLS[task]
+def download_and_process_data(task, urls, folder):
     download_and_extract(urls, folder)
     if task in GLUE_TASKS: # Glue task needs preprocessing.
         preprocess_glue_task(task)
 
-def get_dataset_path(task):
-    folder = TASK_INFO[task]["path"]
+def get_dataset_path(task, task_info):
+    folder = task_info["path"]
     if not path_exists(folder):
-        download_and_process_data(task, folder)
+        urls = task_info["download_url"]
+        download_and_process_data(task, urls, folder)
 
     return folder
 
-def get_roberta_path(model_type):
-    folder = MODEL_INFO[model_type]["path"]
+def get_roberta_path(model_info):
+    folder = model_info["path"]
     if not path_exists(folder):
-        urls = MODEL_DOWNLOAD_URLS[model_type]
+        urls = model_info["download_url"]
         download_and_extract(urls, folder)
 
     return folder
-
-if __name__ == "__main__":
-    ARGS = argparsers.args_download()
-
-    if ARGS.task is not None:
-        TARGET_FOLDER = TASK_INFO[ARGS.task]["path"]
-        #preprocess_glue_task(ARGS.task)
-        download_and_process_data(ARGS.task, TARGET_FOLDER)
-    else:
-        TARGET_FOLDER = MODEL_INFO[ARGS.model]["path"]
-        DOWNLOAD_URLS = MODEL_DOWNLOAD_URLS[ARGS.model]
-        download_and_extract(DOWNLOAD_URLS, TARGET_FOLDER)

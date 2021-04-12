@@ -4,7 +4,7 @@ import os
 import re
 import numpy as np
 from common.task_utils import TASK_INFO
-from compression.distillation import data
+from common.data_utils import load_train_data
 from compression.distillation import models
 
 STOP_WORDS = [
@@ -171,7 +171,7 @@ def augment(task, augment_technique, seed):
 
     augmenter = classes[augment_technique]()
 
-    training_data = data.load_train_data(task)
+    training_data = load_train_data(task)
     sentence_pairs = len(training_data) == 3
     prev_pct = 0
     print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)

@@ -7,36 +7,36 @@ from common.task_utils import TASK_LABEL_DICT, TASK_INFO
 from common.model_utils import get_model_path
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-def update_config_from_file(cfg, path):
+def update_student_config_from_file(cfg, path):
     with open(path, 'r') as f:
         loaded = json.load(f)
         cfg.update(loaded)
     return cfg
 
-def get_default_config(task, arch, model_name=None, use_gpu=True):
+def get_default_student_config(task, arch, model_name=None, use_gpu=True):
     # get base config
     base_path = f'compression/distillation/student_models/configs/base.json'
-    cfg = update_config_from_file({}, base_path)
+    cfg = update_student_config_from_file({}, base_path)
     cfg['task'] = task
     cfg['num-classes'] = TASK_INFO[task]['settings']['num-classes']
     cfg['use-sentence-pairs'] = TASK_INFO[task]['settings']['use-sentence-pairs']
-    
+
     # update with base student model config settings
     filepath = f'compression/distillation/student_models/configs/{arch}.json'
-    cfg = update_config_from_file(cfg, filepath)
+    cfg = update_student_config_from_file(cfg, filepath)
 
     # update with saved model config settings
     if model_name is not None:
         model_path = get_model_path(task, "distilled")
-        cfg = update_config_from_file(cfg, f'{model_path}/{model_name}.json')
-        
+        cfg = update_student_config_from_file(cfg, f'{model_path}/{model_name}.json')
+
     return cfg
 
 class StudentModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-        self.label_dict = TASK_LABEL_DICT[cfg['task']]
         self.cfg = cfg
+        self.label_dict = TASK_LABEL_DICT[cfg['task']]
 
     def get_optimizer(self):
         return Adam(
