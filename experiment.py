@@ -7,13 +7,12 @@ from common import transponder
 from finetune import main as finetune_main
 from compress import main as compress_main
 from evaluate import main as evaluate_main
-from distill import main as distill_main
 
 OUTPUT_DIR = "experiments"
 
 TASK_FUNCS = {
     "finetune": finetune_main, "compress": compress_main,
-    "evaluate": evaluate_main, "distill": distill_main
+    "evaluate": evaluate_main
 }
 
 def run_experiment(task_args, _run):
@@ -22,10 +21,6 @@ def run_experiment(task_args, _run):
 
 if __name__ == "__main__":
     EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
-
-    print(EXPERIMENT_ARGS)
-    print(TASK_ARGS)
-    exit(0)
 
     EXPERIMENT = Experiment(EXPERIMENT_ARGS.name)
 
