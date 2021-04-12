@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from cbow import load_pretrained_embeddings
+from embeddings.cbow import load_pretrained_embeddings
 from compression.distillation.student_models.base import StudentModel
 
 class WASSERBLAT_FFN(StudentModel):
