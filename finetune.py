@@ -1,5 +1,5 @@
 from common import argparsers, task_utils, model_utils
-from download import get_dataset_path, get_roberta_path
+from preprocessing.download import get_dataset_path, get_roberta_path
 from roberta_custom import train
 
 
@@ -85,11 +85,14 @@ def get_finetune_string(
 
 def main(args, sacred_experiment=None):
     task = args.task
-    task_path = get_dataset_path(task)
+    task_info = task_utils.TASK_INFO[task]
+    task_path = get_dataset_path(task, task_info)
     if args.arch == 'roberta_base':
-        model_path = get_roberta_path('base') + '/model.pt'
+        roberta_info = model_utils.MODEL_INFO['base']
     else:
-        model_path = get_roberta_path('large') + '/model.pt'
+        roberta_info = model_utils.MODEL_INFO['large']
+
+    model_path = get_roberta_path(roberta_info) + '/model.pt'
 
     finetune_args = get_finetune_string(
         task_path, model_path, args,

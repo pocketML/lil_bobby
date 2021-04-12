@@ -203,7 +203,7 @@ def preprocess_glue_task(glue_task):
 if __name__ == "__main__":
     if len(argv) < 2:
         print("Run as following:")
-        print("./examples/roberta/preprocess_GLUE_tasks.sh <glud_data_folder> <task_name>")
+        print("./examples/roberta/preprocess_GLUE_tasks.sh <task_name>")
         exit(1)
 
     preprocess_glue_task(argv[1])

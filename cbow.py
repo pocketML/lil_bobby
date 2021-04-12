@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from collections import Counter
 import unicodedata
-from compression.distillation import data
+from common import data_utils
 from common.model_utils import get_model_path
 
 class CBOWDataset(Dataset):
@@ -39,8 +39,8 @@ class CBOWEmbeddings():
             out.append(str(word))
         return out
 
-    def create_vocab(self, data, vocab_size):
-        tokenized_data = [self.tokenize(sent) for sent in data]
+    def create_vocab(self, loaded_data, vocab_size):
+        tokenized_data = [self.tokenize(sent) for sent in loaded_data]
         vocab_counts = Counter([x for xs in tokenized_data for x in xs])
         vocab = list(vocab_counts.items())
         vocab.sort(key=lambda x: x[1], reverse=True)
@@ -156,9 +156,9 @@ def train_embeddings(
         batch_size=32, use_cpu=False
 ):
     # load data
-    train_data = data.load_train_data(task)
+    train_data = data_utils.load_train_data(task)
     train_data = train_data[0] if len(train_data) == 2 else train_data[0] + train_data[2]
-    augment_data = data.load_augment_data(task, "tinybert")
+    augment_data = data_utils.load_augment_data(task, "tinybert")
     augment_data = augment_data[0] if len(augment_data) == 1 else augment_data[0] + augment_data[1]
     loaded_data = train_data + augment_data
     print("Data loaded...")
