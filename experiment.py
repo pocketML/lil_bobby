@@ -58,8 +58,8 @@ if __name__ == "__main__":
         max_epochs = FINETUNE_ARGS.max_epochs
         transponder_args = dict(FINETUNE_ARGS.__dict__)
         del transponder_args["max_epochs"]
-    elif "distill" in TASK_ARGS and TASK_ARGS["distill"].distill:
-        DISTILLATION_ARGS = TASK_ARGS["distill"]
+    elif "compress" in TASK_ARGS and TASK_ARGS["compress"].distill:
+        DISTILLATION_ARGS = TASK_ARGS["compress"]
         max_epochs = DISTILLATION_ARGS.epochs
         transponder_args = dict(DISTILLATION_ARGS.__dict__)
         del transponder_args["epochs"]
