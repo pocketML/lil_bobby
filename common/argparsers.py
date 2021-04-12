@@ -138,7 +138,7 @@ def args_analyze():
 def args_experiment():
     ap = argparse.ArgumentParser()
 
-    task_choices = ("finetune", "compress", "evaluate", "analyze", "distill")
+    task_choices = ("finetune", "compress", "evaluate", "analyze")
     ap.add_argument("jobs", nargs="+", choices=task_choices)
     ap.add_argument("--name", type=str, required=True)
     ap.add_argument("--transponder", action="store_true")
