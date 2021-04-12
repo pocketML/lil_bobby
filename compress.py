@@ -1,9 +1,49 @@
-from common import argparsers
+import torch
+import torch.nn as nn
+from common import argparsers, data_utils
+from compression.distill import train_loop
+from compression.distillation.models import DistLossFunction, load_student
 
 def main(args, sacred_experiment=None):
-    print(f"Doing some sick compression with args: {args}")
+    print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
+
+    device = torch.device('cpu') if args.cpu else torch.device('cuda')
+    use_gpu = not args.cpu
+    task = args.task
+    student_type = args.student_arch
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
+
+    if "distill" in args.compression_actions:
+        epochs = args.epochs
+        temperature = args.temperature
+
+        model = load_student(task, student_type, use_gpu=use_gpu)
+        distillation_data = data_utils.load_all_distillation_data(task)
+        print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
+
+        val_data = data_utils.load_val_data(task)
+        model.to(device)
+        print(f"*** Loaded {len(val_data[0])} validation data samples ***")
+
+        criterion = DistLossFunction(
+            args.alpha, 
+            nn.MSELoss(), 
+            nn.CrossEntropyLoss(), 
+            temperature=temperature,
+            device=device
+        )
+        dataloaders = data_utils.get_dataloader_dict(model, distillation_data, val_data)
+        print(f'*** Dataloaders created ***')
+
+        optim = model.get_optimizer()
+        train_loop(
+            model, criterion, optim, dataloaders, device,
+            args, epochs, sacred_experiment=sacred_experiment
+        )
 
 if __name__ == "__main__":
-    ARGS = argparsers.args_compress()
+    ARGS = argparsers.args_compress()[0]
 
     main(ARGS)
