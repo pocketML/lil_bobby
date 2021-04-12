@@ -23,7 +23,8 @@ class TangBILSTM(base.StudentModel):
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d
         self.classifier = nn.Sequential(
             nn.Linear(inp_d, self.cfg['cls-hidden-dim']),
-            nn.ReLU(), 
+            nn.ReLU(),
+            nn.Dropout(self.cfg.dropout),
             nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes']))
 
     def get_optimizer(self):

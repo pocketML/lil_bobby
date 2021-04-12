@@ -1,9 +1,7 @@
 import os
 from fairseq.models.roberta import RobertaModel
 from common import task_utils
-from compression.distillation.models import STUDENT_MODELS
-from compression.distillation.student_models import base
-from preprocess import download
+from preprocessing import download
 
 # roberta models
 MODEL_INFO = {
@@ -75,26 +73,13 @@ def load_teacher(task, checkpoint_path, use_cpu=False, model_name='checkpoint_be
     return model
 
 def load_roberta_model(arch, use_cpu=False):
-    model_dir = download.get_roberta_path('base' if arch == 'roberta_base' else 'large')
+    model_info = MODEL_INFO['base'] if arch == 'roberta_base' else MODEL_INFO['large']
+    model_dir = download.get_roberta_path(model_info)
     model = RobertaModel.from_pretrained(model_dir, checkpoint_file='model.pt')
     if not use_cpu:
         model.cuda()
     model.eval()
     return model
 
-def load_student(task, student_type, use_gpu, model_name=None):
-    cfg = base.get_default_config(task, student_type, use_gpu=use_gpu, model_name=model_name)
-    try:
-        model = STUDENT_MODELS[student_type](cfg)
-    except KeyError:
-        raise Exception(f'Student type "{student_type}" not recognized')
-    # load state dict
-    if model_name is not None:
-        model.load(model_name)
-    return model
-
 def is_finetuned_model(arch):
     return arch in MODEL_INFO.keys()
-
-def is_student_model(arch):
-    return arch in STUDENT_MODELS.keys()

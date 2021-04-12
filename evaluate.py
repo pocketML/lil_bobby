@@ -1,4 +1,5 @@
 from common import argparsers, task_utils, model_utils, data_utils
+from compression.distillation import models as distill_models
 from tqdm import tqdm
 import torch
 
@@ -104,7 +105,7 @@ def main(args, sacred_experiment=None):
         else:
             raise Exception(f'task {task} not currently supported')
     else: # we have a student model
-        model = model_utils.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
+        model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
         val_data = data_utils.load_val_data(task)
         dl = data_utils.get_dataloader_dict_val(model, val_data)
         evaluate_distilled_model(model, dl, device, args, sacred_experiment)
