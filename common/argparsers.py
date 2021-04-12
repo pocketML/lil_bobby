@@ -10,18 +10,8 @@ MODEL_ARCHS = list(MODEL_INFO.keys()) + list(STUDENT_MODELS.keys())
 def args_distill(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
-    student_archs = ["glue", "wasserblat-ffn", "tang"]
-
-    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--checkpoint-path", default="checkpoints")
-    ap.add_argument("--student-arch", type=str, choices=student_archs, default=None)
     ap.add_argument("--epochs", type=int, default=50)
-    ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--temperature", type=int, default=1)
-    ap.add_argument("--train-cbow", action="store_true")
-    ap.add_argument("--cpu", action="store_true")
-    ap.add_argument("--loadbar", action="store_true")
-    ap.add_argument("--eval", type=str, default=None)
     ap.add_argument("--alpha", type=float, default=0.5)
     ap.add_argument("--early-stopping", type=int, default=5)
 
@@ -38,25 +28,33 @@ def args_prune(args=None, namespace=None, parse_known=False):
     return ap.parse_args(args=args, namespace=namespace)
 
 # define arguments for model compression
-def args_compress():
+def args_compress(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-    compression_techniques = [
-        'distill',
-        'prune-magnitude',
-        'prune-movement',
-        'quantize-dynamic',
-        'quantize-static',
-        'quantize-aware'
-    ]
-    ap.add_argument("--distill", action="store_true")
+    compression_actions = {
+        'distill': args_distill,
+        'prune-magnitude-static': args_prune,
+        'prune-magnitude-aware': args_prune,
+        'prune-movement': args_prune,
+        'quantize-dynamic': None,
+        'quantize-static': None
+    }
+    ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
+
+    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
+    ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
+    ap.add_argument("--checkpoint-path", default="checkpoints")
+    ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--loadbar", action="store_true")
+    ap.add_argument("--seed", type=int, default=1337)
 
     compression_args, args_remain = ap.parse_known_args()
-    if compression_args.distill:
-        compression_args, args_remain = args_finetune(
+
+    for action in compression_args.compression_actions:
+        compression_args, args_remain = compression_actions[action](
             args_remain, namespace=compression_args, parse_known=True
         )
 
-    return compression_args
+    return compression_args, args_remain
 
 def args_cbow(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
