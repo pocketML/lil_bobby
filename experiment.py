@@ -23,6 +23,10 @@ def run_experiment(task_args, _run):
 if __name__ == "__main__":
     EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
 
+    print(EXPERIMENT_ARGS)
+    print(TASK_ARGS)
+    exit(0)
+
     EXPERIMENT = Experiment(EXPERIMENT_ARGS.name)
 
     if EXPERIMENT_ARGS.output_path is not None:
