@@ -2,6 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 from functools import reduce
 from common import model_utils
+import os
 
 def dtype_bits(param):
     dt = param.dtype
@@ -89,3 +90,8 @@ def print_named_params(model, arch):
         print(f'* {layer}')
         for name, param in children:
             print(f'| --> {name}, {param.size()}, {param.dtype}')
+
+def print_model_disk_size(model):
+    torch.save(model.state_dict(), "tmp.pt")
+    print("%.2f MB" %(os.path.getsize("tmp.pt")/1e6))
+    os.remove('tmp.pt')
