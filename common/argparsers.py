@@ -35,8 +35,10 @@ def args_compress():
         'prune-magnitude-static': args_prune,
         'prune-magnitude-aware': args_prune,
         'prune-movement': args_prune,
-        'quantize-dynamic': None,
-        'quantize-static': None
+        'quantize': None
+        #'quantize-dynamic': None,
+        #'quantize-static': None,
+        #'quantize-qat': None,
     }
     ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
 
@@ -132,6 +134,7 @@ def args_analyze():
     ap.add_argument('--layer-weight-hist', type=str)
     ap.add_argument('--named-params', action='store_true')
     ap.add_argument('--weight-thresholds', action='store_true')
+    ap.add_argument('--model-disk-size', action="store_true")
 
     args = ap.parse_args()
     return args

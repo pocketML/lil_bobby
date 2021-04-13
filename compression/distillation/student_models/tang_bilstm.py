@@ -21,12 +21,11 @@ class TangBILSTM(base.StudentModel):
         # classifier/mlp
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d
-        self.classifier = nn.Sequential(
-            nn.Linear(inp_d, self.cfg['cls-hidden-dim']),
-            nn.ReLU(),
-            nn.Dropout(self.cfg["dropout"]),
-            nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes'])
-        )
+        fc1 = nn.Linear(inp_d, self.cfg['cls-hidden-dim'])
+        relu = nn.ReLU()
+        dropout = nn.Dropout(self.cfg["dropout"])
+        fc2 = nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes'])
+        self.classifier = nn.Sequential(fc1, relu, dropout, fc2)
 
     def get_optimizer(self):
         return Adadelta(
@@ -50,4 +49,8 @@ class TangBILSTM(base.StudentModel):
             x2 = embed_encode_sents(x[1], lens[1])
             x = base.cat_cmp(x1, x2)
         # classification
+        #x = self.fc1(x)
+        #x = self.relu(x)
+        #x = self.dropout(x)
+        #x = self.fc2(x)
         return self.classifier(x)
