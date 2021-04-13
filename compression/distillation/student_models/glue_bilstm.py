@@ -24,7 +24,8 @@ class GlueBILSTM(base.StudentModel):
         self.classifier = nn.Sequential(
             nn.Linear(inp_d, self.cfg['cls-hidden-dim']),
             nn.Tanh(), 
-            nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes']))
+            nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes'])
+        )
 
     def forward(self, x, lens):
         def embed_enc_sents(sents, lengths):

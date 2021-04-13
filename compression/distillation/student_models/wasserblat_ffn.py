@@ -18,18 +18,19 @@ class WASSERBLAT_FFN(StudentModel):
         self.cbow = load_pretrained_embeddings(cfg["task"], cfg["embedding-dim"])
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.cbow.vectors))
 
-        self.dropout_1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
+        self.dropout1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
 
         self.avg_pool = nn.AvgPool1d(2)
 
-        self.dense_1 = nn.Linear(self.max_seq_len * (self.cfg['embedding-dim'] // 2), self.hidden_units)
-        self.relu_1 = nn.ReLU()
-        self.dropout_2 = nn.Dropout(p=self.cfg['dropout'])
-        self.dense_2 = nn.Linear(self.hidden_units, self.hidden_units)
-        self.relu_2 = nn.ReLU()
-        self.dropout_3 = nn.Dropout(p=self.cfg['dropout'])
-
-        self.classifier = nn.Linear(self.hidden_units, self.cfg['num-classes'])
+        self.classfier = nn.Sequential(
+            nn.Linear(self.max_seq_len * (self.cfg['embedding-dim'] // 2), self.hidden_units),
+            nn.ReLU(),
+            nn.Dropout(p=self.cfg['dropout']),
+            nn.Linear(self.hidden_units, self.hidden_units),
+            nn.ReLU(),
+            nn.Dropout(p=self.cfg['dropout']),
+            nn.Linear(self.hidden_units, self.cfg['num-classes'])
+        )
 
     def forward(self, sents, lens):
         emb = self.embedding(sents).float()
@@ -39,21 +40,14 @@ class WASSERBLAT_FFN(StudentModel):
         # Pad 2nd dimension to match max_seq_len.
         emb = torch.nn.functional.pad(emb, pad=(0, 0, 0, pad_amount, 0, 0), mode="constant")
 
-        x = self.dropout_1(emb)
+        x = self.dropout1(emb)
 
         x = self.avg_pool(x)
 
         x = x.view(self.cfg['batch-size'], -1)
 
-        x = self.dense_1(x)
-        x = self.relu_1(x)
-        x = self.dropout_2(x)
-
-        x = self.dense_2(x)
-        x = self.relu_2(x)
-        x = self.dropout_3(x)
-
-        return self.classifier(x)
+        x = self.classfier(x)
+        return x
 
     def encode(self, sentence):
         return self.cbow.encode(sentence)
