@@ -12,8 +12,8 @@ def main(args, sacred_experiment=None):
     task = args.task
     student_type = args.student_arch
     seed = args.seed
-    if args.named_seed is not None:
-        seed = task_utils.SEED_DICT[args.named_seed]
+    if args.seed_name is not None:
+        seed = task_utils.SEED_DICT[args.seed_name]
 
     torch.manual_seed(seed)
     if torch.cuda.is_available():
