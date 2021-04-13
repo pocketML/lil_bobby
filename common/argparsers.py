@@ -1,5 +1,5 @@
 import argparse
-from common.task_utils import TASK_INFO
+from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from compression.distillation.models import STUDENT_MODELS
 
@@ -28,7 +28,7 @@ def args_prune(args=None, namespace=None, parse_known=False):
     return ap.parse_args(args=args, namespace=namespace)
 
 # define arguments for model compression
-def args_compress(args=None, namespace=None, parse_known=False):
+def args_compress():
     ap = argparse.ArgumentParser()
     compression_actions = {
         'distill': args_distill,
@@ -46,6 +46,7 @@ def args_compress(args=None, namespace=None, parse_known=False):
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--loadbar", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
+    ap.add_argument("--seed-name", type=str, choices=SEED_DICT.keys(), default=None)
 
     compression_args, args_remain = ap.parse_known_args()
 
@@ -152,10 +153,18 @@ def args_experiment():
             finetune_args = args_finetune(args_remain, parse_known=True)[0]
             task_args["finetune"] = finetune_args
         if task == "compress":
-            compress_args = args_compress(args_remain, parse_known=True)[0]
+            compress_args = args_compress()[0]
             task_args["compress"] = compress_args
         if task == "evaluate":
             evaluate_args = args_evaluate(args_remain, parse_known=True)[0]
             task_args["evaluate"] = evaluate_args
 
     return experiment_args, task_args
+
+def args_run_all():
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument("--name", type=str, default=None)
+    ap.add_argument("--model-name", type=str, default=None)
+
+    return ap.parse_known_args()

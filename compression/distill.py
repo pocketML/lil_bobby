@@ -28,7 +28,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
 
             iterator = tqdm(dl[phase], leave=False) if args.loadbar else dl[phase]
 
-            running_loss, running_corrects, num_examples = 0.0, 0.0, 0.0
+            running_loss, running_corrects, num_examples = 0.0, 0.0, 0
             for x1, lens, target_labels, target_logits in iterator:
                 x1 = x1.to(device)
                 target_labels = target_labels.to(device)
@@ -44,9 +44,9 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     loss.backward()
                     optim.step()
                     running_loss += loss.item()
-                running_corrects += torch.sum(preds == target_labels.data)
+                running_corrects += torch.sum(preds == target_labels.data).item()
                 num_examples += len(lens)
-            accuracy = running_corrects / num_examples
+            accuracy = 0 if num_examples == 0 else running_corrects / num_examples
             if phase == "train":
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')
             else:
@@ -57,9 +57,9 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     no_improvement = 0
                 else:
                     no_improvement += 1
-                transponder.send_train_status(epoch, accuracy.item())
+                transponder.send_train_status(epoch, accuracy)
                 if sacred_experiment is not None:
-                    sacred_experiment.log_scalar("validation.acc", accuracy.item())
+                    sacred_experiment.log_scalar("validation.acc", accuracy)
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
             if no_improvement == args.early_stopping:
                 return
