@@ -10,7 +10,7 @@ def main(args, args_remain):
     args_str = " ".join(args_remain)
 
     for seed_name in task_utils.SEED_DICT:
-        full_cmd_str = f"python experiment.py {args_str}"
+        full_cmd_str = f"sbatch submit.job experiment.py {args_str}"
         if name_1 is not None:
             full_cmd_str += f" --name {name_1}_{seed_name} --seed {task_utils.SEED_DICT[seed_name]}"
         if name_2 is not None:
