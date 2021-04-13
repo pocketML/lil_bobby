@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from common import argparsers, data_utils
+from common import argparsers, data_utils, task_utils
 from compression.distill import train_loop
 from compression.distillation.models import DistLossFunction, load_student
 
@@ -11,9 +11,13 @@ def main(args, sacred_experiment=None):
     use_gpu = not args.cpu
     task = args.task
     student_type = args.student_arch
-    torch.manual_seed(args.seed)
+    seed = args.seed
+    if args.named_seed is not None:
+        seed = task_utils.SEED_DICT[args.named_seed]
+
+    torch.manual_seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed(seed)
 
     if "quantize" in args.compression_actions:
         pass
