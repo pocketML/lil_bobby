@@ -118,5 +118,20 @@ TASK_INFO = {
     }
 }
 
+SEED_DICT = {
+    "hadfield": 8291959,
+    "knuth": 1101938,
+    "feynman": 5111918,
+    "miyazaki": 1051941,
+    "doom": 7131971,
+    "bennington": 3201976,
+    "lorca": 6051898,
+    "armstrong": 8051930,
+    "cardi": 10111992,
+    "simone": 2211933,
+    "lovelace": 12101815,
+    "shannon": 4301916
+}
+
 def get_processed_path(task):
     return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
