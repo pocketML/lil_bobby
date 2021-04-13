@@ -19,6 +19,8 @@ def main(args, sacred_experiment=None):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
+    if "quantize" in args.compression_actions:
+        pass
     if "distill" in args.compression_actions:
         epochs = args.epochs
         temperature = args.temperature
