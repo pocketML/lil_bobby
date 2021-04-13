@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 from bpemb import BPEmb
 from torch.optim.adadelta import Adadelta
+from torch.quantization.stubs import DeQuantStub
 from compression.distillation.student_models import base
+from torch import quantization as quant
 
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
 #  but with bytepair embeddings instead of the humongously
@@ -11,9 +13,12 @@ class TangBILSTM(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
+        #self.quantized_embeddings = False
+        #self.dequant = quant.DeQuantStub()
         # embedding
         self.bpe = BPEmb(lang="en", dim=self.cfg['embedding-dim'], vs=self.cfg['vocab-size'], add_pad_emb=True)
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors))
+        self.embedding = self.embedding.float()
         
         # encoding
         self.bilstm = base.get_lstm(self.cfg)
@@ -37,7 +42,10 @@ class TangBILSTM(base.StudentModel):
     def forward(self, x, lens):
         def embed_encode_sents(sents, lengths):
             #embedding
-            emb = self.embedding(sents).float()
+            sents = sents.contiguous()
+            emb = self.embedding(sents)
+            #if self.quantized_embeddings:
+            #    emb = self.dequant(emb)
             # encoding
             h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
             return base.choose_hidden_state(h, lens=lengths, decision='last')

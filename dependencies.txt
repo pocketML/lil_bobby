@@ -1,6 +1,8 @@
 python 3.6.9
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
-pip install fairseq
+pip install fairseq // not working.  Follow instructions on https://github.com/pytorch/fairseq
+pip install sacred
+pip install gensim
 conda install requests
 conda install matplotlib
 pip install bpemb
