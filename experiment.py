@@ -58,14 +58,15 @@ if __name__ == "__main__":
         max_epochs = FINETUNE_ARGS.max_epochs
         transponder_args = dict(FINETUNE_ARGS.__dict__)
         del transponder_args["max_epochs"]
-    elif "distill" in TASK_ARGS and TASK_ARGS["distill"].distill:
-        DISTILLATION_ARGS = TASK_ARGS["distill"]
+    elif "compress" in TASK_ARGS and "distill" in TASK_ARGS["compress"].compression_actions:
+        DISTILLATION_ARGS = TASK_ARGS["compress"]
         max_epochs = DISTILLATION_ARGS.epochs
         transponder_args = dict(DISTILLATION_ARGS.__dict__)
         del transponder_args["epochs"]
+        del transponder_args["compression_actions"]
         args_to_delete = ["size"]
         for arg in transponder_args:
-            if transponder_args[arg] == False or transponder_args[arg] is None:
+            if transponder_args[arg] is False or transponder_args[arg] is None:
                 args_to_delete.append(arg)
         for arg in args_to_delete:
             if arg in transponder_args:
