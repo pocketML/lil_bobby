@@ -66,10 +66,10 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
         out_logits = model(x1, lens)
         _, preds = torch.max(out_logits, 1)
         target_labels = target_labels.squeeze()
-        running_corrects += torch.sum(preds == target_labels.data)
+        running_corrects += torch.sum(preds == target_labels.data).item()
         num_examples += len(lens)
 
-    accuracy = running_corrects / num_examples
+    accuracy = 0 if num_examples == 0 else running_corrects / num_examples
     if sacred_experiment is not None:
         sacred_experiment.log_scalar("validation.acc", accuracy)
     print(f'|--> val accuracy: {accuracy:.4f}')

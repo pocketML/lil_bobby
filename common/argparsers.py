@@ -35,7 +35,7 @@ def args_compress():
         'prune-magnitude-static': args_prune,
         'prune-magnitude-aware': args_prune,
         'prune-movement': args_prune,
-        'quantize': None
+        'quantize': args_prune,
         #'quantize-dynamic': None,
         #'quantize-static': None,
         #'quantize-qat': None,

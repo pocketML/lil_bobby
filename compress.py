@@ -3,6 +3,9 @@ import torch.nn as nn
 from common import argparsers, data_utils, task_utils
 from compression.distill import train_loop
 from compression.distillation.models import DistLossFunction, load_student
+import evaluate
+from compression.quantization import post_training as ptq
+from analysis import parameters
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
@@ -20,7 +23,34 @@ def main(args, sacred_experiment=None):
         torch.cuda.manual_seed(seed)
 
     if "quantize" in args.compression_actions:
-        pass
+        model_name = "tang_hadfield_alpha_0_3"
+        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.to(device)
+        model.cfg['use-gpu'] = use_gpu
+        val_data = data_utils.load_val_data(task)
+        dl = data_utils.get_dataloader_dict_val(model, val_data)
+
+        backend = 'fbgemm'
+        torch.backends.quantized.engine = backend
+        import warnings
+        warnings.simplefilter("ignore", UserWarning)
+        for emb in [None, 'static']:
+            for lstm in [None, 'dynamic']:
+                for cls in [None, 'static', 'dynamic']:
+                    print(f'emb: {emb}, lstm: {lstm}, class: {cls}')
+                    current = model
+                    if emb == 'static':
+                        current = ptq.quantize_embeddings(current, args)
+                    if lstm == 'dynamic':
+                        current = ptq.quantize_encoder(current)
+                    if cls ==  'static':
+                        current = ptq.quantize_classifier(current, args, type='static')
+                    elif cls == 'dynamic':
+                        current = ptq.quantize_classifier(current, args, type='dynamic')
+                    evaluate.evaluate_distilled_model(current, dl, device, args, None)
+                    parameters.print_model_disk_size(current)
+                    print()
+
     if "distill" in args.compression_actions:
         epochs = args.epochs
         temperature = args.temperature

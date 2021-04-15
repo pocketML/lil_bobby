@@ -18,7 +18,6 @@ def main(args, sacred_experiment=None):
         parameters.print_model_disk_size(model_static_quant)
         print(model)
         print(model_static_quant)
-
     if args.model_size:
         parameters.print_model_size(model)
     if args.weight_hist and is_finetuned_model:
