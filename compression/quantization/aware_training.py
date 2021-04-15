@@ -4,6 +4,8 @@ import torch
 import copy
 
 def quantize_model(model):
+    pass
+    '''
     torch.backends.quantized.engine = 'fbgemm'
     model = copy.deepcopy(model)
     model.qconfig = quant.get_default_qat_qconfig('fbgemm')
@@ -12,3 +14,4 @@ def quantize_model(model):
     # quantization aware training goes here
     quant.convert(model.eval(), inplace=True)
     return model
+    '''
