@@ -19,6 +19,19 @@ def args_distill(args=None, namespace=None, parse_known=False):
         return ap.parse_known_args(args=args, namespace=namespace)
     return ap.parse_args(args=args, namespace=namespace)
 
+def args_quantize(args=None, namespace=None, parse_known=False):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--load-trained-model", type=str, required=True)
+    ap.add_argument("--ptq-embedding", action="store_true")
+    ap.add_argument("--dq-encoder", action="store_true")
+    group = ap.add_mutually_exclusive_group()
+    group.add_argument("--dq-classifier", action="store_true")
+    group.add_argument("--ptq-classifier", action="store_true")
+
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+    return ap.parse_args(args=args, namespace=namespace)
+
 def args_prune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     ap.add_argument("--pruning-threshold", type=float)
@@ -26,6 +39,7 @@ def args_prune(args=None, namespace=None, parse_known=False):
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
     return ap.parse_args(args=args, namespace=namespace)
+
 
 # define arguments for model compression
 def args_compress():
@@ -35,7 +49,7 @@ def args_compress():
         'prune-magnitude-static': args_prune,
         'prune-magnitude-aware': args_prune,
         'prune-movement': args_prune,
-        'quantize': args_prune,
+        'quantize': args_quantize,
         #'quantize-dynamic': None,
         #'quantize-static': None,
         #'quantize-qat': None,
