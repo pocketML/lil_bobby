@@ -13,7 +13,7 @@ class GlueBILSTM(base.StudentModel):
 
         # embedding
         self.bpe = BPEmb(lang="en", dim=self.cfg['embedding-dim'], vs=self.cfg['vocab-size'], add_pad_emb=True)
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors))
+        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors)).float()
         
         # encoding
         self.bilstm = base.get_lstm(self.cfg)
@@ -30,7 +30,8 @@ class GlueBILSTM(base.StudentModel):
     def forward(self, x, lens):
         def embed_enc_sents(sents, lengths):
             #embedding
-            emb = self.embedding(sents).float()
+            sents = sents.contiguous()
+            emb = self.embedding(sents)
             emb = self.dropout(emb)
             # encoding
             h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
@@ -43,6 +44,7 @@ class GlueBILSTM(base.StudentModel):
             x1 = embed_enc_sents(x[0], lens[0])
             x2 = embed_enc_sents(x[1], lens[1])
             x = base.cat_cmp(x1, x2)
+        #print("whelp6")
         # classifier
         x = self.classifier(x)
         return x

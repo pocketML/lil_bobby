@@ -38,14 +38,11 @@ class TangBILSTM(base.StudentModel):
             rho=self.cfg['rho']
         )
 
-
     def forward(self, x, lens):
         def embed_encode_sents(sents, lengths):
             #embedding
             sents = sents.contiguous()
             emb = self.embedding(sents)
-            #if self.quantized_embeddings:
-            #    emb = self.dequant(emb)
             # encoding
             h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
             return base.choose_hidden_state(h, lens=lengths, decision='last')
