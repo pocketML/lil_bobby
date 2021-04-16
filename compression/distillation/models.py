@@ -12,7 +12,7 @@ STUDENT_MODELS = {
 }
 
 def load_student(task, student_type, use_gpu, model_name=None):
-    cfg = base.get_default_student_config(task, student_type, use_gpu=use_gpu, model_name=model_name)
+    cfg = base.get_default_student_config(task, student_type, model_name=model_name)
     try:
         model = STUDENT_MODELS[student_type](cfg)
     except KeyError:
@@ -20,4 +20,5 @@ def load_student(task, student_type, use_gpu, model_name=None):
     # load state dict
     if model_name is not None:
         model.load(model_name)
+    model.cfg['use-gpu'] = use_gpu # very important part
     return model
