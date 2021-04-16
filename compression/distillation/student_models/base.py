@@ -44,7 +44,7 @@ def update_student_config_from_file(cfg, path):
         cfg.update(loaded)
     return cfg
 
-def get_default_student_config(task, arch, model_name=None, use_gpu=True):
+def get_default_student_config(task, arch, model_name=None):
     # get base config
     base_path = f'compression/distillation/student_models/configs/base.json'
     cfg = update_student_config_from_file({}, base_path)
@@ -64,7 +64,7 @@ def get_default_student_config(task, arch, model_name=None, use_gpu=True):
     return cfg
 
 # combines distillation loss function with label loss function
-def get_dist_loss_function(alpha, criterion_distill, criterion_label, temperature=1.0, device=torch.device('cuda')):
+def get_dist_loss_function(alpha, criterion_distill, criterion_label, device, temperature=1.0):
     beta = 1 - alpha
     criterion_distill.to(device)
     criterion_label.to(device)
@@ -81,8 +81,8 @@ def get_dist_loss_function(alpha, criterion_distill, criterion_label, temperatur
 # returns the last hidden state (both fw and bw) for each embedded sentence
 def pack_bilstm_unpack(bilstm, cfg, embedded, lens, batch_size):
     def init_hidden():
-        h = torch.zeros(2, batch_size, cfg['encoder-hidden-dim'])
-        c = torch.zeros(2, batch_size, cfg['encoder-hidden-dim'])
+        h = torch.zeros(2 * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
+        c = torch.zeros(2 * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
         if cfg['use-gpu']:
             h = h.cuda()
             c = c.cuda()
