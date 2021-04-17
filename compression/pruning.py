@@ -39,6 +39,9 @@ def to_sparse(x):
     values = x[tuple(indices[i] for i in range(indices.shape[0]))]
     return sparse_tensortype(indices, values, x.size())
 
+def to_dense(x):
+    return x.to_dense()
+
 def get_prunable_params(model):
     grouped_params = model_utils.group_params_by_layer(model, "tang")
 
@@ -80,7 +83,17 @@ def do_pruning(params, prune_cls, sparsify=False, **kwargs):
             sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
             setattr(module, param_name, sparse_tensor)
 
-def magnitude(model, threshold):
+def ratio_zero(model):
+    zero = 0
+    total_params = 0
+    for param in model.parameters():
+        non_zero = torch.count_nonzero(param).item()
+        num_params = param.size().numel()
+        zero += (num_params - non_zero)
+        total_params += num_params
+    return zero / total_params
+
+def magnitude_pruning(model, threshold):
     model = copy.deepcopy(model)
 
     params_to_prune = get_prunable_params(model)
@@ -89,7 +102,7 @@ def magnitude(model, threshold):
 
     return model
 
-def movement(model, threshold):
+def movement_pruning(model, threshold):
     model = copy.deepcopy(model)
 
     params_to_prune = get_prunable_params(model)
