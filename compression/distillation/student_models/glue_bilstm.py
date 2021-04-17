@@ -34,7 +34,7 @@ class GlueBILSTM(base.StudentModel):
             emb = self.embedding(sents)
             emb = self.dropout(emb)
             # encoding
-            h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
+            h = base.pack_rnn_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
             h = self.dropout(h)
             return base.choose_hidden_state(h, decision='max')
         

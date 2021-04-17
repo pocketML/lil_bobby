@@ -1,7 +1,7 @@
 {
     "embedding-dim" : 300,
     "vocab-size": 3000,
-    "dropout": 0.1,
+    "dropout": 0.2,
     "lr": 1,
     "weight-decay": 1e-5,
     "batch-size": 50,

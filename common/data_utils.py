@@ -40,6 +40,7 @@ def load_all_distillation_data(task):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     distillation_data = []
     train_files = glob(f"{base_path}/*.tsv")
+    #train_files = glob(f"{base_path}/train.tsv")
     for filename in train_files:
         loaded_data = load_distillation_data(filename)
 

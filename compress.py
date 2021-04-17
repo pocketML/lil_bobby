@@ -1,3 +1,4 @@
+from argparse import ArgumentError
 import torch
 import torch.nn as nn
 from common import argparsers, data_utils, task_utils
@@ -24,31 +25,6 @@ def main(args, sacred_experiment=None):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
-
-    if "quantize" in args.compression_actions:
-        model_name = args.load_trained_model
-        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
-        model.to(device)
-        dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(task))
-        backend = 'fbgemm'
-        torch.backends.quantized.engine = backend
-
-        if args.ptq_embedding:
-            print("** quantizing embedding layer **")
-            model = ptq.quantize_embeddings(model, args)
-        if args.dq_encoder:
-            print("** quantizing encoder **")
-            model = ptq.quantize_encoder(model)
-        if args.dq_classifier:
-            print("** quantizing classifier **")
-            model = ptq.quantize_classifier(model, args, type='dynamic')
-        elif args.ptq_classifier:
-            print("** quantizing classifier **")
-            model = ptq.quantize_classifier(model, args, type='static')
-
-        evaluate.evaluate_distilled_model(model, dl, device, args, None)
-        parameters.print_model_disk_size(model)
-        print()
 
     if "distill" in args.compression_actions:
         epochs = args.epochs
@@ -78,7 +54,38 @@ def main(args, sacred_experiment=None):
             args, epochs, sacred_experiment=sacred_experiment
         )
 
-if __name__ == "__main__":
-    ARGS = argparsers.args_compress()[0]
+    if "quantize" in args.compression_actions:
+        use_gpu = False
+        device = torch.device('cpu')
+        model_name = args.load_trained_model
+        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.to(device)
+        dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(task))
+        backend = 'fbgemm'
+        torch.backends.quantized.engine = backend
+        print("Starting point:")
+        parameters.print_model_disk_size(model)
+        print()
+        
+        if args.ptq_embedding:
+            print("** quantizing embedding layer **")
+            model = ptq.quantize_embeddings(model, args, dl, device)
+        if args.dq_encoder:
+            print("** quantizing encoder **")
+            model = ptq.quantize_encoder(model)
+        if args.dq_classifier:
+            print("** quantizing classifier **")
+            model = ptq.quantize_classifier(model, args, dl, device, type='dynamic')
+        elif args.ptq_classifier:
+            print("** quantizing classifier **")
+            model = ptq.quantize_classifier(model, args, dl, device, type='static')
 
+        evaluate.evaluate_distilled_model(model, dl, device, args, None)
+        parameters.print_model_disk_size(model)
+        print()
+
+if __name__ == "__main__":
+    ARGS, remain = argparsers.args_compress()
+    if len(remain) > 0:
+        raise ArgumentError(f"Couldn't parse: {remain}")
     main(ARGS)

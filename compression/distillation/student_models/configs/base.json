@@ -13,5 +13,6 @@
     "cls-hidden-dim": 200,
     "batch-first": true,
     "num-layers": 1,
-    "bidirectional": true
+    "bidirectional": true,
+    "type": "lstm"
 }

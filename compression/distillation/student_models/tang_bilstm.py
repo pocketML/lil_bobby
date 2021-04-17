@@ -44,7 +44,7 @@ class TangBILSTM(base.StudentModel):
             sents = sents.contiguous()
             emb = self.embedding(sents)
             # encoding
-            h = base.pack_bilstm_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
+            h = base.pack_rnn_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
             return base.choose_hidden_state(h, lens=lengths, decision='last')
 
         if not self.cfg['use-sentence-pairs']:

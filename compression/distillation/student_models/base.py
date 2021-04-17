@@ -2,6 +2,7 @@ from abc import abstractmethod
 import json
 import torch
 from torch import nn
+from torch.nn.modules import dropout
 from torch.optim import Adam
 from common.task_utils import TASK_LABEL_DICT, TASK_INFO
 from common.model_utils import get_model_path
@@ -79,17 +80,21 @@ def get_dist_loss_function(alpha, criterion_distill, criterion_label, device, te
     return loss
 
 # returns the last hidden state (both fw and bw) for each embedded sentence
-def pack_bilstm_unpack(bilstm, cfg, embedded, lens, batch_size):
+def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size):
     def init_hidden():
-        h = torch.zeros(2 * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
-        c = torch.zeros(2 * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
+        h = torch.zeros((1 + int(cfg['type'] == 'lstm')) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
+        c = torch.zeros((1 + int(cfg['type'] == 'lstm')) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
         if cfg['use-gpu']:
             h = h.cuda()
             c = c.cuda()
         return (h, c)
 
     packed = pack_padded_sequence(embedded, lens, batch_first=cfg['batch-first'])
-    out, _ = bilstm(packed, init_hidden())
+    if cfg['type'] == 'lstm':
+        out, _ = rnn(packed, init_hidden())
+    else:
+        out, _ = rnn(packed, init_hidden()[0])
+
     unpacked, _ = pad_packed_sequence(out, batch_first=cfg['batch-first'])
     return unpacked
 
@@ -103,6 +108,7 @@ def get_lstm(cfg):
             hidden_size=cfg['encoder-hidden-dim'],
             num_layers=cfg['num-layers'],
             bidirectional=cfg['bidirectional'],
+            #dropout=cfg['dropout']
         )
 
 def choose_hidden_state(hidden_states, lens=None, decision='max'):
