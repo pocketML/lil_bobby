@@ -10,7 +10,7 @@ STUDENT_MODELS = {
     'glue' : GlueBILSTM,
     'wasserblat-ffn': WASSERBLAT_FFN,
     'tang': TangBILSTM,
-    'char': CharRNN
+    'char-rnn': CharRNN
 }
 
 def load_student(task, student_type, use_gpu, model_name=None):
