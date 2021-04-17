@@ -81,7 +81,7 @@ def print_model_size(model):
     total_params, total_bits = get_model_size(model)
     print(f'total num parameters: {total_params}')
     print(f'size in bits: {total_bits}')
-    print(f'size in MBs: {total_bits/8000000:.1f}')
+    print(f'size in MBs: {total_bits/8000000:.3f}')
     print('-'*20)
 
 def print_named_params(model, arch):
@@ -93,5 +93,5 @@ def print_named_params(model, arch):
 
 def print_model_disk_size(model):
     torch.save(model.state_dict(), "tmp.pt")
-    print("%.2f MB" %(os.path.getsize("tmp.pt")/1e6))
+    print("%.3f MB" %(os.path.getsize("tmp.pt")/1e6))
     os.remove('tmp.pt')
