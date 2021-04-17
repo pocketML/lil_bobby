@@ -21,7 +21,6 @@ def args_distill(args=None, namespace=None, parse_known=False):
 
 def args_quantize(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--load-trained-model", type=str, required=True)
     ap.add_argument("--ptq-embedding", action="store_true")
     ap.add_argument("--dq-encoder", action="store_true")
     group = ap.add_mutually_exclusive_group()
@@ -34,21 +33,21 @@ def args_quantize(args=None, namespace=None, parse_known=False):
 
 def args_prune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pruning-threshold", type=float)
+    ap.add_argument("--prune-magnitude-static", action="store_true")
+    ap.add_argument("--prune-magnitude-aware", action="store_true")
+    ap.add_argument("--prune-movement", action="store_true")
+    ap.add_argument("--prune-threshold", type=float, required=True)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
     return ap.parse_args(args=args, namespace=namespace)
-
 
 # define arguments for model compression
 def args_compress():
     ap = argparse.ArgumentParser()
     compression_actions = {
         'distill': args_distill,
-        'prune-magnitude-static': args_prune,
-        'prune-magnitude-aware': args_prune,
-        'prune-movement': args_prune,
+        'prune': args_prune,
         'quantize': args_quantize,
         #'quantize-dynamic': None,
         #'quantize-static': None,
@@ -57,6 +56,7 @@ def args_compress():
     ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
 
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
+    ap.add_argument("--load-trained-model", type=str, required=True)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--checkpoint-path", default="checkpoints")
     ap.add_argument("--cpu", action="store_true")
