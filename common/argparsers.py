@@ -13,7 +13,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--temperature", type=int, default=1)
     ap.add_argument("--alpha", type=float, default=0.5)
-    ap.add_argument("--early-stopping", type=int, default=5)
+    ap.add_argument("--early-stopping", type=int, default=10)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
