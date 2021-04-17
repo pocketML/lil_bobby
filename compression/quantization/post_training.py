@@ -7,13 +7,10 @@ import copy
 import evaluate
 from common import data_utils
 
-def quantize_embeddings(model, args, inplace=False):
+def quantize_embeddings(model, args, dl, device, inplace=False):
     if not inplace:
         model = copy.deepcopy(model)
     model.eval()
-    val_data = data_utils.load_val_data(args.task)
-    dl = data_utils.get_dataloader_dict_val(model, val_data)
-    device = torch.device('cpu') if args.cpu else torch.device('cuda')
     model.embedding.qconfig = quant.float_qparams_weight_only_qconfig
     model.embedding = nn.Sequential(quantized.Embedding.from_float(model.embedding), quant.DeQuantStub())
     quant.prepare(model.embedding, inplace=True)
@@ -26,18 +23,15 @@ def quantize_encoder(model, inplace=False):
         model = copy.deepcopy(model)
     model.eval()
     model = quant.quantize_dynamic(
-        model, qconfig_spec={nn.LSTM}, dtype=torch.qint8
+        model, qconfig_spec={nn.LSTM, nn.RNN}, dtype=torch.qint8
     )
     return model
 
-def quantize_classifier(model, args, type='static', inplace=False):
+def quantize_classifier(model, args, dl, device, type='static', inplace=False):
     if not inplace:
         model = copy.deepcopy(model)
     model.eval()
     if type == 'static':
-        val_data = data_utils.load_val_data(args.task)
-        dl = data_utils.get_dataloader_dict_val(model, val_data)
-        device = torch.device('cpu') if args.cpu else torch.device('cuda')
         model.classifier = quant.QuantWrapper(model.classifier)
         model.classifier.qconfig = quant.default_qconfig
         quant.prepare(model.classifier, inplace=True)
