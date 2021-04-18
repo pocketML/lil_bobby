@@ -56,7 +56,7 @@ class HashEmbedding(nn.Module):
         self.right_shift = 7
         self.vocab_size = self.K
         self.weights = nn.Embedding(self.vocab_size * num_hashes + num_hashes, 1)
-        self.embedding = nn.EmbeddingBag(self.B, self.embedding_dim, mode='sum')
+        self.embedding = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
         self.is_quantized = False
         self.quant = quant.QuantStub()
         self.dequant = quant.DeQuantStub()
@@ -89,18 +89,12 @@ class HashEmbedding(nn.Module):
         weights = self.weights(weight_idx.view(indices.shape[0], -1))
         weights = weights.view(indices.shape[0], indices.shape[1], -1)
         if self.is_quantized:
-            print(indices.dtype)
-            print(indices.shape)
-            print(self.quant(weights).dtype)
-            print(weights.shape)
             x = torch.stack([
                 self.embedding(
-                    indices[i,:,:])
-                    #per_sample_weights=self.quant(weights[i,:,:]))
+                    indices[i,:,:],
+                    per_sample_weights=weights[i,:,:])
                 for i in range(indices.shape[0])
             ])
-            x = self.dequant(x)
-            x = self.embedding[1](x)
         else:
             x = torch.stack([
                 self.embedding(indices[i,:,:], per_sample_weights=weights[i,:,:])
