@@ -33,6 +33,8 @@ def quantize(task, model, device, args):
         print("** quantizing classifier **")
         model = ptq.quantize_classifier(model, args, dl, device, type='static')
 
+    print(model)
+
     evaluate.evaluate_distilled_model(model, dl, device, args, None)
     parameters.print_model_disk_size(model)
     print()
@@ -58,7 +60,7 @@ def distill(task, model, device, args, sacred_experiment):
     epochs = args.epochs
     temperature = args.temperature
 
-    distillation_data = data_utils.load_all_distillation_data(task)
+    distillation_data = data_utils.load_all_distillation_data(task, only_original_data=args.original_data)
     print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
     val_data = data_utils.load_val_data(task)
     model.to(device)
