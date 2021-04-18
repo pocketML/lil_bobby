@@ -14,5 +14,6 @@
     "batch-first": true,
     "num-layers": 1,
     "bidirectional": true,
-    "type": "lstm"
+    "type": "lstm",
+    "embedding-type": "bpe"
 }

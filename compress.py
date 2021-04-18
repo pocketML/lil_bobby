@@ -5,8 +5,8 @@ from common import argparsers, data_utils, task_utils
 from compression.distill import train_loop
 from compression.distillation.models import DistLossFunction, load_student
 import evaluate
-from compression.pruning import magnitude_pruning, ratio_zero
-from compression.quantization import post_training as ptq
+from compression.prune import magnitude_pruning, ratio_zero
+from compression import quantize as ptq
 from analysis import parameters
 import warnings
 

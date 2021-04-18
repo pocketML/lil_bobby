@@ -108,7 +108,6 @@ def get_lstm(cfg):
             hidden_size=cfg['encoder-hidden-dim'],
             num_layers=cfg['num-layers'],
             bidirectional=cfg['bidirectional'],
-            #dropout=cfg['dropout']
         )
 
 def choose_hidden_state(hidden_states, lens=None, decision='max'):
