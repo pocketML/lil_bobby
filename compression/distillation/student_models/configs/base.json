@@ -15,5 +15,7 @@
     "num-layers": 1,
     "bidirectional": true,
     "type": "lstm",
-    "embedding-type": "bpe"
+    "rho": 0.95,
+    "embedding-type": "bpe",
+    "num-hashes": 3
 }

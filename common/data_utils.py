@@ -36,11 +36,13 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task):
+def load_all_distillation_data(task, only_original_data=False):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     distillation_data = []
-    train_files = glob(f"{base_path}/*.tsv")
-    #train_files = glob(f"{base_path}/train.tsv")
+    if only_original_data:
+        train_files = glob(f"{base_path}/train.tsv")
+    else:
+        train_files = glob(f"{base_path}/*.tsv")
     for filename in train_files:
         loaded_data = load_distillation_data(filename)
 

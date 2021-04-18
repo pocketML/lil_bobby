@@ -1,7 +1,6 @@
 from analysis import parameters
 from compression.distillation import models as distill_models
 from compression.quantization import post_training
-from compression.pruning import magnitude
 from common import argparsers, model_utils
 
 def main(args, sacred_experiment=None):

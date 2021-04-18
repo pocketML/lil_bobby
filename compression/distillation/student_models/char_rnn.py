@@ -7,8 +7,6 @@ import unicodedata
 import string
 import hashlib
 
-from torch.quantization.stubs import DeQuantStub
-
 from compression.distillation.student_models import base
 
 # one-hot encoding of chars
@@ -133,4 +131,17 @@ class CharRNN(base.StudentModel):
         return x
 
     def encode(self, sent):
+<<<<<<< HEAD
         return self.emb.encode(sent)
+=======
+        sent = self.char_emb.strip_sentence(sent).strip()
+        if len(sent) <= 0:
+            return [self.char_emb.vocab_size]
+        return [self.char_emb.mapping[c] for c in sent]
+
+    def get_optimizer(self):
+        return optim.Adadelta(
+            self.parameters(), lr=self.cfg['lr'],
+            rho=self.cfg['rho']
+        )
+>>>>>>> 076a8c5 (small stuff)

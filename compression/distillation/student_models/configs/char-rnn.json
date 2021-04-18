@@ -4,7 +4,7 @@
     "batch-size": 50,
     "cls-hidden-dim": 100,
     "num-layers": 1,
-    "lr": 1e-4,
+    "lr": 5e-4,
     "weight-decay": 1e-5,
     "dropout": 0.1,
     "type": "rnn",
