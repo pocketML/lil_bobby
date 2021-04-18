@@ -8,5 +8,8 @@
     "weight-decay": 1e-5,
     "dropout": 0.1,
     "type": "rnn",
-    "embedding-dim": 100
+    "embedding-dim": 100,
+    "embedding-type": "hash",
+    "vocab-size": 512,
+    "num-hashes": 3
 }

@@ -1,9 +1,15 @@
-import unicodedata
 import torch
-from torch.nn.modules import dropout
-from compression.distillation.student_models import base
-import string
 import torch.nn as nn
+import torch.quantization as quant
+import torch.nn.quantized as quantized
+
+import unicodedata
+import string
+import hashlib
+
+from torch.quantization.stubs import DeQuantStub
+
+from compression.distillation.student_models import base
 
 # one-hot encoding of chars
 # what would happen if the tensor is for a word
@@ -33,15 +39,87 @@ class CharEmbedding():
             if unicodedata.category(c) != 'Mn').encode('ascii', 'ignore').decode('utf-8')
         return ''.join(c for c in ascii if c in self.vocab)
 
+    def encode(self, sent):
+        sent = self.strip_sentence(sent).strip()
+        if len(sent) <= 0:
+            return [self.vocab_size]
+        return [self.mapping[c] for c in sent]
+
+# let's keep hash weights to a list of len 256 + 1
+class HashEmbedding(nn.Module):
+    def __init__(self, num_hashes, embedding_dim):
+        super().__init__()
+        self.num_hashes = num_hashes
+        self.embedding_dim = embedding_dim
+        self.K = 512
+        self.B = 256
+        self.right_shift = 7
+        self.vocab_size = self.K
+        self.weights = nn.Embedding(self.vocab_size * num_hashes + num_hashes, 1)
+        self.embedding = nn.EmbeddingBag(self.B, self.embedding_dim, mode='sum')
+        self.is_quantized = False
+        self.quant = quant.QuantStub()
+        self.dequant = quant.DeQuantStub()
+
+    def encode(self, sent):
+        sent_stack = []
+        for word in sent.split(" "):
+            word_stack = []
+            for i in range(self.num_hashes):
+                salted_word =  f'{i}{word}'
+                hashed = hashlib.md5(salted_word.encode('utf-8')).digest()[-2:]
+                hashed_int = int.from_bytes(hashed, 'big') >> self.right_shift
+                word_stack.append(hashed_int)
+            sent_stack.append(torch.LongTensor(word_stack))
+        out = torch.stack(sent_stack)
+        return out
+
+    def prepare_quantization(self):
+        self.weights.qconfig = quant.float_qparams_weight_only_qconfig
+        self.weights = quantized.Embedding.from_float(self.weights)
+        self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
+        self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
+        self.is_quantized = True
+
+    def forward(self, x):
+        indices = x // 2
+        weight_idx = x
+        for i in range(self.num_hashes):
+            weight_idx[:,:,i] += i * (self.K + 1)
+        weights = self.weights(weight_idx.view(indices.shape[0], -1))
+        weights = weights.view(indices.shape[0], indices.shape[1], -1)
+        if self.is_quantized:
+            print(indices.dtype)
+            print(indices.shape)
+            print(self.quant(weights).dtype)
+            print(weights.shape)
+            x = torch.stack([
+                self.embedding(
+                    indices[i,:,:])
+                    #per_sample_weights=self.quant(weights[i,:,:]))
+                for i in range(indices.shape[0])
+            ])
+            x = self.dequant(x)
+            x = self.embedding[1](x)
+        else:
+            x = torch.stack([
+                self.embedding(indices[i,:,:], per_sample_weights=weights[i,:,:])
+                for i in range(indices.shape[0])
+            ])
+        return x
+        
+
 class CharRNN(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.char_emb = CharEmbedding()
-        vocab_size = self.char_emb.vocab_size
-        cfg['vocab-size'] = vocab_size
-        #cfg['type'] = 'lstm'
-        self.embedding = nn.Embedding(vocab_size + 1, cfg["embedding-dim"])#.from_pretrained(self.char_emb.vectors)
+        if cfg['embedding-type'] == 'hash':
+            self.emb = HashEmbedding(cfg['num-hashes'], cfg['embedding-dim'])
+            self.embedding = self.emb
+            self.cfg['vocab-size'] = self.emb.vocab_size
+        else:
+            self.emb = nn.Embedding(cfg['vocab-size'] + 1, cfg["embedding-dim"])
+            self.embedding = self.emb
  
         self.n_classes = 2
         #self.rnn = base.get_lstm(cfg)
@@ -61,7 +139,4 @@ class CharRNN(base.StudentModel):
         return x
 
     def encode(self, sent):
-        sent = self.char_emb.strip_sentence(sent).strip()
-        if len(sent) <= 0:
-            return [self.char_emb.vocab_size]
-        return [self.char_emb.mapping[c] for c in sent]
+        return self.emb.encode(sent)
