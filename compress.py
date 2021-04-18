@@ -1,4 +1,5 @@
 from argparse import ArgumentError
+import argparse
 import torch
 import torch.nn as nn
 from common import argparsers, data_utils, task_utils
@@ -120,5 +121,5 @@ def main(args, sacred_experiment=None):
 if __name__ == "__main__":
     ARGS, remain = argparsers.args_compress()
     if len(remain) > 0:
-        raise ArgumentError(f"Couldn't parse: {remain}")
+        raise Exception(f"Couldn't parse: {remain}")
     main(ARGS)

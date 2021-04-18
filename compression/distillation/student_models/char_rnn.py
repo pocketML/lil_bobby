@@ -77,6 +77,7 @@ class HashEmbedding(nn.Module):
         self.weights = quantized.Embedding.from_float(self.weights)
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
         self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
+        self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
         self.is_quantized = True
 
     def forward(self, x):
@@ -114,8 +115,7 @@ class CharRNN(base.StudentModel):
             self.embedding = self.emb
  
         self.n_classes = 2
-        #self.rnn = base.get_lstm(cfg)
-        self.rnn = nn.RNN(cfg["embedding-dim"], cfg['encoder-hidden-dim'], cfg['num-layers'], batch_first=cfg['batch-first'], dropout=cfg['dropout'])
+        self.encoder = nn.RNN(cfg["embedding-dim"], cfg['encoder-hidden-dim'], cfg['num-layers'], batch_first=cfg['batch-first'], dropout=cfg['dropout'])
         self.classifier = nn.Sequential(
             nn.Linear(cfg['encoder-hidden-dim'], cfg['cls-hidden-dim']),
             nn.ReLU(),
@@ -125,23 +125,10 @@ class CharRNN(base.StudentModel):
 
     def forward(self, sents, lengths):
         emb = self.embedding(sents)
-        h = base.pack_rnn_unpack(self.rnn, self.cfg, emb, lengths, emb.shape[0])
+        h = base.pack_rnn_unpack(self.encoder, self.cfg, emb, lengths, emb.shape[0])
         x = base.choose_hidden_state(h, lens=lengths, decision='last')
         x = self.classifier(x)
         return x
 
     def encode(self, sent):
-<<<<<<< HEAD
         return self.emb.encode(sent)
-=======
-        sent = self.char_emb.strip_sentence(sent).strip()
-        if len(sent) <= 0:
-            return [self.char_emb.vocab_size]
-        return [self.char_emb.mapping[c] for c in sent]
-
-    def get_optimizer(self):
-        return optim.Adadelta(
-            self.parameters(), lr=self.cfg['lr'],
-            rho=self.cfg['rho']
-        )
->>>>>>> 076a8c5 (small stuff)
