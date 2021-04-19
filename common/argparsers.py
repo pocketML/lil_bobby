@@ -14,19 +14,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--temperature", type=int, default=1)
     ap.add_argument("--alpha", type=float, default=0.5)
     ap.add_argument("--early-stopping", type=int, default=10)
-
-    if parse_known:
-        return ap.parse_known_args(args=args, namespace=namespace)
-    return ap.parse_args(args=args, namespace=namespace)
-
-def args_quantize(args=None, namespace=None, parse_known=False):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--load-trained-model", type=str, required=True)
-    ap.add_argument("--ptq-embedding", action="store_true")
-    ap.add_argument("--dq-encoder", action="store_true")
-    group = ap.add_mutually_exclusive_group()
-    group.add_argument("--dq-classifier", action="store_true")
-    group.add_argument("--ptq-classifier", action="store_true")
+    ap.add_argument("--original-data", action="store_true")
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -62,14 +50,11 @@ def args_compress():
         'distill': args_distill,
         'prune': args_prune,
         'quantize': args_quantize,
-        #'quantize-dynamic': None,
-        #'quantize-static': None,
-        #'quantize-qat': None,
     }
     ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
 
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--load-trained-model", type=str, required=True)
+    ap.add_argument("--load-trained-model", type=str)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--checkpoint-path", default="checkpoints")
     ap.add_argument("--cpu", action="store_true")
