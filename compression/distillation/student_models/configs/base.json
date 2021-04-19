@@ -17,5 +17,6 @@
     "type": "lstm",
     "rho": 0.95,
     "embedding-type": "bpe",
-    "num-hashes": 3
+    "num-hashes": 3,
+    "hash-ratio": 10
 }

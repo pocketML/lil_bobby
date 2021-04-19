@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from embeddings.cbow import load_pretrained_embeddings
+from embedding import embeddings
 from compression.distillation.student_models.base import StudentModel
 
 class WASSERBLAT_FFN(StudentModel):
@@ -15,8 +15,7 @@ class WASSERBLAT_FFN(StudentModel):
         #     lang="en", dim=self.cfg['embedding-dim'],
         #     vs=self.cfg['vocab-size'], add_pad_emb=True
         # )
-        self.cbow = load_pretrained_embeddings(cfg["task"], cfg["embedding-dim"])
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.cbow.vectors))
+        self.embedding = embeddings.get_embedding(cfg)
 
         self.dropout1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
 
@@ -48,6 +47,3 @@ class WASSERBLAT_FFN(StudentModel):
 
         x = self.classfier(x)
         return x
-
-    def encode(self, sentence):
-        return self.cbow.encode(sentence)

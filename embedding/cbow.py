@@ -1,11 +1,15 @@
-import pickle
 import torch
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
+import torch.quantization as quant
+import torch.nn.quantized as quantized
+
+import pickle
+import numpy as np
 from collections import Counter
 import unicodedata
+
 from common import data_utils
 from common.model_utils import get_model_path
 
@@ -21,12 +25,23 @@ class CBOWDataset(Dataset):
     def __getitem__(self, idx):
         return self.sentences[idx], self.targets[idx]
 
-class CBOWEmbeddings():
-    def __init__(self, embedding_dim):
+class CBOWEmbedding(nn.Module):
+    def __init__(self, cfg, embedding_dim=None):
+        if cfg is None and embedding_dim is None:
+            raise Exception("You have to pass either a cfg dict or an embedding dimension")
+
         self.vectors = None
         self.word_to_idx = None
-        self.embedding_dim = embedding_dim
         self.specials = {'unknown': 0, 'pad': 1}
+
+        if cfg is not None:
+            self.embedding_dim = cfg['embedding-dim']
+            self.load(cfg['task'])
+            vectors = torch.from_numpy(self.vectors)
+            self.embedding = nn.Embedding.from_pretrained(vectors)
+        else:
+            self.embedding_dim = embedding_dim
+            self.embedding = None
 
     def tokenize(self, sentence):
         out = []
@@ -52,6 +67,15 @@ class CBOWEmbeddings():
 
     def encode(self, sentence):
         return torch.LongTensor([self.word_to_idx.get(w, self.specials['unknown']) for w in sentence])
+
+    # is inplace
+    def prepare_quantization(self):
+        self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
+        self.embedding = quantized.Embedding.from_float(self.embedding)
+        self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+
+    def forward(self, x):
+        return self.embedding(x)
 
     def save(self, task):
         model_path = get_model_path(task, "embeddings")
@@ -144,7 +168,7 @@ def get_dataloader(tokenized_data, cbowemb, context_size, batch_size=32):
     )
 
 def load_pretrained_embeddings(task, embedding_dim):
-    cbowemb = CBOWEmbeddings(embedding_dim)
+    cbowemb = CBOWEmbedding(None, embedding_dim=embedding_dim)
     cbowemb.load(task)
 
     return cbowemb
@@ -163,7 +187,7 @@ def train_embeddings(
     print("Data loaded...")
 
     # found perfect vocab content
-    cbowemb = CBOWEmbeddings(embedding_dim)
+    cbowemb = CBOWEmbedding(None, embedding_dim=embedding_dim)
     tokenized_data = cbowemb.create_vocab(loaded_data, vocab_size)
     model = CBOW(cbowemb, vocab_size, context_size, batch_size)
     if not use_cpu:
