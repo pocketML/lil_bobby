@@ -36,9 +36,6 @@ class StudentModel(nn.Module):
         self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
         self.eval()
 
-    def encode(self, sentence):
-        return self.bpe.encode_ids(sentence)
-
 def update_student_config_from_file(cfg, path):
     with open(path, 'r') as f:
         loaded = json.load(f)

@@ -1,8 +1,8 @@
-import torch
 import torch.nn as nn
-from bpemb import BPEmb
+
 from common.task_utils import TASK_LABEL_DICT
 from compression.distillation.student_models import base
+from embedding import embeddings
 
 # Model inspired by https://openreview.net/pdf?id=rJ4km2R5t7
 # https://github.com/nyu-mll/GLUE-baselines/tree/master/src
@@ -12,8 +12,7 @@ class GlueBILSTM(base.StudentModel):
         self.dropout = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
 
         # embedding
-        self.bpe = BPEmb(lang="en", dim=self.cfg['embedding-dim'], vs=self.cfg['vocab-size'], add_pad_emb=True)
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors)).float()
+        self.embedding = embeddings.get_embedding(cfg)
         
         # encoding
         self.bilstm = base.get_lstm(self.cfg)
