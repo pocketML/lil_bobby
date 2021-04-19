@@ -14,7 +14,7 @@ class BPEmbedding(nn.Module):
         self.embedding = self.embedding.float()
 
     def encode(self, sent):
-        self.bpe.encode_ids(sent)
+        return self.bpe.encode_ids(sent)
     
      # is inplace
     def prepare_quantization(self):

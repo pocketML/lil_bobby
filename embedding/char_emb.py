@@ -14,7 +14,7 @@ class CharEmbedding(nn.Module):
         self.vocab_size = len(self.vocab)
         cfg['vocab-size'] = self.vocab_size
         self.mapping = {c: i for i, c in enumerate(self.vocab)}
-        self.embedding = nn.Embedding(self.vocab_size, cfg['embedding-dim'])
+        self.embedding = nn.Embedding(self.vocab_size + 1, cfg['embedding-dim']) # +1 for pad
 
     # from https://stackoverflow.com/a/518232      
     def strip_sentence(self, sentence):
@@ -28,7 +28,7 @@ class CharEmbedding(nn.Module):
         if len(sent) <= 0:
             return [self.vocab_size]
         return [self.mapping[c] for c in sent]
-        
+
     # is inplace
     def prepare_quantization(self):
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig

@@ -27,6 +27,7 @@ class CBOWDataset(Dataset):
 
 class CBOWEmbedding(nn.Module):
     def __init__(self, cfg, embedding_dim=None):
+        super().__init__()
         if cfg is None and embedding_dim is None:
             raise Exception("You have to pass either a cfg dict or an embedding dimension")
 

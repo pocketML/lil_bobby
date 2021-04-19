@@ -89,7 +89,7 @@ def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size):
     packed = pack_padded_sequence(embedded, lens, batch_first=cfg['batch-first'])
     if cfg['type'] == 'lstm':
         out, _ = rnn(packed, init_hidden())
-    else:
+    else: # we got an rnn
         out, _ = rnn(packed, init_hidden()[0])
 
     unpacked, _ = pad_packed_sequence(out, batch_first=cfg['batch-first'])
