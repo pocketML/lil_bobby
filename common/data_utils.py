@@ -36,11 +36,13 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task):
+def load_all_distillation_data(task, only_original_data=False):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     distillation_data = []
-    train_files = glob(f"{base_path}/*.tsv")
-    #train_files = glob(f"{base_path}/train.tsv")
+    if only_original_data:
+        train_files = glob(f"{base_path}/train.tsv")
+    else:
+        train_files = glob(f"{base_path}/*.tsv")
     for filename in train_files:
         loaded_data = load_distillation_data(filename)
 
@@ -87,9 +89,9 @@ class DistillationPairData(Dataset):
 def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
     label_tensors = [torch.LongTensor([model.label_dict[x.strip()]]) for x in labels]
     logit_tensors = None if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
-    sents1_tensors = [torch.LongTensor(model.encode(sent)) for sent in sentences1]
+    sents1_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences1]
     if sentences2 is not None:
-        sents2_tensors = [torch.LongTensor(model.encode(sent)) for sent in sentences2]
+        sents2_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences2]
         return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors)
     else:
         return DistillationData(sents1_tensors, label_tensors, logit_tensors)
@@ -106,7 +108,7 @@ def get_dataloader_dict_val(model, validation_data):
             batch_size=model.cfg['batch-size'],
             shuffle=True,
             drop_last=False,
-            collate_fn=create_collate_fn(model.cfg['vocab-size'])
+            collate_fn=create_collate_fn(model.cfg)
         )
 
 def get_dataloader_dict(model, distillation_data, validation_data):
@@ -126,21 +128,31 @@ def get_dataloader_dict(model, distillation_data, validation_data):
             batch_size=model.cfg['batch-size'],
             shuffle=True,
             drop_last=x == 'train',
-            collate_fn=create_collate_fn(model.cfg['vocab-size'])) for x in ['train', 'val']}
+            collate_fn=create_collate_fn(model.cfg)) for x in ['train', 'val']}
     return dataloaders
 
 # pads sentences in a batch to equal length
 # code inspired by https://github.com/hpanwar08/sentence-classification-pytorch/
 # TODO: remember to make this function, or a similar for sentence pairs
-def create_collate_fn(pad_idx):
+def create_collate_fn(cfg):
+    pad_idx = cfg['vocab-size']
+    use_hash_emb = cfg['embedding-type'] == 'hash'
+    if use_hash_emb:
+        num_hashes = cfg['num-hashes']
     def collate_fn(data):
         data.sort(key=lambda x: len(x[0]), reverse=True)
         if len(data[0]) == 4: # single sentence
             lens = [length for _,length,_,_ in data]
             labels, all_logits, lengths = [], [], []
-            padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
+            if use_hash_emb:
+                padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
+            else:
+                padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
             for i, (sent, length, label, logits) in enumerate(data):
-                padded_sents[i,:lens[i]] = sent
+                if use_hash_emb:
+                    padded_sents[i, :lens[i],] = sent
+                else:
+                    padded_sents[i,:lens[i]] = sent
                 labels.append(label)
                 all_logits.append(logits)
                 lengths.append(length)

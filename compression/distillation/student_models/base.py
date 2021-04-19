@@ -36,9 +36,6 @@ class StudentModel(nn.Module):
         self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
         self.eval()
 
-    def encode(self, sentence):
-        return self.bpe.encode_ids(sentence)
-
 def update_student_config_from_file(cfg, path):
     with open(path, 'r') as f:
         loaded = json.load(f)
@@ -92,7 +89,7 @@ def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size):
     packed = pack_padded_sequence(embedded, lens, batch_first=cfg['batch-first'])
     if cfg['type'] == 'lstm':
         out, _ = rnn(packed, init_hidden())
-    else:
+    else: # we got an rnn
         out, _ = rnn(packed, init_hidden()[0])
 
     unpacked, _ = pad_packed_sequence(out, batch_first=cfg['batch-first'])
@@ -108,7 +105,6 @@ def get_lstm(cfg):
             hidden_size=cfg['encoder-hidden-dim'],
             num_layers=cfg['num-layers'],
             bidirectional=cfg['bidirectional'],
-            #dropout=cfg['dropout']
         )
 
 def choose_hidden_state(hidden_states, lens=None, decision='max'):
