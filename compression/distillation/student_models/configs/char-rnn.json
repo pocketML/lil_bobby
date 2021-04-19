@@ -10,6 +10,7 @@
     "type": "rnn",
     "embedding-dim": 100,
     "embedding-type": "hash",
-    "vocab-size": 512,
+    "vocab-size": 5000,
+    "hash-ratio": 10,
     "num-hashes": 3
 }
