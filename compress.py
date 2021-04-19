@@ -10,6 +10,7 @@ from compression.prune import magnitude_pruning, ratio_zero
 from compression import quantize as ptq
 from analysis import parameters
 import warnings
+import random
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -65,6 +66,9 @@ def distill(task, model, device, args, sacred_experiment):
     print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
     val_data = data_utils.load_val_data(task)
     model.to(device)
+    #for name, x in model.named_parameters():
+    #    print(name, x.is_cuda)
+    #exit()
     print(f"*** Loaded {len(val_data[0])} validation data samples ***")
 
     criterion = DistLossFunction(
@@ -95,6 +99,7 @@ def main(args, sacred_experiment=None):
     if args.seed_name is not None:
         seed = task_utils.SEED_DICT[args.seed_name]
 
+    random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
