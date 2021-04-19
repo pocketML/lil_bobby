@@ -47,6 +47,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 running_corrects += torch.sum(preds == target_labels.data).item()
                 num_examples += len(lens)
             accuracy = 0 if num_examples == 0 else running_corrects / num_examples
+            print(f'|--> {phase} accuracy: {accuracy:.4f}')
             if phase == "train":
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')
             else:
@@ -60,6 +61,5 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 transponder.send_train_status(epoch, accuracy)
                 if sacred_experiment is not None:
                     sacred_experiment.log_scalar("validation.acc", accuracy)
-            print(f'|--> {phase} accuracy: {accuracy:.4f}')
             if no_improvement == args.early_stopping:
                 return
