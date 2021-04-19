@@ -1,5 +1,5 @@
 from common import argparsers
-from embeddings import cbow
+from embedding import cbow
 
 def main(args, sacred_experiment=None):
     # cbowemb = cbow.train_embeddings(
