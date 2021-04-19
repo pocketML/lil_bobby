@@ -8,7 +8,7 @@ import hashlib
 class HashEmbedding(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-
+        self.cfg = cfg
         self.num_hashes = cfg['num-hashes']
         self.embedding_dim = cfg['embedding-dim']
         self.K = cfg['vocab-size']
@@ -17,6 +17,7 @@ class HashEmbedding(nn.Module):
         self.vocab_size = self.K
         self.weights = nn.Embedding(self.vocab_size * self.num_hashes + self.num_hashes, 1)
         self.embedding = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
+        self.hash_offsets = torch.LongTensor([i * (self.K + 1) for i in range(self.num_hashes)])
 
     def encode(self, sent):
         sent_stack = []
@@ -24,7 +25,7 @@ class HashEmbedding(nn.Module):
             word_stack = []
             for i in range(self.num_hashes):
                 salted_word =  f'{i}{word}'
-                hashed = hashlib.md5(salted_word.encode('utf-8')).digest()[-2:]
+                hashed = hashlib.md5(salted_word.encode('utf-8')).digest()[-4:]
                 hashed_int = int.from_bytes(hashed, 'big') % self.K
                 word_stack.append(hashed_int)
             sent_stack.append(torch.LongTensor(word_stack))
@@ -40,16 +41,18 @@ class HashEmbedding(nn.Module):
         self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
 
     def forward(self, x):
-        indices = x // self.ratio
-        weight_idx = x
-        for i in range(self.num_hashes):
-            weight_idx[:,:,i] += i * (self.K + 1)
-        weights = self.weights(weight_idx.view(indices.shape[0], -1))
-        weights = weights.view(indices.shape[0], indices.shape[1], -1)
-        x = torch.stack([
-            self.embedding(
-                indices[i,:,:],
-                per_sample_weights=weights[i,:,:])
-            for i in range(indices.shape[0])
-        ])
+        batch_size = x.shape[0]
+        seq_len = x.shape[1]
+        
+        if self.cfg['use-gpu']:
+            weight_idx = x + self.hash_offsets.cuda()
+        else:
+            weight_idx = x + self.hash_offsets
+        weights = self.weights(weight_idx.view(batch_size, -1))
+        weights = weights.view(batch_size * seq_len, -1)
+
+        indices = (x // self.ratio).view(batch_size * seq_len, -1)
+        x = self.embedding(indices, per_sample_weights=weights)
+        x = x.view(batch_size, seq_len, -1)
+
         return x
