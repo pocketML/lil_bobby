@@ -69,7 +69,7 @@ def args_compress():
     ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
 
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--load-trained-model", type=str, required=True)
+    ap.add_argument("--load-trained-model", type=str)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--checkpoint-path", default="checkpoints")
     ap.add_argument("--cpu", action="store_true")

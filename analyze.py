@@ -1,23 +1,23 @@
 from analysis import parameters
 from compression.distillation import models as distill_models
 from compression.quantization import post_training
-from compression.pruning import magnitude
 from common import argparsers, model_utils
 
 def main(args, sacred_experiment=None):
     is_finetuned_model = model_utils.is_finetuned_model(args.arch)
     if is_finetuned_model:
-        model = model_utils.load_teacher(args.task, 'checkpoints', use_cpu=True, model_name=args.model_name)
+        model_path = model_utils.get_model_path(args.task, "finetuned")
+        model = model_utils.load_teacher(args.task, model_path, use_cpu=True, model_name=args.model_name)
     else: # is in compressions.distillation.models.STUDENT_MODELS.keys()
         model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
 
     model.eval()
     if args.model_disk_size:
-        model_static_quant = post_training.quantize_model(model)
+        #model_static_quant = post_training.quantize_model(model)
         parameters.print_model_disk_size(model)
-        parameters.print_model_disk_size(model_static_quant)
+        #parameters.print_model_disk_size(model_static_quant)
         print(model)
-        print(model_static_quant)
+        #print(model_static_quant)
     if args.model_size:
         parameters.print_model_size(model)
     if args.weight_hist and is_finetuned_model:
