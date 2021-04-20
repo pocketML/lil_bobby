@@ -126,5 +126,5 @@ def main(args, sacred_experiment=None):
 if __name__ == "__main__":
     ARGS, remain = argparsers.args_compress()
     if len(remain) > 0:
-        raise Exception(f"Couldn't parse: {remain}")
+        raise ArgumentError(None, f"Couldn't parse the following arguments: {remain}")
     main(ARGS)
