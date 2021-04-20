@@ -1,6 +1,6 @@
 from analysis import parameters
 from compression.distillation import models as distill_models
-from compression.quantization import post_training
+from compression import quantize
 from common import argparsers, model_utils
 
 def main(args, sacred_experiment=None):
@@ -13,11 +13,11 @@ def main(args, sacred_experiment=None):
 
     model.eval()
     if args.model_disk_size:
-        #model_static_quant = post_training.quantize_model(model)
+        model_static_quant = quantize.quantize_model(model)
         parameters.print_model_disk_size(model)
-        #parameters.print_model_disk_size(model_static_quant)
+        parameters.print_model_disk_size(model_static_quant)
         print(model)
-        #print(model_static_quant)
+        print(model_static_quant)
     if args.model_size:
         parameters.print_model_size(model)
     if args.weight_hist and is_finetuned_model:

@@ -1,10 +1,14 @@
 import math
-from bpemb import BPEmb
-from compression.distillation.student_models import base
 import torch
 import torch.nn as nn
+from compression.distillation.student_models import base
+from embedding import embeddings
 
 class PositionalEncoding(nn.Module):
+    """
+    With heavy inspiration from:
+    https://github.com/pytorch/examples/blob/master/word_language_model/model.py
+    """
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -21,25 +25,33 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 class Transformer(base.StudentModel):
+    """
+    With heavy inspiration from:
+    https://github.com/pytorch/examples/blob/master/word_language_model/model.py
+    """
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.max_seq_len = 150
-        self.bpe = BPEmb(lang="en", dim=self.cfg['embedding-dim'], vs=self.cfg['vocab-size'], add_pad_emb=True)
+        self.max_seq_len = 100
         self.pos_encoder = PositionalEncoding(cfg["embedding-dim"], cfg["dropout"])
         if cfg["use-gpu"]:
             self.pos_encoder.pos_encode = self.pos_encoder.pos_encode.cuda()
         self.transformer_encoder = torch.nn.TransformerEncoderLayer(
             cfg["embedding-dim"], cfg["attn-heads"], cfg["encoder-hidden-dim"], cfg["dropout"]
         )
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.bpe.vectors)).float()
+        self.embedding = embeddings.get_embedding(cfg)
         self.decoder = nn.Linear(cfg["embedding-dim"], cfg["vocab-size"])
         self.classifier_dim = self.max_seq_len * cfg["vocab-size"]
         self.classifier = nn.Sequential(
             nn.Linear(self.classifier_dim, cfg["cls-hidden-dim"]),
-            nn.ReLU(), 
+            nn.Dropout(cfg["dropout"]),
+            nn.ReLU(),
             nn.Linear(cfg["cls-hidden-dim"], cfg["num-classes"])
         )
+        # This is apparently important.
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform(p)
 
     def forward(self, x, lens):
         emb = self.embedding(x) * math.sqrt(self.cfg["embedding-dim"])
