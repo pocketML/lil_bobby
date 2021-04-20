@@ -6,7 +6,7 @@
     "weight-decay": 0.1,
     "batch-size": 32,
     "cls-hidden-dim": 200,
-    "encoder-hidden-dim": 1024,
+    "encoder-hidden-dim": 200,
     "attn-heads": 4,
     "rho": 0.95
 }

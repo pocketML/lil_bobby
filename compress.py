@@ -1,14 +1,16 @@
 from argparse import ArgumentError
+import argparse
 import torch
 import torch.nn as nn
 from common import argparsers, data_utils, task_utils
 from compression.distill import train_loop
 from compression.distillation.models import DistLossFunction, load_student
 import evaluate
-from compression.pruning import magnitude_pruning, ratio_zero
-from compression.quantization import post_training as ptq
+from compression.prune import magnitude_pruning, ratio_zero
+from compression import quantize as ptq
 from analysis import parameters
 import warnings
+import random
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -32,6 +34,8 @@ def quantize(task, model, device, args):
     elif args.ptq_classifier:
         print("** quantizing classifier **")
         model = ptq.quantize_classifier(model, args, dl, device, type='static')
+
+    print(model)
 
     evaluate.evaluate_distilled_model(model, dl, device, args, None)
     parameters.print_model_disk_size(model)
@@ -58,10 +62,13 @@ def distill(task, model, device, args, sacred_experiment):
     epochs = args.epochs
     temperature = args.temperature
 
-    distillation_data = data_utils.load_all_distillation_data(task)
+    distillation_data = data_utils.load_all_distillation_data(task, only_original_data=args.original_data)
     print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
     val_data = data_utils.load_val_data(task)
     model.to(device)
+    #for name, x in model.named_parameters():
+    #    print(name, x.is_cuda)
+    #exit()
     print(f"*** Loaded {len(val_data[0])} validation data samples ***")
 
     criterion = DistLossFunction(
@@ -92,6 +99,7 @@ def main(args, sacred_experiment=None):
     if args.seed_name is not None:
         seed = task_utils.SEED_DICT[args.seed_name]
 
+    random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)

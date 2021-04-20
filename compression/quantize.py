@@ -5,17 +5,27 @@ import torch
 import copy
 
 import evaluate
-from common import data_utils
 
 def quantize_embeddings(model, args, dl, device, inplace=False):
     if not inplace:
         model = copy.deepcopy(model)
     model.eval()
-    model.embedding.qconfig = quant.float_qparams_weight_only_qconfig
-    model.embedding = nn.Sequential(quantized.Embedding.from_float(model.embedding), quant.DeQuantStub())
-    quant.prepare(model.embedding, inplace=True)
-    evaluate.evaluate_distilled_model(model, dl, device, args, None)
-    quant.convert(model.embedding, inplace=True)
+    if model.cfg['embedding-type'] == 'hash':
+        model.embedding.prepare_quantization()
+        quant.prepare(model.embedding.embedding, inplace=True)
+        quant.prepare(model.embedding.weights, inplace=True)
+        evaluate.evaluate_distilled_model(model, dl, device, args, None)
+        quant.convert(model.embedding.embedding, inplace=True)
+        quant.convert(model.embedding.weights, inplace=True)
+    else:
+        model.embedding.qconfig = quant.float_qparams_weight_only_qconfig
+        model.embedding = nn.Sequential(
+            quantized.Embedding.from_float(model.embedding), 
+            quant.DeQuantStub()
+        )
+        quant.prepare(model.embedding, inplace=True)
+        evaluate.evaluate_distilled_model(model, dl, device, args, None)
+        quant.convert(model.embedding, inplace=True)
     return model
 
 def quantize_encoder(model, inplace=False):
