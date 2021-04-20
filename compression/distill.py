@@ -29,7 +29,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
             iterator = tqdm(dl[phase], leave=False) if args.loadbar else dl[phase]
 
             running_loss, running_corrects, num_examples = 0.0, 0.0, 0
-            for x1, lens, target_labels, target_logits in iterator:                    
+            for x1, lens, target_labels, target_logits in iterator:
                 x1 = x1.to(device)
                 target_labels = target_labels.to(device)
                 if phase == "train":
