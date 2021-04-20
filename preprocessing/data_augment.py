@@ -2,6 +2,7 @@ from abc import abstractmethod
 import random
 import os
 import re
+from glob import glob
 import numpy as np
 from common.task_utils import TASK_INFO
 from common.data_utils import load_train_data
@@ -27,7 +28,14 @@ def load_glove():
     words = []
     embeddings = {}
 
-    with open("data/glove.840B.300d.txt", "r", encoding="utf-8") as fp:
+    glove_files = glob("data/glove.*.txt")
+    if glove_files == []:
+        print("Error: Can't find GLoVE file in 'data/', pls download.")
+        exit(0)
+
+    print(f"Found GLoVE file: {glove_files[0]}")
+
+    with open(glove_files[0], "r", encoding="utf-8") as fp:
         for count, line in enumerate(fp):
             if count == VOCAB_SIZE:
                 break
