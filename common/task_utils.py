@@ -4,6 +4,15 @@ TASK_LABEL_DICT = {
     'sst-2': {
         '1': 0,
         '0': 1,
+    },
+    'mnli': {
+        'contradiction': 0,
+        'neutral': 1,
+        'entailment': 2,
+    },
+    'qqp': {
+        '0': 0,
+        '1': 1,
     }
 }
 
@@ -135,3 +144,6 @@ SEED_DICT = {
 
 def get_processed_path(task):
     return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
+
+def is_sentence_pair(task):
+    return TASK_INFO[task]['settings']['use-sentence-pairs']

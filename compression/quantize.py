@@ -1,6 +1,5 @@
 import torch.nn as nn
 import torch.quantization as quant
-import torch.nn.quantized as quantized
 import torch
 import copy
 
@@ -20,7 +19,7 @@ def quantize_encoder(model, inplace=False):
         model = copy.deepcopy(model)
     model.eval()
     model = quant.quantize_dynamic(
-        model, qconfig_spec={nn.LSTM, nn.RNN}, dtype=torch.qint8
+        model, qconfig_spec={nn.LSTM}, dtype=torch.qint8
     )
     return model
 
