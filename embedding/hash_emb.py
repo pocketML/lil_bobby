@@ -6,6 +6,7 @@ import torch.nn.quantized as quantized
 import hashlib
 
 from embedding.abstract_class import Embedding
+from compression.distillation.student_models import base
 
 class HashEmbedding(Embedding):
     def __init__(self, cfg):
