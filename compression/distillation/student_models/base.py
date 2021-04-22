@@ -78,7 +78,7 @@ def get_dist_loss_function(alpha, criterion_distill, criterion_label, device, te
     return loss
 
 # returns the last hidden state (both fw and bw) for each embedded sentence
-def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size):
+def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size, enforce_sorted=True):
     def init_hidden():
         h = torch.zeros((1 + int(cfg['bidirectional'])) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
         c = torch.zeros((1 + int(cfg['bidirectional'])) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
@@ -87,7 +87,7 @@ def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size):
             c = c.cuda()
         return (h, c)
 
-    packed = pack_padded_sequence(embedded, lens, batch_first=cfg['batch-first'])
+    packed = pack_padded_sequence(embedded, lens, batch_first=cfg['batch-first'], enforce_sorted=enforce_sorted)
     if cfg['type'] == 'lstm':
         out, _ = rnn(packed, init_hidden())
     else: # we got an rnn
