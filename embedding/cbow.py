@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
-import torch.quantization as quant
-import torch.nn.quantized as quantized
 
 import pickle
 import numpy as np
@@ -12,6 +10,7 @@ import unicodedata
 
 from common import data_utils
 from common.model_utils import get_model_path
+from embedding.abstract_class import Embedding
 
 class CBOWDataset(Dataset):
     def __init__(self, sentences, targets):
@@ -25,9 +24,9 @@ class CBOWDataset(Dataset):
     def __getitem__(self, idx):
         return self.sentences[idx], self.targets[idx]
 
-class CBOWEmbedding(nn.Module):
+class CBOWEmbedding(Embedding):
     def __init__(self, cfg, embedding_dim=None):
-        super().__init__()
+        super().__init__(cfg)
         if cfg is None and embedding_dim is None:
             raise Exception("You have to pass either a cfg dict or an embedding dimension")
 
@@ -68,15 +67,6 @@ class CBOWEmbedding(nn.Module):
 
     def encode(self, sentence):
         return torch.LongTensor([self.word_to_idx.get(w, self.specials['unknown']) for w in sentence])
-
-    # is inplace
-    def prepare_quantization(self):
-        self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
-        self.embedding = quantized.Embedding.from_float(self.embedding)
-        self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
-
-    def forward(self, x):
-        return self.embedding(x)
 
     def save(self, task):
         model_path = get_model_path(task, "embeddings")

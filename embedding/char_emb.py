@@ -1,14 +1,13 @@
-import torch
 import torch.nn as nn
-import torch.quantization as quant
-import torch.nn.quantized as quantized
 
 import string
 import unicodedata
 
-class CharEmbedding(nn.Module):
+from embedding.abstract_class import Embedding
+
+class CharEmbedding(Embedding):
     def __init__(self, cfg):
-        super().__init__()
+        super().__init__(cfg)
 
         self.vocab = [x for x in string.ascii_lowercase + " ,.;:?!"]
         self.vocab_size = len(self.vocab)
@@ -28,12 +27,3 @@ class CharEmbedding(nn.Module):
         if len(sent) <= 0:
             return [self.vocab_size]
         return [self.mapping[c] for c in sent]
-
-    # is inplace
-    def prepare_quantization(self):
-        self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
-        self.embedding = quantized.Embedding.from_float(self.embedding)
-        self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
-
-    def forward(self, x):
-        return self.embedding(x)

@@ -1,12 +1,13 @@
-from abc import abstractmethod
-import json
 import torch
 from torch import nn
-from torch.nn.modules import dropout
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.optim import Adam
+
+from abc import abstractmethod
+import json
+
 from common.task_utils import TASK_LABEL_DICT, TASK_INFO
 from common.model_utils import get_model_path
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class StudentModel(nn.Module):
     def __init__(self, cfg):
@@ -79,8 +80,8 @@ def get_dist_loss_function(alpha, criterion_distill, criterion_label, device, te
 # returns the last hidden state (both fw and bw) for each embedded sentence
 def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size):
     def init_hidden():
-        h = torch.zeros((1 + int(cfg['type'] == 'lstm')) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
-        c = torch.zeros((1 + int(cfg['type'] == 'lstm')) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
+        h = torch.zeros((1 + int(cfg['bidirectional'])) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
+        c = torch.zeros((1 + int(cfg['bidirectional'])) * cfg['num-layers'], batch_size, cfg['encoder-hidden-dim'])
         if cfg['use-gpu']:
             h = h.cuda()
             c = c.cuda()
