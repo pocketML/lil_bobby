@@ -2,12 +2,14 @@ import torch
 import torch.nn as nn
 import torch.quantization as quant
 import torch.nn.quantized as quantized
+
 import hashlib
 
+from embedding.abstract_class import Embedding
 
-class HashEmbedding(nn.Module):
+class HashEmbedding(Embedding):
     def __init__(self, cfg):
-        super().__init__()
+        super().__init__(cfg)
         self.cfg = cfg
         self.num_hashes = cfg['num-hashes']
         self.embedding_dim = cfg['embedding-dim']
@@ -33,12 +35,19 @@ class HashEmbedding(nn.Module):
         return out
 
     # is inplace
-    def prepare_quantization(self):
+    def prepare_to_quantize(self):
         self.weights.qconfig = quant.float_qparams_weight_only_qconfig
         self.weights = quantized.Embedding.from_float(self.weights)
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
         self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
         self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+        quant.prepare(self.embedding, inplace=True)
+        quant.prepare(self.weights, inplace=True)
+
+    # is inplace
+    def convert_to_quantized(self):
+        quant.convert(self.embedding, inplace=True)
+        quant.convert(self.weights, inplace=True)
 
     def forward(self, x):
         batch_size = x.shape[0]
