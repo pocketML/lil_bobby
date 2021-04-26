@@ -81,7 +81,8 @@ def main(args, sacred_experiment=None):
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
     if is_finetuned_model:
-        model = model_utils.load_teacher(args.task, 'checkpoints', use_cpu=args.cpu, model_name=args.model_name)
+        model_path = model_utils.get_model_path(args.task, "finetuned")
+        model = model_utils.load_teacher(model_path, use_cpu=args.cpu, model_name=args.model_name)
         model.eval()
         if task in ['sst-2', 'rte']:
             accuracy = evaluate_accuracy(model, task, val_data_path)
