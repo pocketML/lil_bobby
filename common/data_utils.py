@@ -136,6 +136,7 @@ def get_dataloader_dict(model, distillation_data, validation_data):
 # TODO: remember to make this function, or a similar for sentence pairs
 def create_collate_fn(cfg):
     pad_idx = cfg['vocab-size']
+    use_cls_token = cfg['use-cls-token']
     use_hash_emb = cfg['embedding-type'] == 'hash'
     if use_hash_emb:
         num_hashes = cfg['num-hashes']
@@ -144,15 +145,29 @@ def create_collate_fn(cfg):
         if len(data[0]) == 4: # single sentence
             lens = [length for _,length,_,_ in data]
             labels, all_logits, lengths = [], [], []
-            if use_hash_emb:
-                padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
-            else:
-                padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
-            for i, (sent, length, label, logits) in enumerate(data):
+            if use_cls_token:
                 if use_hash_emb:
-                    padded_sents[i, :lens[i],] = sent
+                    padded_sents = torch.empty(len(data), max(lens) + 1, num_hashes).long().fill_(pad_idx)
                 else:
-                    padded_sents[i,:lens[i]] = sent
+                    padded_sents = torch.empty(len(data), max(lens) + 1).long().fill_(pad_idx)
+            else:
+                if use_hash_emb:
+                    padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
+                else:
+                    padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
+            for i, (sent, length, label, logits) in enumerate(data):
+                if use_cls_token:
+                    if use_hash_emb:
+                        padded_sents[i, 1:lens[i] + 1,] = sent
+                        padded_sents[i, 0,] = pad_idx + 1
+                    else:
+                        padded_sents[i, 1:lens[i]+ 1] = sent
+                        padded_sents[i, 0] = pad_idx + 1
+                else:
+                    if use_hash_emb:
+                        padded_sents[i, :lens[i],] = sent
+                    else:
+                        padded_sents[i, :lens[i]] = sent
                 labels.append(label)
                 all_logits.append(logits)
                 lengths.append(length)

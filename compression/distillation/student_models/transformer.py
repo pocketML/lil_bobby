@@ -1,3 +1,4 @@
+from embedding.hash_emb import HashEmbedding
 import math
 import torch
 import torch.nn as nn

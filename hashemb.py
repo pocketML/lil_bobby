@@ -6,8 +6,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+import numpy as np
 
-class Model(nn.Module):
+class HashEmbeddingTrainer(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.embedding = HashEmbedding(cfg)
@@ -32,25 +33,49 @@ class GloveDataset(Dataset):
     def __getitem__(self, idx):
         return self.words[idx], self.logits[idx]
 
+def save_embeddings(model):
+    scalars = np.array(model.embedding.weights.weight.data)
+    vectors = np.array(model.embedding.embedding.weight.data)
+    with open('data/hash_emb_pretrained.npy', 'wb') as f:
+        np.save(f, scalars)
+        np.save(f, vectors)
+
+def load_embeddings(model):
+    with open('data/hash_emb_pretrained.npy', 'rb') as f:
+        scalars = np.load(f)
+        vectors = np.load(f)
+        model.embedding.weights = nn.Embedding.from_pretrained(torch.from_numpy(scalars), freeze=False)
+        model.embedding.embedding = nn.EmbeddingBag.from_pretrained(
+            torch.from_numpy(vectors),
+            mode='sum',
+            freeze=False
+        )
+
 def load_glove(model):
     words, tensors = [], []
-    with open('data/glove.42B.300d.txt', 'r', encoding='utf-8') as fip:
+    lines = None
+    with open('data/glove.42B.300d.txt', 'r', encoding='utf-8') as fip: # TODO make this download if it doesn't exist
         lines = fip.readlines()
-        for line in lines[:1000000]:
-            line = line.strip().split()
-            words.append(model.embedding.encode(line[0]))
-            numbers = [float(x) for x in line[1:]]
-            tensors.append(torch.FloatTensor(numbers))
+        lines = lines[:1000000]
+    for line in lines:
+        line = line.strip().split()
+        words.append(model.embedding.encode(line[0]))
+        numbers = [float(x) for x in line[1:]]
+        tensors.append(torch.FloatTensor(numbers))
     return torch.stack(words), torch.stack(tensors)
 
-def train_on_glove(num_hashes=3, vocab_size=5000, embedding_dim=100, hash_ratio=10, use_gpu=False):
+def train_on_glove(num_hashes=3, vocab_size=5000, embedding_dim=100, hash_ratio=10, use_gpu=True):
+    device =torch.device('cuda') if use_gpu else torch.device('cpu')
+
     cfg = base.get_default_student_config('sst-2', 'char-rnn')
     cfg['num_hashes'] = num_hashes
     cfg['vocab-size'] = vocab_size
     cfg['embedding-dim'] = embedding_dim
     cfg['hash-ratio'] = hash_ratio
     cfg['use-gpu'] = use_gpu
-    model = Model(cfg)
+
+    model = HashEmbeddingTrainer(cfg)
+    model.to(device)
 
     train_data = load_glove(model)
     dataset = GloveDataset(train_data)
@@ -68,19 +93,24 @@ def train_on_glove(num_hashes=3, vocab_size=5000, embedding_dim=100, hash_ratio=
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001)
     print("*** Preparing to train the embeddings... ***")
-
+    best_loss = 2147483647.0
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch + 1}')
         total_loss = 0.0
         for x, y in tqdm(dl):
+            x = x.to(device)
+            y = y.to(device)
             model.zero_grad()
-
             log_probs = model(x)
             loss = criterion(log_probs, y.squeeze())
             loss.backward()
             optimizer.step()
-            total_loss += loss * len(x)
+            total_loss += loss.item() * len(x)
         print(f'|--> Loss {total_loss / len(dl.dataset):.4f}')
+        if total_loss < best_loss:
+            best_loss = total_loss
+            print('*** Saving embeddings ***')
+            save_embeddings(model)
 
-train_on_glove()
-
+if __name__ == "__main__":
+    train_on_glove()
