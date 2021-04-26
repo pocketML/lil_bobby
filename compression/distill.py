@@ -1,6 +1,7 @@
-from common import task_utils, transponder, model_utils
 import torch
 from tqdm import tqdm
+from common import transponder, model_utils
+from compression import prune
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
@@ -17,6 +18,11 @@ def save_checkpoint(model, student_arch, sacred_experiment=None):
 def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):
     best_val_acc = 0
     no_improvement = 0
+    movement_prune = "prune" in args.compression_actions and args.prune_movement
+    pruning_threshold = args.prune_threshold if movement_prune else 0
+    pruning_threshold_stored = None
+    total_steps = 0
+
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
 
@@ -37,9 +43,23 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 target_labels = target_labels.to(device)
                 if phase == "train":
                     target_logits = target_logits.to(device)
+                    if movement_prune and ((pruning_threshold_stored is None) or (total_steps % args.prune_compute == 0)):
+                        # Sort all the values to get the global topK
+                        concat = torch.cat(
+                            [param.view(-1) for param in prune.get_mask_scores(model).values()]
+                        )
+                        n = concat.numel()
+                        kth = max(n - (int(n * pruning_threshold) + 1), 1)
+                        pruning_threshold_stored = concat.kthvalue(kth).values.item()
+                        pruning_threshold = pruning_threshold_stored
+
                 optim.zero_grad()
                 torch.set_grad_enabled(phase == "train")
                 out_logits = model(x1, lens)
+
+                if movement_prune:
+                    prune.movement_pruning(model, pruning_threshold)
+
                 _, preds = torch.max(out_logits, 1)
                 target_labels = target_labels.squeeze()
                 if phase == "train":
@@ -49,9 +69,14 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     running_loss += loss.item() * len(lens)
                 running_corrects += torch.sum(preds == target_labels.data).item()
                 num_examples += len(lens)
+
             accuracy = 0 if num_examples == 0 else running_corrects / num_examples
             if phase == "train":
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')
+                total_steps += 1
+                if movement_prune:
+                    ratio_zero = prune.ratio_zero(model)
+                    print(f"Sparsity: {int(ratio_zero * 100)}%")
             else:
                 if accuracy > best_val_acc:
                     print(f'Saving new best model')
