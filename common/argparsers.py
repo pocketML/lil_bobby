@@ -38,6 +38,7 @@ def args_prune(args=None, namespace=None, parse_known=False):
     ap.add_argument("--prune-magnitude-aware", action="store_true")
     ap.add_argument("--prune-movement", action="store_true")
     ap.add_argument("--prune-threshold", type=float, required=True)
+    ap.add_argument("--prune-compute", type=float, default=15)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -96,6 +97,7 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
     ap.add_argument("--glue-preprocess", action="store_true")
     ap.add_argument("--augment", type=str, choices=augmenters, default=None)
     ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"), default=None)
+    ap.add_argument("--checkpoint-path", default="checkpoints")
     ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--seed", type=int, default=1337)
