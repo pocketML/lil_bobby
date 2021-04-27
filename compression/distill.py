@@ -1,7 +1,7 @@
+from common import task_utils, transponder, model_utils
 import torch
 from tqdm import tqdm
 from common import transponder, model_utils
-from compression import prune
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
@@ -32,7 +32,10 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
 
             running_loss, running_corrects, num_examples = 0.0, 0.0, 0
             for x1, lens, target_labels, target_logits in iterator:
-                x1 = x1.to(device)
+                if task_utils.is_sentence_pair(model.cfg['task']):
+                    x1 = x1[0].to(device), x1[1].to(device)
+                else:
+                    x1 = x1.to(device)
                 target_labels = target_labels.to(device)
                 if phase == "train":
                     target_logits = target_logits.to(device)

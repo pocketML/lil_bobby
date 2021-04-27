@@ -2,12 +2,15 @@ import torch
 import torch.nn as nn
 import torch.quantization as quant
 import torch.nn.quantized as quantized
+
 import hashlib
 
+from embedding.abstract_class import Embedding
+from compression.distillation.student_models import base
 
-class HashEmbedding(nn.Module):
+class HashEmbedding(Embedding):
     def __init__(self, cfg):
-        super().__init__()
+        super().__init__(cfg)
         self.cfg = cfg
         self.num_hashes = cfg['num-hashes']
         self.embedding_dim = cfg['embedding-dim']
@@ -15,9 +18,11 @@ class HashEmbedding(nn.Module):
         self.ratio = cfg['hash-ratio']
         self.B = self.K // self.ratio
         self.vocab_size = self.K
-        self.weights = nn.Embedding(self.vocab_size * self.num_hashes + self.num_hashes, 1)
-        self.embedding = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
-        self.hash_offsets = torch.LongTensor([i * (self.K + 1) for i in range(self.num_hashes)])
+        self.embedding_size = self.B + 1 + int(cfg['use-cls-token'])
+        scalar_size = self.vocab_size * self.num_hashes + self.num_hashes * (1 + int(int(cfg['use-cls-token'])))
+        self.weights = nn.Embedding(scalar_size, 1)
+        self.embedding = nn.EmbeddingBag(self.embedding_size, self.embedding_dim, mode='sum')
+        self.hash_offsets = torch.LongTensor([i * (self.K + 1 + int(cfg['use-cls-token'])) for i in range(self.num_hashes)])
 
     def encode(self, sent):
         sent_stack = []
@@ -33,12 +38,19 @@ class HashEmbedding(nn.Module):
         return out
 
     # is inplace
-    def prepare_quantization(self):
+    def prepare_to_quantize(self):
         self.weights.qconfig = quant.float_qparams_weight_only_qconfig
         self.weights = quantized.Embedding.from_float(self.weights)
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
         self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
         self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+        quant.prepare(self.embedding, inplace=True)
+        quant.prepare(self.weights, inplace=True)
+
+    # is inplace
+    def convert_to_quantized(self):
+        quant.convert(self.embedding, inplace=True)
+        quant.convert(self.weights, inplace=True)
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -56,3 +68,7 @@ class HashEmbedding(nn.Module):
         x = x.view(batch_size, seq_len, -1)
 
         return x
+
+    def init_weight_range(self, init_range):
+        self.weights.weight.data.uniform_(-init_range, init_range)
+        self.embedding.weight.data.uniform_(-init_range, init_range)
