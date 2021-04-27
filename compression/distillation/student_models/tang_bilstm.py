@@ -33,23 +33,20 @@ class TangBILSTM(base.StudentModel):
         )
 
     def forward(self, x, lens):
-        def embed_encode_sents(sents, lengths):
+        def embed_encode_sents(sents, lengths, enforce_sorted=True):
             #embedding
             sents = sents.contiguous()
             emb = self.embedding(sents)
             # encoding
-            h = base.pack_rnn_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0])
+            h = base.pack_rnn_unpack(self.bilstm, self.cfg, emb, lengths, emb.shape[0], enforce_sorted=enforce_sorted)
             return base.choose_hidden_state(h, lens=lengths, decision='last')
 
         if not self.cfg['use-sentence-pairs']:
             x = embed_encode_sents(x, lens)
         else:
-            x1 = embed_encode_sents(x[0], lens[0])
-            x2 = embed_encode_sents(x[1], lens[1])
+            x1 = embed_encode_sents(x[0], lens[0], enforce_sorted=False)
+            x2 = embed_encode_sents(x[1], lens[1], enforce_sorted=False)
             x = base.cat_cmp(x1, x2)
-        # classification
-        #x = self.fc1(x)
-        #x = self.relu(x)
-        #x = self.dropout(x)
-        #x = self.fc2(x)
-        return self.classifier(x)
+
+        x = self.classifier(x)
+        return x

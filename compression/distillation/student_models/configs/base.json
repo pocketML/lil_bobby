@@ -18,5 +18,6 @@
     "rho": 0.95,
     "embedding-type": "bpe",
     "num-hashes": 3,
-    "hash-ratio": 10
+    "hash-ratio": 10,
+    "use-cls-token": false
 }
