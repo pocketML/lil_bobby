@@ -15,7 +15,11 @@ class WASSERBLAT_FFN(StudentModel):
         #     lang="en", dim=self.cfg['embedding-dim'],
         #     vs=self.cfg['vocab-size'], add_pad_emb=True
         # )
+
+        
+
         self.embedding = embeddings.get_embedding(cfg)
+        self.embedding.embedding = nn.Embedding(cfg["vocab-size"]+1, cfg["embedding-dim"])
 
         self.dropout1 = nn.Dropout(p=self.cfg['dropout']) if self.cfg['dropout'] else lambda x: x
 
