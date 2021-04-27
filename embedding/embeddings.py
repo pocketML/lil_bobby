@@ -12,9 +12,9 @@ EMBEDDING_ZOO = {
 
 def get_embedding(cfg):
     if cfg['embedding-type'] == 'cbow': # we have only trained cbow for these parameters
-        cfg['vocab-size'] = 5000 - 1
-        if cfg['vocab-size'] != 5000 - 1:
+        if cfg['vocab-size'] != 5000:
             print(f"CBOW embedding fallback: vocab size from {cfg['vocab-size']} to 5000")
+            cfg['vocab-size'] = 5000
         if cfg['embedding-dim'] != 16:
             print(f"CBOW embedding fallback: embedding dimension from {cfg['embedding-dim']} to 16")
             cfg['embedding-dim'] = 16

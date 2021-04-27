@@ -75,8 +75,8 @@ class DistillationPairData(Dataset):
         super().__init__()
         self.sents1 = sents1
         self.sents2 = sents2
-        self.lens1 = [torch.LongTensor(len(sent)) for sent in self.sents1]
-        self.lens2 = [torch.LongTensor(len(sent)) for sent in self.sents2]
+        self.lens1 = [torch.LongTensor([len(sent)]) for sent in self.sents1]
+        self.lens2 = [torch.LongTensor([len(sent)]) for sent in self.sents2]
         self.labels = labels
         self.logits = logits if logits is not None else [None] * len(sents1)
 
@@ -98,7 +98,7 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
 
 def get_dataloader_dict_val(model, validation_data):
     if len(validation_data) > 2:
-        val_x1, val_x2, val_labels = validation_data
+        val_x1, val_labels, val_x2 = validation_data
         dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
     else:
         val_x1, val_labels = validation_data
@@ -113,9 +113,9 @@ def get_dataloader_dict_val(model, validation_data):
 
 def get_dataloader_dict(model, distillation_data, validation_data):
     datasets = {}
-    if len(distillation_data) > 3:
+    if len(distillation_data) > 3: # sentence_pairs
         train_x1, train_x2, train_labels, train_logits = distillation_data
-        val_x1, val_x2, val_labels = validation_data
+        val_x1, val_labels, val_x2 = validation_data # this is apparently different
         datasets['train'] = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits)
         datasets['val'] = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
     else:
@@ -136,6 +136,7 @@ def get_dataloader_dict(model, distillation_data, validation_data):
 # TODO: remember to make this function, or a similar for sentence pairs
 def create_collate_fn(cfg):
     pad_idx = cfg['vocab-size']
+    use_cls_token = cfg['use-cls-token']
     use_hash_emb = cfg['embedding-type'] == 'hash'
     if use_hash_emb:
         num_hashes = cfg['num-hashes']
@@ -144,20 +145,58 @@ def create_collate_fn(cfg):
         if len(data[0]) == 4: # single sentence
             lens = [length for _,length,_,_ in data]
             labels, all_logits, lengths = [], [], []
-            if use_hash_emb:
-                padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
-            else:
-                padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
-            for i, (sent, length, label, logits) in enumerate(data):
+            if use_cls_token:
                 if use_hash_emb:
-                    padded_sents[i, :lens[i],] = sent
+                    padded_sents = torch.empty(len(data), max(lens) + 1, num_hashes).long().fill_(pad_idx)
                 else:
-                    padded_sents[i,:lens[i]] = sent
+                    padded_sents = torch.empty(len(data), max(lens) + 1).long().fill_(pad_idx)
+            else:
+                if use_hash_emb:
+                    padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
+                else:
+                    padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
+            for i, (sent, length, label, logits) in enumerate(data):
+                if use_cls_token:
+                    if use_hash_emb:
+                        padded_sents[i, 1:lens[i] + 1,] = sent
+                        padded_sents[i, 0,] = pad_idx + 1
+                    else:
+                        padded_sents[i, 1:lens[i]+ 1] = sent
+                        padded_sents[i, 0] = pad_idx + 1
+                else:
+                    if use_hash_emb:
+                        padded_sents[i, :lens[i],] = sent
+                    else:
+                        padded_sents[i, :lens[i]] = sent
                 labels.append(label)
                 all_logits.append(logits)
                 lengths.append(length)
             all_logits = torch.stack(all_logits) if all_logits[0] is not None else all_logits
             return padded_sents, torch.cat(lengths), torch.stack(labels), all_logits 
-        else:
-            raise Exception("please don't be here")
+        else: # sentence pairs
+            lens1 = [length for _,length,_,_,_,_ in data]
+            lens2 = [length for _,_,_,length,_,_ in data]
+            labels, all_logits, lengths1, lengths2 = [], [], [], []
+            if use_hash_emb:
+                padded_sents1 = torch.empty(len(data), max(lens1), num_hashes).long().fill_(pad_idx)
+                padded_sents2 = torch.empty(len(data), max(lens2), num_hashes).long().fill_(pad_idx)
+            else:
+                padded_sents1 = torch.empty(len(data), max(lens1)).long().fill_(pad_idx)
+                padded_sents2 = torch.empty(len(data), max(lens2)).long().fill_(pad_idx)
+            for i, (sent1, length1, sent2, length2, label, logits) in enumerate(data):
+                if use_hash_emb:
+                    padded_sents1[i, :lens1[i],] = sent1
+                    padded_sents2[i, :lens2[i],] = sent2
+                else:
+                    padded_sents1[i,:lens1[i]] = sent1
+                    padded_sents2[i,:lens2[i]] = sent2
+                labels.append(label)
+                all_logits.append(logits)
+                lengths1.append(length1)
+                lengths2.append(length2)
+            all_logits = torch.stack(all_logits) if all_logits[0] is not None else all_logits
+            all_labels = torch.stack(labels)
+            all_sents = (padded_sents1, padded_sents2)
+            all_lengths = (torch.cat(lengths1), torch.cat(lengths2))
+            return all_sents, all_lengths, all_labels, all_logits
     return collate_fn
