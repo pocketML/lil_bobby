@@ -85,7 +85,6 @@ def distill(task, model, device, args, sacred_experiment):
 
     optim = model.get_optimizer()
     if model.cfg['type'] == 'transformer':
-        print("wee in heeere")
         from compression.distillation.student_models.transformer2 import run_badboy
         run_badboy(model, dataloaders, device, criterion, args)
     else:

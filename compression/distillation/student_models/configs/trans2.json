@@ -14,6 +14,6 @@
     "type": "transformer",
     "attn-heads": 4,
     "attn-hidden": 500,
-    "num-layers": 4,
+    "num-layers": 2,
     "use-cls-token": true
 }
