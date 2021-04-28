@@ -159,10 +159,10 @@ def create_collate_fn(cfg):
                 if use_cls_token:
                     if use_hash_emb:
                         padded_sents[i, 1:lens[i] + 1,] = sent
-                        padded_sents[i, 0,] = pad_idx + 1
+                        padded_sents[i, 0,] = pad_idx# + 1
                     else:
                         padded_sents[i, 1:lens[i]+ 1] = sent
-                        padded_sents[i, 0] = pad_idx + 1
+                        padded_sents[i, 0] = pad_idx# + 1
                 else:
                     if use_hash_emb:
                         padded_sents[i, :lens[i],] = sent

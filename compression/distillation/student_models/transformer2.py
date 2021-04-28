@@ -15,7 +15,7 @@ class WarmupOptimizer:
         self.warmup_steps = warmup_steps
         self.scale_factor = scale_factor
         self.d_model = d_model
-        self._step = 0
+        self._step = 1
         self._rate = 0
 
     def step(self):
@@ -74,18 +74,13 @@ class Transformer2(base.StudentModel):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, cfg['num-layers'])
 
         self.classifier = nn.Sequential(
-            #nn.Dropout(cfg['dropout']),
+            nn.Dropout(cfg['dropout']),
             nn.Linear(cfg['embedding-dim'], cfg['cls-hidden-dim']),
+            nn.Dropout(cfg['dropout']),
             nn.ReLU(),
-            #nn.Dropout(cfg['dropout']),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
-        #self.init_weights()
-
-    def generate_square_subsequent_mask(self, sz):
-        mask = (torch.triu(torch.ones(sz,sz)) == 1).transpose(0,1)
-        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-        return mask
+        self.init_weights()
 
     def init_weights(self):
         init_range = 0.1
@@ -96,20 +91,14 @@ class Transformer2(base.StudentModel):
         self.classifier[1].weight.data.uniform_(-init_range, init_range)
         self.classifier[4].weight.data.uniform_(-init_range, init_range)
 
-    def forward(self, x, x_mask):
-        x = self.embedding(x) #* self.embedding_dim_sqrt
+    def forward(self, x, _):
+        x = self.embedding(x)
         x = x.permute(1,0,2)
-        #print(x_mask.shape)
-        #print(x.shape)
         x = self.pos_encoder(x)
-        #print(x.shape)
-        x = self.transformer_encoder(x)#, x_mask)
-        #print(x.shape)
-        x = x.mean(dim=0)
-        #x = x[0,:,:]
-        #print(x.shape)
+        x = self.transformer_encoder(x)
+        #x = x.mean(dim=0)
+        x = x[0,:,:]
         x = self.classifier(x)
-        #print(x.shape)
         return x
 
 def run_badboy(model, dl, device, criterion, args):
@@ -137,13 +126,9 @@ def run_badboy(model, dl, device, criterion, args):
             out = model(x1, None)
             _, preds = torch.max(out, 1)
 
-            if False:
-                print(out)
-                print()
-
             loss = criterion(out, target_logits, target_labels)
             loss.backward()
-            #nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+            nn.utils.clip_grad_norm_(model.parameters(), 0.5)
             optimizer.step()
 
             running_corrects += torch.sum(preds == target_labels.data).item()
@@ -170,7 +155,7 @@ def run_badboy(model, dl, device, criterion, args):
             accuracy = 0 if num_examples == 0 else running_corrects / num_examples
             print(f'| --> Val accuracy:   {accuracy:.4f}') 
     
-    for i in range(1, 21):
+    for i in range(1, 210):
         print(f'* EPOCH {i}')
         train()
         eval()
