@@ -10,7 +10,7 @@
     "rho": 0.95,
     "hash-ratio": 10,
     "num-hashes": 3,
-    "embedding-type": "hash",
+    "embedding-type": "bpe",
     "type": "transformer",
     "attn-heads": 4,
     "attn-hidden": 500,
