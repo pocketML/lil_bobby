@@ -26,13 +26,11 @@ class Embedding(nn.Module):
     def forward(self, x):
         return self.embedding(x)
 
-<<<<<<< HEAD:embedding/abstract_class.py
-    def init_weight_range(self, init_range):
-        self.embedding.weight.data.uniform_(-init_range, init_range)
-=======
     def init_embeddings(self):
         return None
->>>>>>> 310eda2 (Lots of refactoring.):embedding/base.py
+
+    def init_weight_range(self, init_range):
+        self.embedding.weight.data.uniform_(-init_range, init_range)
 
     @abstractmethod
     def encode(self, sent):

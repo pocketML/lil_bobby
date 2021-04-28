@@ -187,3 +187,4 @@ def create_collate_fn(cfg):
             all_lengths = (torch.cat(lengths1), torch.cat(lengths2))
             return all_sents, all_lengths, all_labels, all_logits
     return collate_fn
+    
