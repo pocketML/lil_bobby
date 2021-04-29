@@ -84,14 +84,10 @@ def distill(task, model, device, args, sacred_experiment):
     print(f'*** Dataloaders created ***')
 
     optim = model.get_optimizer()
-    if model.cfg['type'] == 'transformer':
-        from compression.distillation.student_models.transformer2 import run_badboy
-        run_badboy(model, dataloaders, device, criterion, args)
-    else:
-        train_loop(
-            model, criterion, optim, dataloaders, device,
-            args, epochs, sacred_experiment=sacred_experiment
-        )
+    train_loop(
+        model, criterion, optim, dataloaders, device,
+        args, epochs, sacred_experiment=sacred_experiment
+    )
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")

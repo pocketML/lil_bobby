@@ -17,7 +17,8 @@ class StudentModel(nn.Module):
 
     def get_optimizer(self):
         return Adam(
-            self.parameters(), lr=self.cfg['lr'],
+            self.parameters(), 
+            lr=self.cfg['lr'],
             weight_decay=self.cfg['weight-decay']
         )
 

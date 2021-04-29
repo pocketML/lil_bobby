@@ -103,63 +103,15 @@ class Transformer2(base.StudentModel):
         x = self.classifier(x)
         return x
 
-def run_badboy(model, dl, device, criterion, args):
-    lr = 1e-4
-    warmup_start_lr = lr / 100
-    base_optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    optimizer = WarmupOptimizer(
-        base_optimizer, 
-        warmup_steps=100,
-        final_lr=lr,
-        start_lr=warmup_start_lr
-    )
-    #optimizer = base_optimizer
-
-    def train():
-        model.train()
-        running_loss, running_corrects, num_examples = 0, 0, 0
-        iterator = tqdm(dl['train'], leave=False) if args.loadbar else dl['train']
-        for x1, _, target_labels, target_logits in iterator:
-            x1 = x1.to(device)
-            target_labels = target_labels.to(device).squeeze()
-            target_logits = target_logits.to(device)
-
-            optimizer.zero_grad()
-            torch.set_grad_enabled(True)
-
-            out = model(x1, None)
-            _, preds = torch.max(out, 1)
-
-            loss = criterion(out, target_logits, target_labels)
-            loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 0.5)
-            optimizer.step()
-
-            running_corrects += torch.sum(preds == target_labels.data).item()
-            num_examples += len(x1)
-            running_loss += loss.item() * len(x1)
-        accuracy = 0 if num_examples == 0 else running_corrects / num_examples
-        print(f'| --> Train loss:     {running_loss/num_examples:.4f}')
-        print(f'| --> Train accuracy: {accuracy:.4f}')
-
-
-    def eval():
-        running_corrects, num_examples = 0, 0
-        iterator = tqdm(dl['val'], leave=False) if args.loadbar else dl['val']
-        with torch.no_grad():
-            for x1, _, target_labels,_ in iterator:
-                x1 = x1.to(device)
-                target_labels = target_labels.to(device).squeeze()
-                out = model(x1, None)
-
-                _, preds = torch.max(out, 1)
-
-                running_corrects += torch.sum(preds == target_labels.data).item()
-                num_examples += len(x1)
-            accuracy = 0 if num_examples == 0 else running_corrects / num_examples
-            print(f'| --> Val accuracy:   {accuracy:.4f}') 
-    
-    for i in range(1, 210):
-        print(f'* EPOCH {i}')
-        train()
-        eval()
+    def get_optimizer(self):
+        lr = self.cfg['lr']
+        warmup_start_lr = lr / 100
+        base_optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        optimizer = WarmupOptimizer(
+            base_optimizer, 
+            warmup_steps=100,
+            final_lr=lr,
+            start_lr=warmup_start_lr
+        )
+        optimizer = base_optimizer
+        return optimizer
