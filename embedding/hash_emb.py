@@ -39,6 +39,7 @@ class HashEmbedding(Embedding):
     # is inplace
     def prepare_to_quantize(self):
         self.weights.qconfig = quant.float_qparams_weight_only_qconfig
+        self.weights.qscheme = torch.per_tensor_affine
         self.weights = quantized.Embedding.from_float(self.weights)
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
         self.embedding = quantized.EmbeddingBag.from_float(self.embedding)

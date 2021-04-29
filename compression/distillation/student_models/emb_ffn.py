@@ -29,7 +29,7 @@ class WarmupOptimizer:
 
     def zero_grad(self):
         self.base_optimizer.zero_grad()
-'''
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=200):
         super().__init__()
@@ -48,7 +48,7 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:x.size(0), :]
         x = self.dropout(x)
         return x
-    '''
+    
 
 class EmbFFN(base.StudentModel):
     def __init__(self, cfg):
@@ -56,7 +56,7 @@ class EmbFFN(base.StudentModel):
 
         self.embedding = embeddings.get_embedding(cfg)
 
-        #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
+        self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
         self.classifier = nn.Sequential(
             nn.Dropout(cfg['dropout']),
             nn.Linear(cfg['embedding-dim'], cfg['cls-hidden-dim']),
@@ -67,7 +67,7 @@ class EmbFFN(base.StudentModel):
         self.init_weights()
 
     def init_weights(self):
-        init_range = 0.1
+        init_range = 0.01
         if self.cfg['embedding-type'] == 'hash':
             self.embedding.init_weight_range(init_range)
         self.classifier[1].bias.data.zero_()
@@ -75,23 +75,20 @@ class EmbFFN(base.StudentModel):
         self.classifier[1].weight.data.uniform_(-init_range, init_range)
         self.classifier[4].weight.data.uniform_(-init_range, init_range)
 
-    '''def apply_mask(self, x):
-        mask = torch.LongTensor([0,0,0])
-        bitmask = torch.FloatTensor(x.shape[0], x.shape[1]).uniform_() < self.cfg['train-masking']
-        if self.cfg['use-gpu']:
-            mask = mask.cuda()
-        idx = bitmask.nonzero()
-        x[idx[:,0], idx[:,1], :] = mask
-        return x'''
 
-    def forward(self, x, _):
-        #if self.training and self.cfg['train-masking'] > 0:
-        #    x = self.apply_mask(x)
+    def mean_with_lens(self, x, lens, dim=0):
+        if self.cfg['use-gpu']:
+            lens = lens.cuda()
+        idx = torch.arange(x.shape[1])
+        x = x.cumsum(dim)[lens - 1, idx, :]
+        x = x / lens.view(-1, 1)
+        return x
+
+    def forward(self, x, lens):
         x = self.embedding(x)
-        #x = x.permute(1,0,2)
-        #x = self.pos_encoder(x)
-        #x = self.transformer_encoder(x)
-        x = x.mean(dim=1)
+        x = x.permute(1,0,2)
+        x = self.pos_encoder(x)
+        x = self.mean_with_lens(x, lens)
         x = self.classifier(x)
         return x
 
@@ -99,8 +96,7 @@ class EmbFFN(base.StudentModel):
         warmup_start_lr = self.cfg['lr'] / 100
         base_optimizer = torch.optim.Adam(
             self.parameters(), 
-            lr=self.cfg['lr'],
-            weight_decay=self.cfg['weight-decay']
+            lr=self.cfg['lr']        
         )
         optimizer = WarmupOptimizer(
             base_optimizer, 
