@@ -7,6 +7,7 @@
     "encoder-hidden-dim": 150,
     "embedding-dim": 25,
     "vocab-size": 5000,
+    "context-size": 2,
     "dropout": 0.1,
     "lr": 5e-4,
     "weight-decay": 1e-3,
