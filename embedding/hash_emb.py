@@ -5,13 +5,12 @@ import torch.nn.quantized as quantized
 
 import hashlib
 
-from embedding.abstract_class import Embedding
+from embedding.base import Embedding
 from compression.distillation.student_models import base
 
 class HashEmbedding(Embedding):
-    def __init__(self, cfg):
-        super().__init__(cfg)
-        self.cfg = cfg
+    def __init__(self, cfg, load=True):
+        super().__init__(cfg, load)
         self.num_hashes = cfg['num-hashes']
         self.embedding_dim = cfg['embedding-dim']
         self.K = cfg['vocab-size']
@@ -19,10 +18,12 @@ class HashEmbedding(Embedding):
         self.B = self.K // self.ratio
         self.vocab_size = self.K
         self.embedding_size = self.B + 1 + int(cfg['use-cls-token'])
-        scalar_size = self.vocab_size * self.num_hashes + self.num_hashes * (1 + int(int(cfg['use-cls-token'])))
+
+    def init_embeddings(self):
+        scalar_size = self.vocab_size * self.num_hashes + self.num_hashes * (1 + int(int(self.cfg['use-cls-token'])))
         self.weights = nn.Embedding(scalar_size, 1)
-        self.embedding = nn.EmbeddingBag(self.embedding_size, self.embedding_dim, mode='sum')
-        self.hash_offsets = torch.LongTensor([i * (self.K + 1 + int(cfg['use-cls-token'])) for i in range(self.num_hashes)])
+        self.hash_offsets = torch.LongTensor([i * (self.K + 1 + int(self.cfg['use-cls-token'])) for i in range(self.num_hashes)])
+        return nn.EmbeddingBag(self.embedding_size, self.embedding_dim, mode='sum')
 
     def encode(self, sent):
         sent_stack = []

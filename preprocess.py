@@ -13,8 +13,8 @@ def main(args):
     elif args.augment is not None:
         data_augment.augment(args.task, args.augment, args.seed)
     elif args.generate_loss is not None:
-        # TODO: fix checkpoint path thingie. Where do we store finetuned models in the current code?
-        teacher_model = model_utils.load_teacher(args.task, args.checkpoint_path, args.cpu)
+        model_path = model_utils.get_model_path(args.task, "finetuned")
+        teacher_model = model_utils.load_teacher(args.task, model_path, args.cpu, args.checkpoint_path)
         distillation_loss.generate_distillation_loss(args, teacher_model)
 
 if __name__ == "__main__":
