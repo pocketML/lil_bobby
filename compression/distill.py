@@ -1,6 +1,7 @@
 from common import task_utils, transponder, model_utils
 import torch
 from tqdm import tqdm
+from common import transponder, model_utils
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
@@ -17,6 +18,7 @@ def save_checkpoint(model, student_arch, sacred_experiment=None):
 def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):
     best_val_acc = 0
     no_improvement = 0
+
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
 
@@ -37,9 +39,11 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 target_labels = target_labels.to(device)
                 if phase == "train":
                     target_logits = target_logits.to(device)
+
                 optim.zero_grad()
                 torch.set_grad_enabled(phase == "train")
                 out_logits = model(x1, lens)
+
                 _, preds = torch.max(out_logits, 1)
                 target_labels = target_labels.squeeze()
                 if phase == "train":
@@ -49,6 +53,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     running_loss += loss.item() * len(lens)
                 running_corrects += torch.sum(preds == target_labels.data).item()
                 num_examples += len(lens)
+
             accuracy = 0 if num_examples == 0 else running_corrects / num_examples
             if phase == "train":
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')

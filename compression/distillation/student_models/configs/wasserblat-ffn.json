@@ -1,8 +1,11 @@
 {
     "embedding-dim": 16,
+    "embedding-type": "word2vec",
     "vocab-size": 5000,
+    "cls-hidden-dim": 100,
     "dropout": 0.3,
-    "lr": 1e-3,
-    "weight-decay": 1e-5,
+    "lr": 5e-3,
+    "weight-decay": 1e-3,
+    "type": "ffn",
     "batch-size": 32
 }

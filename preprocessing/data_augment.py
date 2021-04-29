@@ -2,10 +2,11 @@ from abc import abstractmethod
 import random
 import os
 import re
+from glob import glob
 import numpy as np
 from common.task_utils import TASK_INFO
 from common.data_utils import load_train_data
-from compression.distillation import models
+from common.model_utils import load_roberta_model
 
 STOP_WORDS = [
     'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours',
@@ -27,7 +28,14 @@ def load_glove():
     words = []
     embeddings = {}
 
-    with open("data/glove.840B.300d.txt", "r", encoding="utf-8") as fp:
+    glove_files = glob("data/glove.*.txt")
+    if glove_files == []:
+        print("Error: Can't find GLoVE file in 'data/', pls download.")
+        exit(0)
+
+    print(f"Found GLoVE file: {glove_files[0]}")
+
+    with open(glove_files[0], "r", encoding="utf-8") as fp:
         for count, line in enumerate(fp):
             if count == VOCAB_SIZE:
                 break
@@ -66,7 +74,7 @@ class Augmenter:
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
-        self.masked_lm = models.load_roberta_model('roberta_large')
+        self.masked_lm = load_roberta_model('roberta_large')
         #self.masked_lm.half()
         # Initialize augment parameters.
         self.p_threshold = 0.4 # Threshold probability.
@@ -139,8 +147,9 @@ class TinyBertAugmenter(Augmenter):
                 if x < self.p_threshold:
                     new_sent[idx] = word_candidate.strip()
 
-            if " ".join(new_sent) not in sent_candidates:
-                sent_candidates.append(" ".join(new_sent))
+            new_sentence = " ".join(new_sent)
+            if new_sentence not in sent_candidates:
+                sent_candidates.append(new_sentence)
 
         return sent_candidates
 
@@ -181,7 +190,17 @@ def augment(task, augment_technique, seed):
                 sentences = [train_example[0], train_example[2]] if sentence_pairs else [train_example[0]]
                 output_sentences = []
                 for sent in sentences: # Augment each sentence (two sentences if sentence pairs task).
-                    output_sentences.append(augmenter.augment(sent.strip()))
+                    augmented_sentences = augmenter.augment(sent.strip())
+                    output_sentences.append(augmented_sentences)
+
+                if sentence_pairs and len(output_sentences[0]) != len(output_sentences[1]):
+                    if min(len(output_sentences[0]), len(output_sentences[1])) == 0:
+                        continue
+
+                    if len(output_sentences[0]) < len(output_sentences[1]):
+                        output_sentences[1] = output_sentences[1][:len(output_sentences[0])]
+                    else:
+                        output_sentences[0] = output_sentences[0][:len(output_sentences[1])]
 
                 for sent in output_sentences[0]:
                     out1.write(f'{sent.strip()}\n')
