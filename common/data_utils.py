@@ -107,7 +107,7 @@ def get_dataloader_dict_val(model, validation_data):
             dataset,
             batch_size=model.cfg['batch-size'],
             shuffle=True,
-            drop_last=True,
+            drop_last=False,
             collate_fn=create_collate_fn(model.cfg)
         )
 
