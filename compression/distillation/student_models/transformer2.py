@@ -3,6 +3,7 @@ import torch.nn as nn
 
 import math
 from tqdm import tqdm
+import numpy as np
 
 from compression.distillation.student_models import base
 from embedding import embeddings
@@ -10,30 +11,24 @@ from embedding import embeddings
 class WarmupOptimizer:
     """Optim wrapper that implements rate."""
 
-    def __init__(self, base_optimizer, d_model, scale_factor, warmup_steps):
+    def __init__(self, base_optimizer, warmup_steps=100, final_lr=1e-4, start_lr=1e-6):
         self.base_optimizer = base_optimizer
         self.warmup_steps = warmup_steps
-        self.scale_factor = scale_factor
-        self.d_model = d_model
-        self._step = 1
-        self._rate = 0
+        self.rates = np.linspace(start_lr, final_lr, num=warmup_steps)
+        self.final_lr = final_lr
+        self._step = 0
+        self._rate = start_lr
 
     def step(self):
         """Update parameters and rate"""
+        self._rate = self.rates[self._step] if self._step < self.warmup_steps else self.final_lr
         self._step += 1
-        self._rate = self.rate()
         for p in self.base_optimizer.param_groups:
             p["lr"] = self._rate
         self.base_optimizer.step()
 
     def zero_grad(self):
         self.base_optimizer.zero_grad()
-
-    def rate(self, step = None):
-        """Implement `lrate` above"""
-        if step is None:
-            step = self._step
-        return self.scale_factor * self.d_model ** (-0.5) * min(step ** (-0.5), step * self.warmup_steps ** (-1.5))
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=200):
@@ -59,9 +54,6 @@ class Transformer2(base.StudentModel):
         super().__init__(cfg)
 
         self.embedding = embeddings.get_embedding(cfg)
-
-        self.model_type = cfg['type']
-
         self.embedding_dim_sqrt = math.sqrt(cfg['embedding-dim'])
 
         self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
@@ -91,25 +83,37 @@ class Transformer2(base.StudentModel):
         self.classifier[1].weight.data.uniform_(-init_range, init_range)
         self.classifier[4].weight.data.uniform_(-init_range, init_range)
 
+    def apply_mask(self, x):
+        mask = torch.LongTensor([0,0,0])
+        bitmask = torch.FloatTensor(x.shape[0], x.shape[1]).uniform_() < self.cfg['train-masking']
+        if self.cfg['use-gpu']:
+            mask = mask.cuda()
+        idx = bitmask.nonzero()
+        x[idx[:,0], idx[:,1], :] = mask
+        return x
+
     def forward(self, x, _):
+        if self.training and self.cfg['train-masking'] > 0:
+            x = self.apply_mask(x)
         x = self.embedding(x)
         x = x.permute(1,0,2)
         x = self.pos_encoder(x)
         x = self.transformer_encoder(x)
-        #x = x.mean(dim=0)
-        x = x[0,:,:]
+        x = x.mean(dim=0)
         x = self.classifier(x)
         return x
 
 def run_badboy(model, dl, device, criterion, args):
-    base_optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    lr = 1e-4
+    warmup_start_lr = lr / 100
+    base_optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     optimizer = WarmupOptimizer(
         base_optimizer, 
-        d_model=model.cfg['embedding-dim'], 
-        scale_factor=1, 
-        warmup_steps=100
+        warmup_steps=100,
+        final_lr=lr,
+        start_lr=warmup_start_lr
     )
-    optimizer = base_optimizer
+    #optimizer = base_optimizer
 
     def train():
         model.train()

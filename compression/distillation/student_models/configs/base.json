@@ -19,5 +19,5 @@
     "embedding-type": "bpe",
     "num-hashes": 3,
     "hash-ratio": 10,
-    "use-cls-token": false
+    "train-masking": 0.0
 }
