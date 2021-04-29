@@ -1,7 +1,7 @@
 {
     "embedding-dim" : 100,
     "vocab-size": 5000,
-    "cls-hidden-dim": 100,
+    "cls-hidden-dim": 200,
     "dropout": 0.2,
     "lr": 5e-04,
     "weight-decay": 0.1,
@@ -10,10 +10,10 @@
     "rho": 0.95,
     "hash-ratio": 10,
     "num-hashes": 3,
-    "embedding-type": "bpe",
+    "embedding-type": "hash",
     "type": "transformer",
     "attn-heads": 4,
     "attn-hidden": 500,
     "num-layers": 2,
-    "use-cls-token": true
+    "train-masking": 0.1
 }
