@@ -5,10 +5,14 @@ import torch.nn.quantized as quantized
 from abc import abstractmethod
 
 class Embedding(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, cfg, load=True):
         super().__init__()
         self.cfg = cfg
-        self.embedding = None
+        self.load_pretrained = load
+        # Load pre-trained embeddings.
+        self.specials = None
+        self.mapping = None
+        self.embedding = self.init_embeddings()
 
     def prepare_to_quantize(self):
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
@@ -21,6 +25,9 @@ class Embedding(nn.Module):
 
     def forward(self, x):
         return self.embedding(x)
+
+    def init_embeddings(self):
+        return None
 
     @abstractmethod
     def encode(self, sent):

@@ -1,6 +1,7 @@
 import argparse
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
+from embedding.embeddings import EMBEDDING_ZOO
 from compression.distillation.models import STUDENT_MODELS
 
 FINETUNE_TASKS = list(TASK_INFO.keys())
@@ -71,22 +72,6 @@ def args_compress():
 
     return compression_args, args_remain
 
-def args_cbow(args=None, namespace=None, parse_known=False):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--context-size", type=int, default=2)
-    ap.add_argument("--embed-dim", type=int, default=16)
-    ap.add_argument("--vocab-size", type=int, default=1000)
-    ap.add_argument("--epochs", type=int, default=10)
-    ap.add_argument("--batch-size", type=int, default=32)
-    ap.add_argument("--cpu", action="store_true")
-    ap.add_argument("--seed", type=int, default=1337)
-
-    if parse_known:
-        return ap.parse_known_args(args=args, namespace=namespace)
-
-    return ap.parse_args(args=args, namespace=namespace)
-
 def args_preprocess(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
@@ -106,8 +91,28 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
         return ap.parse_known_args(args=args, namespace=namespace)
     return ap.parse_args(args=args, namespace=namespace)
 
+def args_embeddings(args=None, namespace=None, parse_known=False):
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--embed-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
+    ap.add_argument("--context-size", type=int, default=2)
+    ap.add_argument("--embed-dim", type=int, default=16)
+    ap.add_argument("--vocab-size", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--batch-size", type=int, default=32)
+    ap.add_argument("--original-data", action="store_true")
+    ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--seed", type=int, default=1337)
+
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+
+    return ap.parse_args(args=args, namespace=namespace)
+
 def args_evaluate(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
+
     ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--model-name", type=str, required=True)
     ap.add_argument('--cpu', action='store_true')
