@@ -1,5 +1,5 @@
 {
-    "embedding-dim": 100,
+    "embedding-dim": 16,
     "encoder-hidden-dim": 100,
     "cls-hidden-dim": 100,
     "bidirectional": true,

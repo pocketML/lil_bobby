@@ -1,9 +1,9 @@
 {
-    "embedding-dim" : 10,
+    "embedding-dim" : 16,
     "vocab-size": 5000,
-    "cls-hidden-dim": 80,
+    "cls-hidden-dim": 100,
     "dropout": 0.2,
-    "lr": 1e-04,
+    "lr": 1e-05,
     "weight-decay": 0.1,
     "batch-size": 50,
     "encoder-hidden-dim": 100,
