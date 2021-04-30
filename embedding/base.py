@@ -13,6 +13,8 @@ class Embedding(nn.Module):
         self.specials = None
         self.mapping = None
         self.embedding = self.init_embeddings()
+        if load: # Freeze or unfreeze embeddings if pretrained.
+            self.embedding.weight.requires_grad = not cfg["embedding-freeze"]
 
     def prepare_to_quantize(self):
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig

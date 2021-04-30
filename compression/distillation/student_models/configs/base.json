@@ -6,6 +6,7 @@
     "use-gpu": true,
     "encoder-hidden-dim": 150,
     "embedding-dim": 25,
+    "embedding-freeze": true,
     "vocab-size": 5000,
     "context-size": 2,
     "dropout": 0.1,
