@@ -19,6 +19,7 @@ class HashEmbedding(Embedding):
         self.vocab_size = self.K
         scalar_size = self.vocab_size * self.num_hashes + self.num_hashes
         self.weights = nn.Embedding(scalar_size, 1)
+        #self.weights = torch.randn(scalar_size)
         self.embedding = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
         self.hash_offsets = torch.LongTensor([i * (self.K + 1) for i in range(self.num_hashes)])
 
@@ -37,9 +38,9 @@ class HashEmbedding(Embedding):
 
     # is inplace
     def prepare_to_quantize(self):
-        self.weights.qconfig = quant.float_qparams_weight_only_qconfig
-        self.weights.qscheme = torch.per_tensor_affine
-        self.weights = quantized.Embedding.from_float(self.weights)
+        #self.weights.qconfig = quant.float_qparams_weight_only_qconfig
+        #self.weights.qscheme = torch.per_tensor_affine
+        #self.weights = quantized.Embedding.from_float(self.weights)
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
         self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
         self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
