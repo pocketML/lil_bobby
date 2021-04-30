@@ -38,6 +38,15 @@ class StudentModel(nn.Module):
         self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
         self.eval()
 
+    def init_weights(self, init_range):
+        if self.cfg['embedding-type'] == 'hash':
+            self.embedding.init_weight_range(init_range)
+        self.classifier[1].bias.data.zero_()
+        self.classifier[4].bias.data.zero_()
+        self.classifier[1].weight.data.uniform_(-init_range, init_range)
+        self.classifier[4].weight.data.uniform_(-init_range, init_range)
+
+
 def update_student_config_from_file(cfg, path):
     with open(path, 'r') as f:
         loaded = json.load(f)

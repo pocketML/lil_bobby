@@ -53,7 +53,7 @@ class EmbFFN(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.embedding = embeddings.get_embedding(cfg)
+        self.embedding = embeddings.get_embedding(cfg, False)
 
         #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
         
@@ -64,17 +64,7 @@ class EmbFFN(base.StudentModel):
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
-        self.init_weights()
-
-    def init_weights(self):
-        init_range = 0.01
-        if self.cfg['embedding-type'] == 'hash':
-            self.embedding.init_weight_range(init_range)
-        self.classifier[1].bias.data.zero_()
-        self.classifier[4].bias.data.zero_()
-        self.classifier[1].weight.data.uniform_(-init_range, init_range)
-        self.classifier[4].weight.data.uniform_(-init_range, init_range)
-
+        self.init_weights(0.01)
 
     def mean_with_lens(self, x, lens, dim=0):
         if self.cfg['use-gpu']:
