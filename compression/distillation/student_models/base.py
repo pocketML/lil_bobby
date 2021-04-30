@@ -5,6 +5,7 @@ from torch.optim import Adam
 
 from abc import abstractmethod
 import json
+import numpy as np
 
 from common.task_utils import TASK_LABEL_DICT, TASK_INFO
 from common.model_utils import get_model_path
@@ -46,6 +47,27 @@ class StudentModel(nn.Module):
         self.classifier[1].weight.data.uniform_(-init_range, init_range)
         self.classifier[4].weight.data.uniform_(-init_range, init_range)
 
+class WarmupOptimizer:
+    """Optim wrapper that implements rate."""
+
+    def __init__(self, base_optimizer, warmup_steps=100, final_lr=1e-4, start_lr=1e-6):
+        self.base_optimizer = base_optimizer
+        self.warmup_steps = warmup_steps
+        self.rates = np.linspace(start_lr, final_lr, num=warmup_steps)
+        self.final_lr = final_lr
+        self._step = 0
+        self._rate = start_lr
+
+    def step(self):
+        """Update parameters and rate"""
+        self._rate = self.rates[self._step] if self._step < self.warmup_steps else self.final_lr
+        self._step += 1
+        for p in self.base_optimizer.param_groups:
+            p["lr"] = self._rate
+        self.base_optimizer.step()
+
+    def zero_grad(self):
+        self.base_optimizer.zero_grad()
 
 def update_student_config_from_file(cfg, path):
     with open(path, 'r') as f:
@@ -111,12 +133,21 @@ def cat_cmp(inp1, inp2):
 
 def get_lstm(cfg):
     return nn.LSTM(
-            batch_first=cfg['batch-first'],
-            input_size=cfg['embedding-dim'],
-            hidden_size=cfg['encoder-hidden-dim'],
-            num_layers=cfg['num-layers'],
-            bidirectional=cfg['bidirectional'],
-        )
+        batch_first=cfg['batch-first'],
+        input_size=cfg['embedding-dim'],
+        hidden_size=cfg['encoder-hidden-dim'],
+        num_layers=cfg['num-layers'],
+        bidirectional=cfg['bidirectional'],
+    )
+
+def get_rnn(cfg):
+    return nn.RNN(
+        batch_first=cfg['batch-first'],
+        input_size=cfg['embedding-dim'],
+        hidden_size=cfg['encoder-hidden-dim'],
+        num_layers=cfg['num-layers'],
+        bidirectional=cfg['bidirectional'],
+    )
 
 def choose_hidden_state(hidden_states, lens=None, decision='max'):
     if decision == 'max':
