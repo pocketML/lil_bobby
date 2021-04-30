@@ -5,6 +5,7 @@ from compression.distillation.student_models.wasserblat_ffn import WASSERBLAT_FF
 from compression.distillation.student_models.char_rnn import CharRNN
 from compression.distillation.student_models.transformer import Transformer
 from compression.distillation.student_models.transformer2 import Transformer2
+from compression.distillation.student_models.transformer3 import Transformer3
 from compression.distillation.student_models.emb_ffn import EmbFFN
 from compression.distillation.student_models.base import get_dist_loss_function as DistLossFunction
 from compression.distillation.student_models import base
@@ -16,6 +17,7 @@ STUDENT_MODELS = {
     'char-rnn': CharRNN,
     'transformer': Transformer,
     'trans2': Transformer2,
+    'trans3': Transformer3,
     'emb-ffn': EmbFFN
 }
 

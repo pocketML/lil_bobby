@@ -2,32 +2,9 @@ import torch
 import torch.nn as nn
 
 import math
-import numpy as np
 
 from compression.distillation.student_models import base
 from embedding import embeddings
-
-class WarmupOptimizer:
-    """Optim wrapper that implements rate."""
-
-    def __init__(self, base_optimizer, warmup_steps=100, final_lr=1e-4, start_lr=1e-6):
-        self.base_optimizer = base_optimizer
-        self.warmup_steps = warmup_steps
-        self.rates = np.linspace(start_lr, final_lr, num=warmup_steps)
-        self.final_lr = final_lr
-        self._step = 0
-        self._rate = start_lr
-
-    def step(self):
-        """Update parameters and rate"""
-        self._rate = self.rates[self._step] if self._step < self.warmup_steps else self.final_lr
-        self._step += 1
-        for p in self.base_optimizer.param_groups:
-            p["lr"] = self._rate
-        self.base_optimizer.step()
-
-    def zero_grad(self):
-        self.base_optimizer.zero_grad()
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=200):
@@ -47,7 +24,6 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:x.size(0), :]
         x = self.dropout(x)
         return x
-    
 
 class EmbFFN(base.StudentModel):
     def __init__(self, cfg):
@@ -64,17 +40,7 @@ class EmbFFN(base.StudentModel):
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
-        self.init_weights()
-
-    def init_weights(self):
-        init_range = 0.01
-        if self.cfg['embedding-type'] == 'hash':
-            self.embedding.init_weight_range(init_range)
-        self.classifier[1].bias.data.zero_()
-        self.classifier[4].bias.data.zero_()
-        self.classifier[1].weight.data.uniform_(-init_range, init_range)
-        self.classifier[4].weight.data.uniform_(-init_range, init_range)
-
+        self.init_weights(0.01)
 
     def mean_with_lens(self, x, lens, dim=0):
         if self.cfg['use-gpu']:
@@ -112,7 +78,7 @@ class EmbFFN(base.StudentModel):
             self.parameters(), 
             lr=self.cfg['lr']        
         )
-        optimizer = WarmupOptimizer(
+        optimizer = base.WarmupOptimizer(
             base_optimizer, 
             warmup_steps=100,
             final_lr=self.cfg['lr'],
