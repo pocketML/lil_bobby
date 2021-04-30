@@ -94,14 +94,17 @@ class CBOW(nn.Module):
         self.batch_size = batch_size
         self.embedding = cbowemb
         classifier_hidden_dim = 128
-        self.fc1 = nn.Linear(context_size * cbowemb.cfg["embedding-dim"]* 2, classifier_hidden_dim)
+        self.fc1 = nn.Linear(cbowemb.cfg["embedding-dim"], classifier_hidden_dim)
+        self.dropout = nn.Dropout(0.2)
         self.fc2 = nn.Linear(classifier_hidden_dim, vocab_size)
         self.relu = nn.ReLU()
         self.activation = nn.LogSoftmax(dim=1)
 
     def forward(self, inputs):
-        embeds = self.embedding(inputs).view(self.batch_size, -1)
-        x = self.fc1(embeds)
+        embeds = self.embedding(inputs)
+        x = torch.mean(embeds, dim=1)
+        x = self.fc1(x)
+        x = self.dropout(x)
         x = self.relu(x)
         x = self.fc2(x)
         log_probs = self.activation(x)
