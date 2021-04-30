@@ -18,9 +18,8 @@ class HashEmbedding(Embedding):
         self.B = self.K // self.ratio
         self.vocab_size = self.K
         scalar_size = self.vocab_size * self.num_hashes + self.num_hashes
-        self.weights = nn.Embedding(scalar_size, 1)
-        #self.weights = torch.randn(scalar_size)
-        self.embedding = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
+        self.scalars = nn.Embedding(scalar_size, 1)
+        self.vectors = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
         self.hash_offsets = torch.LongTensor([i * (self.K + 1) for i in range(self.num_hashes)])
 
     def encode(self, sent):
@@ -38,37 +37,34 @@ class HashEmbedding(Embedding):
 
     # is inplace
     def prepare_to_quantize(self):
-        #self.weights.qconfig = quant.float_qparams_weight_only_qconfig
-        #self.weights.qscheme = torch.per_tensor_affine
-        #self.weights = quantized.Embedding.from_float(self.weights)
-        self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
-        self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
+        #self.scalars.qconfig = quant.float_qparams_weight_only_qconfig
+        #self.scalars = quantized.Embedding.from_float(self.scalars)
+        self.vectors.qconfig = quant.float_qparams_weight_only_qconfig
+        self.vectors = quantized.EmbeddingBag.from_float(self.vectors)
         self.qconfig = torch.quantization.get_default_qconfig('fbgemm')
-        quant.prepare(self.embedding, inplace=True)
-        quant.prepare(self.weights, inplace=True)
+        quant.prepare(self.vectors, inplace=True)
+        #quant.prepare(self.scalars, inplace=True)
 
     # is inplace
     def convert_to_quantized(self):
-        quant.convert(self.embedding, inplace=True)
-        quant.convert(self.weights, inplace=True)
+        quant.convert(self.vectors, inplace=True)
+        #quant.convert(self.scalars, inplace=True)
+
+    def _apply(self, fn):
+        super()._apply(fn)
+        self.hash_offsets = fn(self.hash_offsets)
+        return self
 
     def forward(self, x):
         batch_size = x.shape[0]
         seq_len = x.shape[1]
-        
-        if self.cfg['use-gpu']:
-            weight_idx = x + self.hash_offsets.cuda()
-        else:
-            weight_idx = x + self.hash_offsets
-        weights = self.weights(weight_idx.view(batch_size, -1))
-        weights = weights.view(batch_size * seq_len, -1)
-
+        scalar_idx = (x + self.hash_offsets).view(batch_size, -1)
+        scalars = self.scalars(scalar_idx).view(batch_size * seq_len, -1)
         indices = (x // self.ratio).view(batch_size * seq_len, -1)
-        x = self.embedding(indices, per_sample_weights=weights)
+        x = self.vectors(indices, per_sample_weights=scalars)
         x = x.view(batch_size, seq_len, -1)
-
         return x
 
     def init_weight_range(self, init_range):
-        self.weights.weight.data.uniform_(-init_range, init_range)
-        self.embedding.weight.data.uniform_(-init_range, init_range)
+        self.scalars.weight.data.uniform_(-init_range, init_range)
+        self.vectors.weight.data.uniform_(-init_range, init_range)
