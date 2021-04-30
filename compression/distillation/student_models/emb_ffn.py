@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 
 import math
-from tqdm import tqdm
 import numpy as np
 
 from compression.distillation.student_models import base
@@ -87,7 +86,7 @@ class EmbFFN(base.StudentModel):
     def forward(self, x, lens):
         x = self.embedding(x)
         x = x.permute(1,0,2)
-        x = self.pos_encoder(x)
+        #x = self.pos_encoder(x)
         x = self.mean_with_lens(x, lens)
         x = self.classifier(x)
         return x

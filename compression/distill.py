@@ -1,6 +1,6 @@
 import torch
 from tqdm import tqdm
-from common import transponder, model_utils
+from common import transponder, model_utils, task_utils
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
