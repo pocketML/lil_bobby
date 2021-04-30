@@ -1,7 +1,6 @@
 import torch
 from tqdm import tqdm
 from common import transponder, model_utils
-from compression import prune
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
