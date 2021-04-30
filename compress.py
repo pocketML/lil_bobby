@@ -62,6 +62,7 @@ def prune_model(task, model, device, args):
 def distill_model(task, model, device, args, sacred_experiment):
     epochs = args.epochs
     temperature = args.temperature
+    model.to(device)
 
     distillation_data = data_utils.load_all_distillation_data(task, only_original_data=args.original_data)
     print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
@@ -69,10 +70,6 @@ def distill_model(task, model, device, args, sacred_experiment):
     val_data = data_utils.load_val_data(task)
     print(f"*** Loaded {len(val_data[0])} validation data samples ***")
 
-    #import hashemb
-    #hashemb.load_embeddings(model)
-    model.to(device)
-    print("*** Model created ***")
     criterion = DistLossFunction(
         args.alpha, 
         nn.MSELoss(), 
@@ -80,19 +77,15 @@ def distill_model(task, model, device, args, sacred_experiment):
         device,
         temperature=temperature,
     )
-
+    
     dataloaders = data_utils.get_dataloader_dict(model, distillation_data, val_data)
     print(f'*** Dataloaders created ***')
 
     optim = model.get_optimizer()
-    if model.cfg['type'] == 'transformer':
-        from compression.distillation.student_models.transformer2 import run_badboy
-        run_badboy(model, dataloaders, device, criterion, args)
-    else:
-        train_loop(
-            model, criterion, optim, dataloaders, device,
-            args, epochs, sacred_experiment=sacred_experiment
-        )
+    train_loop(
+        model, criterion, optim, dataloaders, device,
+        args, epochs, sacred_experiment=sacred_experiment
+    )
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")

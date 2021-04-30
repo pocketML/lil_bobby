@@ -17,13 +17,10 @@ class HashEmbedding(Embedding):
         self.ratio = cfg['hash-ratio']
         self.B = self.K // self.ratio
         self.vocab_size = self.K
-        self.embedding_size = self.B + 1 + int(cfg['use-cls-token'])
-
-    def init_embeddings(self):
-        scalar_size = self.vocab_size * self.num_hashes + self.num_hashes * (1 + int(int(self.cfg['use-cls-token'])))
+        scalar_size = self.vocab_size * self.num_hashes + self.num_hashes
         self.weights = nn.Embedding(scalar_size, 1)
-        self.hash_offsets = torch.LongTensor([i * (self.K + 1 + int(self.cfg['use-cls-token'])) for i in range(self.num_hashes)])
-        return nn.EmbeddingBag(self.embedding_size, self.embedding_dim, mode='sum')
+        self.embedding = nn.EmbeddingBag(self.B + 1, self.embedding_dim, mode='sum')
+        self.hash_offsets = torch.LongTensor([i * (self.K + 1) for i in range(self.num_hashes)])
 
     def encode(self, sent):
         sent_stack = []
@@ -41,6 +38,7 @@ class HashEmbedding(Embedding):
     # is inplace
     def prepare_to_quantize(self):
         self.weights.qconfig = quant.float_qparams_weight_only_qconfig
+        self.weights.qscheme = torch.per_tensor_affine
         self.weights = quantized.Embedding.from_float(self.weights)
         self.embedding.qconfig = quant.float_qparams_weight_only_qconfig
         self.embedding = quantized.EmbeddingBag.from_float(self.embedding)
