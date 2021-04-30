@@ -1,7 +1,6 @@
-from common import task_utils, transponder, model_utils
 import torch
 from tqdm import tqdm
-from common import transponder, model_utils
+from common import transponder, model_utils, task_utils
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
@@ -24,7 +23,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
 
         for phase in ("train", "val"):
             if phase == "train":
-                model.train()
+                model.train()   
             else:
                 model.eval()
 
@@ -47,7 +46,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 _, preds = torch.max(out_logits, 1)
                 target_labels = target_labels.squeeze()
                 if phase == "train":
-                    loss = criterion(out_logits, target_logits, target_labels.squeeze())
+                    loss = criterion(out_logits, target_logits, target_labels)
                     loss.backward()
                     optim.step()
                     running_loss += loss.item() * len(lens)
