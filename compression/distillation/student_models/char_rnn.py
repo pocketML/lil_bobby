@@ -11,8 +11,9 @@ class CharRNN(base.StudentModel):
         self.embedding = embeddings.get_embedding(cfg)
  
         self.n_classes = 2
-        self.encoder = nn.LSTM(cfg["embedding-dim"], cfg['encoder-hidden-dim'], cfg['num-layers'], batch_first=cfg['batch-first'], dropout=cfg['dropout'], bidirectional=cfg['bidirectional'])
-        
+        #self.encoder = nn.LSTM(cfg["embedding-dim"], cfg['encoder-hidden-dim'], cfg['num-layers'], batch_first=cfg['batch-first'], dropout=cfg['dropout'], bidirectional=cfg['bidirectional'])
+        self.encoder = nn.RNN(cfg["embedding-dim"], cfg['encoder-hidden-dim'])
+
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d        
         self.classifier = nn.Sequential(
