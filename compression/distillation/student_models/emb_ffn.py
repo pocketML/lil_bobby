@@ -55,7 +55,8 @@ class EmbFFN(base.StudentModel):
 
         self.embedding = embeddings.get_embedding(cfg)
 
-        self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
+        #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
+        
         self.classifier = nn.Sequential(
             nn.Dropout(cfg['dropout']),
             nn.Linear(cfg['embedding-dim'], cfg['cls-hidden-dim']),
@@ -83,10 +84,24 @@ class EmbFFN(base.StudentModel):
         x = x / lens.view(-1, 1)
         return x
 
+    def cmp(self, x, lens, dim):
+        if self.cfg['use-gpu']:
+            lens = lens.cuda()
+        idx = torch.arange(x.shape[1])
+        # relu sum
+        x1 = torch.nn.functional.relu(x)
+        x1 = x1.cumsum(dim)[lens - 1, idx, :]
+        # normal sum
+        x2 = x.cumsum(dim)[lens - 1, idx, :]
+        # mean
+        x3 = x2 / lens.view(-1, 1)
+        return torch.cat([x1, x2, x3], dim=1)
+
     def forward(self, x, lens):
         x = self.embedding(x)
         x = x.permute(1,0,2)
         #x = self.pos_encoder(x)
+        #x = self.cmp(x, lens, 0) 
         x = self.mean_with_lens(x, lens)
         x = self.classifier(x)
         return x
