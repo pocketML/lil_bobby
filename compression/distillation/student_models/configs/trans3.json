@@ -1,6 +1,6 @@
 {
-    "embedding-dim" : 24,
-    "vocab-size": 5000,
+    "embedding-dim" : 50,
+    "vocab-size": 3000,
     "cls-hidden-dim": 100,
     "dropout": 0.2,
     "lr": 5e-04,
@@ -10,10 +10,10 @@
     "rho": 0.95,
     "hash-ratio": 10,
     "num-hashes": 3,
-    "embedding-type": "hash",
+    "embedding-type": "bpe",
     "type": "rnn",
     "bidirectional": true,
-    "attn-heads": 4,
+    "attn-heads": 5,
     "attn-hidden": 500,
     "num-layers": 2,
     "train-masking": 0.1

@@ -100,7 +100,7 @@ class TransformerBlock(nn.Module):
         return x
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, max_len=200):
+    def __init__(self, d_model, dropout=0.1, max_len=2000):
         super().__init__()
 
         self.dropout = nn.Dropout(p=dropout)
@@ -161,7 +161,9 @@ class Transformer3(base.StudentModel):
 
     def forward(self, x, lens):
         x = self.embedding(x)
+        x = x.permute(1,0,2)
         x = self.pos_enc(x)
+        x = x.permute(1,0,2)
         x = self.encoder(x)
         
         h = base.pack_rnn_unpack(self.decoder, self.cfg, x, lens, x.shape[0])
