@@ -7,7 +7,7 @@ def main(args, sacred_experiment=None):
     is_finetuned_model = model_utils.is_finetuned_model(args.arch)
     if is_finetuned_model:
         model_path = model_utils.get_model_path(args.task, "finetuned")
-        model = model_utils.load_teacher(args.task, model_path, use_cpu=True, model_name=args.model_name)
+        model = model_utils.load_teacher(args.task, f"{model_path}/{args.model_name}", use_cpu=True)
     else: # is in compressions.distillation.models.STUDENT_MODELS.keys()
         model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
 
@@ -21,8 +21,9 @@ def main(args, sacred_experiment=None):
     if args.model_size:
         parameters.print_model_size(model)
         total_params, total_bits = parameters.get_model_size(model)
-        sacred_experiment.log_scalar("model_params", total_params)
-        sacred_experiment.log_scalar("model_size", total_bits/8000000)
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("model_params", total_params)
+            sacred_experiment.log_scalar("model_size", total_bits/8000000)
     if args.weight_hist and is_finetuned_model:
         parameters.weight_histogram_for_all_transformers(model, args.arch)
     if args.layer_weight_hist:
