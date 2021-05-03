@@ -29,13 +29,15 @@ class EmbFFN(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.embedding = embeddings.get_embedding(cfg)
+        self.embedding = embeddings.get_embedding(cfg, False)
 
         #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
-        
+
+        inp_d = self.cfg['embedding-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['embedding-dim']
+
         self.classifier = nn.Sequential(
             nn.Dropout(cfg['dropout']),
-            nn.Linear(cfg['embedding-dim'], cfg['cls-hidden-dim']),
+            nn.Linear(inp_d, cfg['cls-hidden-dim']),
             nn.Dropout(cfg['dropout']),
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
@@ -50,25 +52,40 @@ class EmbFFN(base.StudentModel):
         x = x / lens.view(-1, 1)
         return x
 
-    def cmp(self, x, lens, dim):
+    def cmp(self, x, lens, batch_first=True):
         if self.cfg['use-gpu']:
             lens = lens.cuda()
-        idx = torch.arange(x.shape[1])
-        # relu sum
+
         x1 = torch.nn.functional.relu(x)
-        x1 = x1.cumsum(dim)[lens - 1, idx, :]
-        # normal sum
-        x2 = x.cumsum(dim)[lens - 1, idx, :]
+        x2 = self.sigmoid(x)
+        if batch_first:
+            idx = torch.arange(x.shape[0])
+            x1 = x1.cumsum(1)[idx, lens - 1, :]
+            x2 = x2.cumsum(1)[idx, lens - 1, :]
+            x3 = x.cumsum(1)[idx, lens - 1, :]
+        else:
+            idx = torch.arange(x.shape[1])
+            x1 = x1.cumsum(0)[lens - 1, idx, :]
+            x2 = x2.cumsum(0)[lens - 1, idx, :]
+            x3 = x.cumsum(0)[lens - 1, idx, :]
+
         # mean
-        x3 = x2 / lens.view(-1, 1)
+        x3 = x3 / lens.view(-1, 1)
         return torch.cat([x1, x2, x3], dim=1)
 
     def forward(self, x, lens):
-        x = self.embedding(x)
-        x = x.permute(1,0,2)
-        #x = self.pos_encoder(x)
-        #x = self.cmp(x, lens, 0) 
-        x = self.mean_with_lens(x, lens)
+        def embed_mean(inp, lengths):
+            out = self.embedding(inp)
+            out = out.permute(1,0,2)
+            out = self.mean_with_lens(out, lengths)
+            return out
+        
+        if self.cfg['use-sentence-pairs']:
+            x1 = embed_mean(x[0], lens[0])
+            x2 = embed_mean(x[1], lens[1])
+            x = base.cat_cmp(x1, x2)
+        else:
+            x = embed_mean(x, lens)
         x = self.classifier(x)
         return x
 

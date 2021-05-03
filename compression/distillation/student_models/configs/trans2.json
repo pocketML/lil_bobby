@@ -1,5 +1,5 @@
 {
-    "embedding-dim" : 100,
+    "embedding-dim" : 32,
     "vocab-size": 5000,
     "cls-hidden-dim": 200,
     "dropout": 0.2,
@@ -11,9 +11,11 @@
     "hash-ratio": 10,
     "num-hashes": 3,
     "embedding-type": "hash",
-    "type": "transformer",
-    "attn-heads": 4,
-    "attn-hidden": 500,
-    "num-layers": 2,
+    "type": "rnn",
+    "bidirectional": true,
+    "attn-heads": 8,
+    "attn-hidden": 128,
+    "transformer-layers": 12,
+    "num-layers": 1,
     "train-masking": 0.1
 }

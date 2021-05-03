@@ -9,7 +9,7 @@ from embedding.base import Embedding
 from compression.distillation.student_models import base
 
 class HashEmbedding(Embedding):
-    def __init__(self, cfg, load=True):
+    def __init__(self, cfg, load=False):
         super().__init__(cfg, load)
         self.num_hashes = cfg['num-hashes']
         self.embedding_dim = cfg['embedding-dim']

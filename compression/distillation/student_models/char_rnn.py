@@ -8,11 +8,11 @@ class CharRNN(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.embedding = embeddings.get_embedding(cfg)
+        self.embedding = embeddings.get_embedding(cfg, False)
  
         self.n_classes = 2
-        #self.encoder = nn.LSTM(cfg["embedding-dim"], cfg['encoder-hidden-dim'], cfg['num-layers'], batch_first=cfg['batch-first'], dropout=cfg['dropout'], bidirectional=cfg['bidirectional'])
-        self.encoder = nn.RNN(cfg["embedding-dim"], cfg['encoder-hidden-dim'])
+        self.encoder = nn.LSTM(cfg["embedding-dim"], cfg['encoder-hidden-dim'], cfg['num-layers'], batch_first=cfg['batch-first'], dropout=cfg['dropout'], bidirectional=cfg['bidirectional'])
+        #self.encoder = nn.RNN(cfg["embedding-dim"], cfg['encoder-hidden-dim'])
 
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d        
@@ -23,6 +23,7 @@ class CharRNN(base.StudentModel):
             nn.Dropout(cfg['dropout']),
             nn.Linear(cfg['cls-hidden-dim'], self.n_classes)
         )
+        self.init_weights(0.1)
 
     def forward(self, sents, lengths):
         emb = self.embedding(sents)
