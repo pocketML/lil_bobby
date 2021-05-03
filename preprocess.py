@@ -13,8 +13,9 @@ def main(args):
     elif args.augment is not None:
         data_augment.augment(args.task, args.augment, args.seed)
     elif args.generate_loss is not None:
-        model_path = model_utils.get_model_path(args.task, "finetuned")
-        teacher_model = model_utils.load_teacher(args.task, model_path, args.cpu)
+        teacher_model = model_utils.load_teacher(
+            args.task, f"models/finetuned/{args.task}/{args.checkpoint_path}", args.cpu
+        )
         distillation_loss.generate_distillation_loss(args, teacher_model)
 
 if __name__ == "__main__":

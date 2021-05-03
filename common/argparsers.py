@@ -45,7 +45,7 @@ def args_prune(args=None, namespace=None, parse_known=False):
     return ap.parse_args(args=args, namespace=namespace)
 
 # define arguments for model compression
-def args_compress():
+def args_compress(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     compression_actions = {
         'distill': args_distill,
@@ -63,7 +63,7 @@ def args_compress():
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--seed-name", type=str, choices=SEED_DICT.keys(), default=None)
 
-    compression_args, args_remain = ap.parse_known_args()
+    compression_args, args_remain = ap.parse_known_args(args=args, namespace=namespace)
 
     for action in compression_args.compression_actions:
         compression_args, args_remain = compression_actions[action](
@@ -142,7 +142,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
 
     return ap.parse_args(args=args, namespace=namespace)
 
-def args_analyze():
+def args_analyze(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
     ap.add_argument('--model-name', type=str, default=None)
@@ -155,33 +155,40 @@ def args_analyze():
     ap.add_argument('--weight-thresholds', action='store_true')
     ap.add_argument('--model-disk-size', action="store_true")
 
-    args = ap.parse_args()
-    return args
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+
+    return ap.parse_args(args=args, namespace=namespace)
 
 def args_experiment():
     ap = argparse.ArgumentParser()
 
     task_choices = ("finetune", "compress", "evaluate", "analyze")
     ap.add_argument("jobs", nargs="+", choices=task_choices)
-    ap.add_argument("--name", type=str, required=True)
+    ap.add_argument("--name", type=str, default=None)
+    ap.add_argument("--search", action="store_true")
+    ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--transponder", action="store_true")
     ap.add_argument("--output-path", type=str)
 
     task_args = {}
+    consumed_args = {}
 
     experiment_args, args_remain = ap.parse_known_args()
-    for task in experiment_args.jobs:
-        if task == "finetune":
-            finetune_args = args_finetune(args_remain, parse_known=True)[0]
-            task_args["finetune"] = finetune_args
-        if task == "compress":
-            compress_args = args_compress()[0]
-            task_args["compress"] = compress_args
-        if task == "evaluate":
-            evaluate_args = args_evaluate(args_remain, parse_known=True)[0]
-            task_args["evaluate"] = evaluate_args
+    argparse_funcs = {
+        "finetune": args_finetune, "compress": args_compress,
+        "evaluate": args_evaluate, "analyze": args_analyze
+    }
+    running_remain = args_remain
 
-    return experiment_args, task_args
+    for task in experiment_args.jobs:
+        prev_remain = running_remain
+        args_for_task, running_remain = argparse_funcs[task](args_remain, parse_known=True)
+        consumed = set(prev_remain) - set(running_remain)
+        task_args[task] = args_for_task
+        consumed_args[task] = sorted(list(consumed), key=args_remain.index)
+
+    return experiment_args, task_args, consumed_args
 
 def args_run_all():
     ap = argparse.ArgumentParser()

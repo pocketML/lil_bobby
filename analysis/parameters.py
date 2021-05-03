@@ -91,7 +91,12 @@ def print_named_params(model, arch):
         for name, param in children:
             print(f'| --> {name}, {param.size()}, {param.dtype}')
 
-def print_model_disk_size(model):
+def get_model_disk_size(model):
     torch.save(model.state_dict(), "tmp.pt")
-    print("%.3f MB" %(os.path.getsize("tmp.pt")/1e6))
+    size = os.path.getsize("tmp.pt")/1e6
     os.remove('tmp.pt')
+    return size
+
+def print_model_disk_size(model):
+    size = get_model_disk_size(model)
+    print(f"{size:.3f} MB")

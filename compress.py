@@ -1,4 +1,6 @@
 from argparse import ArgumentError
+import json
+import os
 import torch
 import torch.nn as nn
 from common import argparsers, data_utils, task_utils
@@ -108,8 +110,12 @@ def main(args, sacred_experiment=None):
 
     if "distill" in args.compression_actions:
         model = load_student(task, student_type, use_gpu=use_gpu)
-        if do_pruning and args.prune_movement:
-            prune.initalize_mask_scores(model)
+        if sacred_experiment is not None:
+            temp_name = "temp.json"
+            with open(temp_name, "w", encoding="utf-8") as fp:
+                json.dump(model.cfg, fp, indent=4)
+            sacred_experiment.add_artifact(temp_name, "model_cfg.json")
+            os.remove(temp_name)
 
         distill_model(task, model, device, args, sacred_experiment)
 

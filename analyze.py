@@ -20,6 +20,9 @@ def main(args, sacred_experiment=None):
         print(model_static_quant)
     if args.model_size:
         parameters.print_model_size(model)
+        total_params, total_bits = parameters.get_model_size(model)
+        sacred_experiment.log_scalar("model_params", total_params)
+        sacred_experiment.log_scalar("model_size", total_bits/8000000)
     if args.weight_hist and is_finetuned_model:
         parameters.weight_histogram_for_all_transformers(model, args.arch)
     if args.layer_weight_hist:
