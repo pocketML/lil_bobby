@@ -1,4 +1,5 @@
 import argparse
+from sys import argv
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
@@ -187,48 +188,32 @@ def args_experiment():
 def args_search():
     ap = argparse.ArgumentParser()
 
-    # Args to search for.
+    # Job to search for.
     task_choices = ("finetune", "compress", "evaluate", "analyze")
-    ap.add_argument("jobs", nargs="+", choices=task_choices)
-    ap.add_argument('--task', choices=list(TASK_INFO.keys()) + [None], default=None)
-    ap.add_argument("--student-arch", choices=list(STUDENT_MODELS.keys()) + [None], default=None)
-    ap.add_argument("--name", type=str)
+    ap.add_argument("job", choices=task_choices)
 
     # Args for manipulating found results.
     ap.add_argument("--generate-table", action="store_true")
     ap.add_argument("--table-headers", nargs="+")
 
-    consumed_args = {}
+    meta_args, args_remain = ap.parse_known_args()
 
-    search_args, args_remain = ap.parse_known_args()
+    search_ap = argparse.ArgumentParser()
 
-    # Add dummy values for task or student_arch to make the parsers behave.
-    if search_args.task is None:
-        args_remain.extend(["--task", "sst-2"])
-    if search_args.student_arch is None:
-        args_remain.extend(["--student-arch", "tang"])
+    index = 0
+    # Go through remaining arguments and add them as search keys/args to "search_ap".
+    while index < len(args_remain):
+        arg = args_remain[index]
+        if arg.startswith("--"):
+            if index < len(args_remain) - 1 and not args_remain[index+1].startswith("--"):
+                search_ap.add_argument(arg, type=str, nargs="+")
+            else:
+                search_ap.add_argument(arg, action="store_true")
+        index += 1
 
-    argparse_funcs = {
-        "finetune": args_finetune, "compress": args_compress,
-        "evaluate": args_evaluate, "analyze": args_analyze
-    }
-    running_remain = args_remain
+    search_args = search_ap.parse_args(args_remain)
 
-    for task in search_args.jobs:
-        prev_remain = running_remain
-        args_for_task, running_remain = argparse_funcs[task](args_remain, parse_known=True)
-        print(args_for_task)
-
-        # Remove dummy values for task or student_arch if we didn't provide these.
-        if search_args.task is None:
-            delattr(args_for_task, "task")
-        if search_args.student_arch is None:
-            delattr(args_for_task, "student_arch")
-
-        consumed = set(prev_remain) - set(running_remain)
-        consumed_args[task] = sorted(list(consumed), key=args_remain.index)
-
-    return search_args, consumed_args
+    return meta_args, search_args
 
 def args_run_all():
     ap = argparse.ArgumentParser()

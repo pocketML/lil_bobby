@@ -1,59 +1,80 @@
 import json
 from glob import glob
+from sys import meta_path
 
 from common.argparsers import args_search
 
-def experiment_contains_args(exp_path, exp_args, all_task_args):
-    if exp_args.name is not None: # See if experiment matches name.
+def get_json_data(experiment_path, data_type):
+    try:
+        with open(f"{experiment_path}/{data_type}.json", "r", encoding="utf-8") as fp:
+            data = json.load(fp)
+            if data_type == "config":
+                data = data["task_args"]
+            return data
+    except FileNotFoundError:
+        return None
+
+def experiment_contains_args(exp_path, job, search_args):
+    if hasattr(search_args, "name"): # See if experiment matches name.
         with open(exp_path + "/info.json", "r", encoding="utf-8") as fp:
-            if json.load(fp)["name"] == exp_args.name:
+            if json.load(fp)["name"] == search_args.name:
                 return True
         return False
 
     # See if args used to run experiment matches given args.
-    with open(exp_path + "/config.json", "r", encoding="utf-8") as fp:
-        data = json.load(fp)["task_args"]
-        for experiment_task in all_task_args:
-            if experiment_task not in data:
+    # We search for both cmd args given to experiment as well as model cfg args used.
+    values_found = {x: False for x in search_args.__dict__}
+    for data_type in ("config", "model_cfg"):
+        experiment_args = get_json_data(exp_path, data_type)
+        if data_type == "config":
+            if job not in experiment_args:
                 return False
-            task_args = all_task_args[experiment_task]
-            experiment_args = data[experiment_task]
-            index = 0
-            while index < len(task_args):
-                key = task_args[index].replace("--", "").replace("-", "_")
 
-                if key not in experiment_args:
-                    return False
+            experiment_args = experiment_args[job]
 
-                value = True
-                if not task_args[index+1].startswith("--"):
-                    index += 1
-                    value = task_args[index]
+        if experiment_args is None:
+            continue
 
-                if not isinstance(experiment_args[key], list):
-                    experiment_args[key] = [experiment_args[key]]
+        for key in search_args.__dict__:
+            if values_found[key]:
+                continue
 
-                for experiment_value in experiment_args[key]:
-                    if not str(experiment_value) == str(value):
-                        return False
+            values = search_args.__dict__[key]
 
-                index += 1
-    return True
+            if key not in experiment_args:
+                continue
 
-def find_matching_experiments(search_args, consumed_args):
+            if not isinstance(experiment_args[key], list):
+                experiment_args[key] = [experiment_args[key]]
+
+            value_found = False
+
+            for experiment_value in experiment_args[key]:
+                for value in values:
+                    if str(experiment_value) == value:
+                        value_found = True
+                        break
+                if value_found:
+                    break
+
+            values_found[key] = value_found
+
+    return all(values_found.values())
+
+def find_matching_experiments(search_args, job):
     experiment_folders = glob("experiments/*")
     valid_folders = []
 
     for folder in experiment_folders:
-        if "_sources" not in folder and experiment_contains_args(folder, search_args, consumed_args):
+        if "_sources" not in folder and experiment_contains_args(folder, job, search_args):
             valid_folders.append(folder)
     return valid_folders
 
-def main(search_args, consumed_args):
-    matching_folders = find_matching_experiments(search_args, consumed_args)
+def main(meta_args, search_args):
+    matching_folders = find_matching_experiments(search_args, meta_args.job)
     print(matching_folders)
 
 if __name__ == "__main__":
-    SEARCH_ARGS, CONSUMED_ARGS = args_search()
+    META_ARGS, SEARCH_ARGS = args_search()
 
-    main(SEARCH_ARGS, CONSUMED_ARGS)
+    main(META_ARGS, SEARCH_ARGS)
