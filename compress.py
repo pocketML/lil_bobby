@@ -45,7 +45,8 @@ def quantize_model(task, model, device, args):
 def prune_model(task, model, device, args):
     dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(task))
 
-    print(f"Sparsity: {int(prune.ratio_zero(model) * 100)}%")
+    params, zero = prune.params_zero(model)
+    print(f"Sparsity: {int((params / zero) * 100)}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
@@ -55,7 +56,8 @@ def prune_model(task, model, device, args):
     elif args.prune_movement:
         model = prune.movement_pruning(model, args.prune_threshold)
 
-    print(f"Sparsity: {int(prune.ratio_zero(model) * 100)}%")
+    params, zero = prune.params_zero(model)
+    print(f"Sparsity: {int((params / zero) * 100)}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)

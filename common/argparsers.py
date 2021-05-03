@@ -165,30 +165,70 @@ def args_experiment():
 
     task_choices = ("finetune", "compress", "evaluate", "analyze")
     ap.add_argument("jobs", nargs="+", choices=task_choices)
-    ap.add_argument("--name", type=str, default=None)
-    ap.add_argument("--search", action="store_true")
+    ap.add_argument("--name", type=str, required=True)
     ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--transponder", action="store_true")
     ap.add_argument("--output-path", type=str)
 
     task_args = {}
-    consumed_args = {}
 
     experiment_args, args_remain = ap.parse_known_args()
     argparse_funcs = {
         "finetune": args_finetune, "compress": args_compress,
         "evaluate": args_evaluate, "analyze": args_analyze
     }
-    running_remain = args_remain
 
     for task in experiment_args.jobs:
+        args_for_task = argparse_funcs[task](args_remain, parse_known=True)[0]
+        task_args[task] = args_for_task
+
+    return experiment_args, task_args
+
+def args_search():
+    ap = argparse.ArgumentParser()
+
+    # Args to search for.
+    task_choices = ("finetune", "compress", "evaluate", "analyze")
+    ap.add_argument("jobs", nargs="+", choices=task_choices)
+    ap.add_argument('--task', choices=list(TASK_INFO.keys()) + [None], default=None)
+    ap.add_argument("--student-arch", choices=list(STUDENT_MODELS.keys()) + [None], default=None)
+    ap.add_argument("--name", type=str)
+
+    # Args for manipulating found results.
+    ap.add_argument("--generate-table", action="store_true")
+    ap.add_argument("--table-headers", nargs="+")
+
+    consumed_args = {}
+
+    search_args, args_remain = ap.parse_known_args()
+
+    # Add dummy values for task or student_arch to make the parsers behave.
+    if search_args.task is None:
+        args_remain.extend(["--task", "sst-2"])
+    if search_args.student_arch is None:
+        args_remain.extend(["--student-arch", "tang"])
+
+    argparse_funcs = {
+        "finetune": args_finetune, "compress": args_compress,
+        "evaluate": args_evaluate, "analyze": args_analyze
+    }
+    running_remain = args_remain
+
+    for task in search_args.jobs:
         prev_remain = running_remain
         args_for_task, running_remain = argparse_funcs[task](args_remain, parse_known=True)
+        print(args_for_task)
+
+        # Remove dummy values for task or student_arch if we didn't provide these.
+        if search_args.task is None:
+            delattr(args_for_task, "task")
+        if search_args.student_arch is None:
+            delattr(args_for_task, "student_arch")
+
         consumed = set(prev_remain) - set(running_remain)
-        task_args[task] = args_for_task
         consumed_args[task] = sorted(list(consumed), key=args_remain.index)
 
-    return experiment_args, task_args, consumed_args
+    return search_args, consumed_args
 
 def args_run_all():
     ap = argparse.ArgumentParser()
