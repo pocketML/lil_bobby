@@ -86,6 +86,7 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
+    ap.add_argument("--loadbar", action="store_true")
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
