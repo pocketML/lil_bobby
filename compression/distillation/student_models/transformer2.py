@@ -53,7 +53,7 @@ class Transformer2(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.embedding = embeddings.get_embedding(cfg)
+        self.embedding = embeddings.get_embedding(cfg, False)
         self.embedding_dim_sqrt = math.sqrt(cfg['embedding-dim'])
 
         self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
@@ -63,11 +63,13 @@ class Transformer2(base.StudentModel):
             cfg['attn-hidden'],
             cfg['dropout']
         )
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, cfg['num-layers'])
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, cfg['transformer-layers'])
+
+        self.decoder = base.get_rnn(cfg)
 
         self.classifier = nn.Sequential(
             nn.Dropout(cfg['dropout']),
-            nn.Linear(cfg['embedding-dim'], cfg['cls-hidden-dim']),
+            nn.Linear(cfg['encoder-hidden-dim'] * 2, cfg['cls-hidden-dim']),
             nn.Dropout(cfg['dropout']),
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
@@ -92,15 +94,29 @@ class Transformer2(base.StudentModel):
         x[idx[:,0], idx[:,1], :] = mask
         return x
 
-    def forward(self, x, _):
-        if self.training and self.cfg['train-masking'] > 0:
-            x = self.apply_mask(x)
+    def forward(self, x, lens):
+        #if self.training and self.cfg['train-masking'] > 0:
+        #    x = self.apply_mask(x)
+        #print(x.shape)
         x = self.embedding(x)
+        #print(x.shape)
         x = x.permute(1,0,2)
+        #print(x.shape)
         x = self.pos_encoder(x)
+        #print(x.shape)
         x = self.transformer_encoder(x)
-        x = x.mean(dim=0)
+        #print(x.shape)
+        x = x.permute(1,0,2)
+        #print(x.shape)
+        
+        h = base.pack_rnn_unpack(self.decoder, self.cfg, x, lens, x.shape[0])
+        x = base.choose_hidden_state(h, lens=lens, decision='last') 
+        #print(x.shape)
+        
+
+        #x = x.mean(dim=0)
         x = self.classifier(x)
+        #print(x.shape)
         return x
 
     def get_optimizer(self):

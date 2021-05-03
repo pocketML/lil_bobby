@@ -32,10 +32,12 @@ class EmbFFN(base.StudentModel):
         self.embedding = embeddings.get_embedding(cfg, False)
 
         #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
-        self.sigmoid = nn.Sigmoid()
+
+        inp_d = self.cfg['embedding-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['embedding-dim']
+
         self.classifier = nn.Sequential(
             nn.Dropout(cfg['dropout']),
-            nn.Linear(3 * cfg['embedding-dim'], cfg['cls-hidden-dim']),
+            nn.Linear(inp_d, cfg['cls-hidden-dim']),
             nn.Dropout(cfg['dropout']),
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
@@ -72,13 +74,18 @@ class EmbFFN(base.StudentModel):
         return torch.cat([x1, x2, x3], dim=1)
 
     def forward(self, x, lens):
-        x = self.embedding(x)
-        x = x.permute(1,0,2)
-        #x = self.pos_encoder(x)
-        #x = self.sigmoid(x)
-
-        x = self.cmp(x, lens, False) 
-        #x = self.mean_with_lens(x, lens)
+        def embed_mean(inp, lengths):
+            out = self.embedding(inp)
+            out = out.permute(1,0,2)
+            out = self.mean_with_lens(out, lengths)
+            return out
+        
+        if self.cfg['use-sentence-pairs']:
+            x1 = embed_mean(x[0], lens[0])
+            x2 = embed_mean(x[1], lens[1])
+            x = base.cat_cmp(x1, x2)
+        else:
+            x = embed_mean(x, lens)
         x = self.classifier(x)
         return x
 

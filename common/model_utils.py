@@ -63,7 +63,7 @@ def get_model_path(task, model_type):
 def load_teacher(task, checkpoint_path, use_cpu=False, model_name='checkpoint_best.pt'):
     bin_path = task_utils.get_processed_path(task)
     model = RobertaModel.from_pretrained(
-        checkpoint_path, #f'models/experiments/finetune_{task}',
+        checkpoint_path, #f'models/experiments/finetune_{task}', TODO: is this correct?
         checkpoint_file=model_name,
         data_name_or_path=bin_path
     )
