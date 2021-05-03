@@ -1,6 +1,10 @@
+import torch
+
 from fairseq.data.data_utils import collate_tokens
-from common import task_utils, data_utils
 import os
+from tqdm import tqdm
+
+from common import task_utils, data_utils
 
 def generate_distillation_loss(args, model):
     input_folder = args.generate_loss
@@ -13,8 +17,9 @@ def generate_distillation_loss(args, model):
         data = data_utils.load_train_data(args.task)
         sentence_pairs = len(data) == 3
 
-    batch_size = 8
+    batch_size = 4
     n = len(data[0])
+    print(f"*** Creating distillation loss for {n} samples ***")
     output_path = f'{task_utils.TASK_INFO[args.task]["path"]}/distillation_data/'
 
     if not os.path.exists(output_path):
@@ -24,34 +29,39 @@ def generate_distillation_loss(args, model):
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
 
     with open(output_path + output_file, 'w', encoding='utf-8') as out:
-        for i in range(int((n - 1) / batch_size) + 1):
-            start = i * batch_size
-            end = start + batch_size if (start + batch_size) < n else n
-            batch_sents = data[0][start : end]
-            if not augmented_data: # Use target labels for regular labeled data.
-                batch_targets = data[1][start : end]
+        iterator = range(int((n - 1) / batch_size) + 1)
+        if args.loadbar:
+            iterator = tqdm(iterator)
 
-            if sentence_pairs:
-                batch_sents2 = data[-1][start : end]
-                batch = collate_tokens(
-                    [model.encode(sent1, sent2) for sent1, sent2 in zip(batch_sents, batch_sents2)],
-                    pad_idx=1
-                )
-            else:
-                batch = collate_tokens(
-                    [model.encode(sent) for sent in batch_sents], 
-                    pad_idx=1
-                )
-            batch_logits = model.predict('sentence_classification_head', batch, return_logits=True)
-            if augmented_data: # Use predicted labels from logits for augmented data.
-                batch_targets = [label_fn(label) for label in batch_logits.argmax(dim=1).tolist()]
+        with torch.no_grad():
+            for i in iterator:
+                start = i * batch_size
+                end = start + batch_size if (start + batch_size) < n else n
+                batch_sents = data[0][start : end]
+                if not augmented_data: # Use target labels for regular labeled data.
+                    batch_targets = data[1][start : end]
 
-            if sentence_pairs:
-                for sent1, sent2, target, logits in zip(batch_sents, batch_sents2, batch_targets, batch_logits.tolist()):
-                    logits_str = ','.join([str(x) for x in logits])
-                    out.write(f'{sent1.strip()}\t{sent2.strip()}\t{target.strip()}\t{logits_str}\n')
-            else:
-                for sent, target, logits in zip(batch_sents, batch_targets, batch_logits.tolist()):
-                    logits_str = ','.join([str(x) for x in logits])
-                    out.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
+                if sentence_pairs:
+                    batch_sents2 = data[-1][start : end]
+                    batch = collate_tokens(
+                        [model.encode(sent1, sent2) for sent1, sent2 in zip(batch_sents, batch_sents2)],
+                        pad_idx=1
+                    )
+                else:
+                    batch = collate_tokens(
+                        [model.encode(sent) for sent in batch_sents], 
+                        pad_idx=1
+                    )
+                batch_logits = model.predict('sentence_classification_head', batch, return_logits=True)
+                if augmented_data: # Use predicted labels from logits for augmented data.
+                    batch_targets = [label_fn(label) for label in batch_logits.argmax(dim=1).tolist()]
+
+                if sentence_pairs:
+                    for sent1, sent2, target, logits in zip(batch_sents, batch_sents2, batch_targets, batch_logits.tolist()):
+                        logits_str = ','.join([str(x) for x in logits])
+                        out.write(f'{sent1.strip()}\t{sent2.strip()}\t{target.strip()}\t{logits_str}\n')
+                else:
+                    for sent, target, logits in zip(batch_sents, batch_targets, batch_logits.tolist()):
+                        logits_str = ','.join([str(x) for x in logits])
+                        out.write(f'{sent.strip()}\t{target.strip()}\t{logits_str}\n')
  
