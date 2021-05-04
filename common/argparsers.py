@@ -85,7 +85,6 @@ def args_compress(args=None, namespace=None, parse_known=False):
             overwrite_ap.add_argument("--" + key, type=type(value))
 
     compression_args, args_remain = overwrite_ap.parse_known_args(args_remain, namespace=compression_args)
-    print(compression_args)
 
     for action in compression_args.compression_actions:
         compression_args, args_remain = compression_actions[action](
