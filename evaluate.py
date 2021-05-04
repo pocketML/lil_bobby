@@ -71,10 +71,10 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
 
     accuracy = 0 if num_examples == 0 else running_corrects / num_examples
     if sacred_experiment is not None:
-        sacred_experiment.log_scalar("validation.acc", accuracy)
-    print(f'|--> val accuracy: {accuracy:.4f}')
+        sacred_experiment.log_scalar("test.accuracy", accuracy)
+    print(f'|--> eval val accuracy: {accuracy:.4f}')
 
-def main(args, sacred_experiment=None):   
+def main(args, sacred_experiment=None):
     task = args.task
     val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv' 
     is_finetuned_model = model_utils.is_finetuned_model(args.arch)
@@ -82,7 +82,9 @@ def main(args, sacred_experiment=None):
 
     if is_finetuned_model:
         model_path = model_utils.get_model_path(args.task, "finetuned")
-        model = model_utils.load_teacher(model_path, use_cpu=args.cpu, model_name=args.model_name)
+        model = model_utils.load_teacher(
+            task, f"{model_path}/{args.model_name}", use_cpu=args.cpu
+        )
         model.eval()
         if task in ['sst-2', 'rte']:
             accuracy = evaluate_accuracy(model, task, val_data_path)

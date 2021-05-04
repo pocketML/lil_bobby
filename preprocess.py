@@ -1,3 +1,4 @@
+from torch._C import Value
 from common import argparsers, model_utils
 from preprocessing import download, data_augment, distillation_loss
 import torch
@@ -13,9 +14,13 @@ def main(args):
     elif args.augment is not None:
         data_augment.augment(args.task, args.augment, args.seed)
     elif args.generate_loss is not None:
+        if args.model_name is None:
+            raise ValueError("Model name is required for generate_loss!")
+
         model_path = model_utils.get_model_path(args.task, "finetuned")
-        teacher_model = model_utils.load_teacher(args.task, model_path, args.cpu)
-        teacher_model.eval()
+        teacher_model = model_utils.load_teacher(
+            args.task, f"{model_path}/{args.model_name}", args.cpu
+        )
         distillation_loss.generate_distillation_loss(args, teacher_model)
 
 if __name__ == "__main__":

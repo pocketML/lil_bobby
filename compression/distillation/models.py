@@ -21,8 +21,14 @@ STUDENT_MODELS = {
     'emb-ffn': EmbFFN
 }
 
-def load_student(task, student_type, use_gpu, model_name=None):
+def load_student(task, student_type, use_gpu, model_name=None, args=None):
     cfg = base.get_default_student_config(task, student_type, model_name=model_name)
+    if args is not None:
+        args_dict = args.__dict__
+        for key in args_dict:
+            if args_dict[key] is not None:
+                cfg[key.replace("_", "-")] = args_dict[key]
+
     if student_type in STUDENT_MODELS:
         model = STUDENT_MODELS[student_type](cfg)
     else:

@@ -45,7 +45,7 @@ def get_transformer_layers(model):
 def get_model_path(task, model_type):
     """
     Returns a path to where a type of model is saved.
-    F.x. models/sst-2/finetuned.
+    F.x. models/finetuned/sst-2.
     """
     if model_type not in ("finetuned", "distilled", "embeddings"):
         raise ValueError("Invalid model type.")
@@ -63,7 +63,7 @@ def get_model_path(task, model_type):
 def load_teacher(task, checkpoint_path, use_cpu=False, model_name='checkpoint_best.pt'):
     bin_path = task_utils.get_processed_path(task)
     model = RobertaModel.from_pretrained(
-        checkpoint_path, #f'models/experiments/finetune_{task}', TODO: is this correct?
+        checkpoint_path,
         checkpoint_file=model_name,
         data_name_or_path=bin_path
     )
