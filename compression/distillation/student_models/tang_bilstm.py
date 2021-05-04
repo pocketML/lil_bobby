@@ -20,16 +20,14 @@ class TangBILSTM(base.StudentModel):
         # classifier/mlp
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d
-        fc1 = nn.Linear(inp_d, self.cfg['cls-hidden-dim'])
-        relu = nn.ReLU()
-        dropout = nn.Dropout(self.cfg["dropout"])
-        fc2 = nn.Linear(self.cfg['cls-hidden-dim'], self.cfg['num-classes'])
-        self.classifier = nn.Sequential(fc1, relu, dropout, fc2)
+        self.classifier = base.get_classifier(inp_d, cfg)
 
     def get_optimizer(self):
         return Adadelta(
-            self.parameters(), lr=self.cfg['lr'],
-            rho=self.cfg['rho']
+            self.parameters(), 
+            lr=self.cfg['lr'],
+            rho=self.cfg['rho'],
+            weight_decay=self.cfg['weight-decay']
         )
 
     def forward(self, x, lens):
