@@ -1,5 +1,4 @@
 import argparse
-import json
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
