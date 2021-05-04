@@ -194,6 +194,9 @@ def args_search():
 
     # Args for manipulating found results.
     ap.add_argument("--generate-table", action="store_true")
+    ap.add_argument("--table-col", type=str)
+    ap.add_argument("--table-row", type=str)
+    ap.add_argument("--table-metric", type=str, choices=("accuracy", "params", "size"))
     ap.add_argument("--table-headers", nargs="+")
 
     meta_args, args_remain = ap.parse_known_args()
