@@ -51,6 +51,11 @@ if __name__ == "__main__":
                 INDEX = 2
             RUN_ID = f"{RUN_ID}_{INDEX}"
 
+            # Update model_name parameter for evaluate and analyze.
+            for task_type in ("evaluate", "analyze"):
+                if task_type in TASK_ARGS and TASK_ARGS[task_type].model_name is not None:
+                    setattr(TASK_ARGS[task_type], "model_name", RUN_ID)
+
     EXPERIMENT.add_config({
         "task_args": TASK_ARGS
     })
