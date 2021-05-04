@@ -9,7 +9,7 @@ def main(args, args_remain):
         return
     args_str = " ".join(args_remain)
 
-    if args.seed_names == []:
+    if args.seed_names is None:
         seed_names = task_utils.SEED_DICT.keys()
     else:
         seed_names = args.seed_names
