@@ -21,6 +21,7 @@ def main(args, args_remain):
         if name_2 is not None:
             full_cmd_str += f" --model-name {name_1}_{seed_name}"
 
+        print(f"Running {full_cmd_str}")
         system(full_cmd_str)
 
 if __name__ == "__main__":
