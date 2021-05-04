@@ -39,13 +39,22 @@ class StudentModel(nn.Module):
         self.load_state_dict(torch.load(f"{model_path}/{model_name}.pt"))
         self.eval()
 
+    def non_embedding_params(self):
+        params = []
+        for m in self.modules():
+            if isinstance(m, nn.Embedding) or isinstance(m, nn.EmbeddingBag):
+                continue
+            params.extend(p for p in m.parameters() if p.dim() == 2)
+        return params
+
     def init_weights(self, init_range):
-        if self.cfg['embedding-type'] == 'hash':
+        if not self.embedding.load_pretrained:
             self.embedding.init_weight_range(init_range)
-        self.classifier[1].bias.data.zero_()
-        self.classifier[4].bias.data.zero_()
-        self.classifier[1].weight.data.uniform_(-init_range, init_range)
-        self.classifier[4].weight.data.uniform_(-init_range, init_range)
+        for i in range(len(self.classifier)):
+            module = self.classifier[i]
+            if isinstance(module, nn.Linear):
+                module.bias.data.zero_()
+                module.weight.data.uniform_(-init_range, init_range)
 
 class WarmupOptimizer:
     """Optim wrapper that implements rate."""
@@ -147,6 +156,14 @@ def get_rnn(cfg):
         hidden_size=cfg['encoder-hidden-dim'],
         num_layers=cfg['num-layers'],
         bidirectional=cfg['bidirectional'],
+    )
+
+def get_classifier(inp_d, cfg):
+    return nn.Sequential(
+        nn.Linear(inp_d, cfg['cls-hidden-dim']),
+        nn.Dropout(cfg['dropout']),
+        nn.ReLU(),
+        nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
     )
 
 def choose_hidden_state(hidden_states, lens=None, decision='max'):
