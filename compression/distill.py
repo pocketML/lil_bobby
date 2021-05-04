@@ -8,10 +8,6 @@ def save_checkpoint(model, student_arch, sacred_experiment=None):
         else student_arch
     )
     model.save(model_name)
-    if sacred_experiment:
-        model_dir = model_utils.get_model_path(model.cfg["task"], "distilled")
-        model_path = f'{model_dir}/{model_name}.pt'
-        sacred_experiment.add_artifact(model_path)
 
 # only works for single sentence prediction
 def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):

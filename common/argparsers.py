@@ -1,7 +1,9 @@
 import argparse
+import json
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
+from compression.distillation.student_models.base import get_default_student_config
 from compression.distillation.models import STUDENT_MODELS
 
 FINETUNE_TASKS = list(TASK_INFO.keys())
@@ -45,7 +47,7 @@ def args_prune(args=None, namespace=None, parse_known=False):
     return ap.parse_args(args=args, namespace=namespace)
 
 # define arguments for model compression
-def args_compress():
+def args_compress(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     compression_actions = {
         'distill': args_distill,
@@ -57,13 +59,32 @@ def args_compress():
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--load-trained-model", type=str)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
-    ap.add_argument("--checkpoint-path", default="checkpoints")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--loadbar", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--seed-name", type=str, choices=SEED_DICT.keys(), default=None)
 
-    compression_args, args_remain = ap.parse_known_args()
+    compression_args, args_remain = ap.parse_known_args(args=args, namespace=namespace)
+
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
+    overwrite_ap = argparse.ArgumentParser()
+    cfg = get_default_student_config(compression_args.task, compression_args.student_arch)
+    for key, value in cfg.items():
+        if isinstance(value, bool):
+            overwrite_ap.add_argument("--" + key, type=str2bool, nargs="?", const=True, default=value)
+        else:
+            overwrite_ap.add_argument("--" + key, type=type(value))
+
+    compression_args, args_remain = overwrite_ap.parse_known_args(args_remain, namespace=compression_args)
 
     for action in compression_args.compression_actions:
         compression_args, args_remain = compression_actions[action](
@@ -81,7 +102,7 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
     ap.add_argument("--glue-preprocess", action="store_true")
     ap.add_argument("--augment", type=str, choices=augmenters, default=None)
     ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"), default=None)
-    ap.add_argument("--checkpoint-path", default="checkpoints")
+    ap.add_argument("--model-name", default=None)
     ap.add_argument("--teacher-arch", choices=teacher_archs, default="roberta_large")
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--cpu", action="store_true")
@@ -143,7 +164,7 @@ def args_finetune(args=None, namespace=None, parse_known=False):
 
     return ap.parse_args(args=args, namespace=namespace)
 
-def args_analyze():
+def args_analyze(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
     ap.add_argument('--model-name', type=str, default=None)
@@ -156,8 +177,10 @@ def args_analyze():
     ap.add_argument('--weight-thresholds', action='store_true')
     ap.add_argument('--model-disk-size', action="store_true")
 
-    args = ap.parse_args()
-    return args
+    if parse_known:
+        return ap.parse_known_args(args=args, namespace=namespace)
+
+    return ap.parse_args(args=args, namespace=namespace)
 
 def args_experiment():
     ap = argparse.ArgumentParser()
@@ -165,24 +188,56 @@ def args_experiment():
     task_choices = ("finetune", "compress", "evaluate", "analyze")
     ap.add_argument("jobs", nargs="+", choices=task_choices)
     ap.add_argument("--name", type=str, required=True)
+    ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--transponder", action="store_true")
     ap.add_argument("--output-path", type=str)
 
     task_args = {}
 
     experiment_args, args_remain = ap.parse_known_args()
+    argparse_funcs = {
+        "finetune": args_finetune, "compress": args_compress,
+        "evaluate": args_evaluate, "analyze": args_analyze
+    }
+
     for task in experiment_args.jobs:
-        if task == "finetune":
-            finetune_args = args_finetune(args_remain, parse_known=True)[0]
-            task_args["finetune"] = finetune_args
-        if task == "compress":
-            compress_args = args_compress()[0]
-            task_args["compress"] = compress_args
-        if task == "evaluate":
-            evaluate_args = args_evaluate(args_remain, parse_known=True)[0]
-            task_args["evaluate"] = evaluate_args
+        args_for_task = argparse_funcs[task](args_remain, parse_known=True)[0]
+        task_args[task] = args_for_task
 
     return experiment_args, task_args
+
+def args_search():
+    ap = argparse.ArgumentParser()
+
+    # Job to search for.
+    task_choices = ("finetune", "compress", "evaluate", "analyze")
+    ap.add_argument("job", choices=task_choices)
+
+    # Args for manipulating found results.
+    ap.add_argument("--metric", type=str, choices=("acc", "params", "size"), default="acc")
+    ap.add_argument("--generate-table", action="store_true")
+    ap.add_argument("--table-col", type=str)
+    ap.add_argument("--table-row", type=str)
+    ap.add_argument("--table-headers", nargs="+")
+
+    meta_args, args_remain = ap.parse_known_args()
+
+    search_ap = argparse.ArgumentParser()
+
+    index = 0
+    # Go through remaining arguments and add them as search keys/args to "search_ap".
+    while index < len(args_remain):
+        arg = args_remain[index]
+        if arg.startswith("--"):
+            if index < len(args_remain) - 1 and not args_remain[index+1].startswith("--"):
+                search_ap.add_argument(arg, type=str, nargs="+")
+            else:
+                search_ap.add_argument(arg, action="store_true")
+        index += 1
+
+    search_args = search_ap.parse_args(args_remain)
+
+    return meta_args, search_args
 
 def args_run_all():
     ap = argparse.ArgumentParser()

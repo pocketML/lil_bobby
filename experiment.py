@@ -1,5 +1,9 @@
 import os
+import json
+from re import A
+from shutil import rmtree
 from glob import glob
+from numpy.lib.arraysetops import isin
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
@@ -7,12 +11,13 @@ from common import transponder
 from finetune import main as finetune_main
 from compress import main as compress_main
 from evaluate import main as evaluate_main
+from analyze import main as analyze_main
 
 OUTPUT_DIR = "experiments"
 
 TASK_FUNCS = {
     "finetune": finetune_main, "compress": compress_main,
-    "evaluate": evaluate_main
+    "evaluate": evaluate_main, "analyze": analyze_main
 }
 
 def run_experiment(task_args, _run):
@@ -35,13 +40,16 @@ if __name__ == "__main__":
 
     RUN_ID = EXPERIMENT_ARGS.name
     if os.path.exists(f"{OUTPUT_DIR}/{RUN_ID}"):
-        PREVIOUS_RUN = glob(f"{OUTPUT_DIR}/{RUN_ID}*")
-        INDEX = PREVIOUS_RUN[-1].split("_")[-1]
-        try:
-            INDEX = int(INDEX) + 1
-        except ValueError:
-            INDEX = 2
-        RUN_ID = f"{RUN_ID}_{INDEX}"
+        if EXPERIMENT_ARGS.overwrite:
+            rmtree(f"{OUTPUT_DIR}/{RUN_ID}")
+        else:
+            PREVIOUS_RUN = glob(f"{OUTPUT_DIR}/{RUN_ID}*")
+            INDEX = PREVIOUS_RUN[-1].split("_")[-1]
+            try:
+                INDEX = int(INDEX) + 1
+            except ValueError:
+                INDEX = 2
+            RUN_ID = f"{RUN_ID}_{INDEX}"
 
     EXPERIMENT.add_config({
         "task_args": TASK_ARGS

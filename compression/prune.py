@@ -1,4 +1,3 @@
-from abc import abstractmethod
 import torch
 from common import model_utils
 import torch.nn.utils.prune as prune
@@ -108,16 +107,15 @@ def do_pruning(params, prune_cls, importance_scores=None, sparsify=False, **kwar
             sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
             setattr(module, param_name, sparse_tensor)
 
-def ratio_zero(model):
+def params_zero(model):
     zero = 0
     total_params = 0
-    for name, param in model.named_parameters():
-        if "mask" not in name:
-            non_zero = torch.count_nonzero(param).item()
-            num_params = param.size().numel()
-            zero += (num_params - non_zero)
-            total_params += num_params
-    return zero / total_params
+    for _, param in model.named_parameters():
+        non_zero = torch.count_nonzero(param).item()
+        num_params = param.size().numel()
+        zero += (num_params - non_zero)
+        total_params += num_params
+    return total_params, zero
 
 def magnitude_pruning(model, threshold):
     model = copy.deepcopy(model)
