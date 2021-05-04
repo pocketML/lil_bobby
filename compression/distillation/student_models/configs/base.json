@@ -22,5 +22,6 @@
     "embedding-type": "bpe",
     "num-hashes": 3,
     "hash-ratio": 10,
-    "train-masking": 0.0
+    "train-masking": 0.0,
+    "clip-grad": 30000
 }

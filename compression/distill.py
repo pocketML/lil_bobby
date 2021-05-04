@@ -1,5 +1,8 @@
 import torch
+import torch.nn as nn
+
 from tqdm import tqdm
+
 from common import transponder, model_utils, task_utils
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
@@ -13,6 +16,8 @@ def save_checkpoint(model, student_arch, sacred_experiment=None):
 def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):
     best_val_acc = 0
     no_improvement = 0
+
+    non_embedding_params = model.non_embedding_params()
 
     for epoch in range(1, num_epochs + 1):
         print(f'* Epoch {epoch}')
@@ -44,6 +49,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 if phase == "train":
                     loss = criterion(out_logits, target_logits, target_labels)
                     loss.backward()
+                    nn.utils.clip_grad_norm_(non_embedding_params, model.cfg['clip_grad'])
                     optim.step()
                     running_loss += loss.item() * len(lens)
                 running_corrects += torch.sum(preds == target_labels.data).item()
