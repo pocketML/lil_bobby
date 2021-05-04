@@ -22,7 +22,7 @@ class TangBILSTM(base.StudentModel):
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d
         self.classifier = base.get_classifier(inp_d, cfg)
 
-        self.init_weight_range(self.cfg["init-range"])
+        self.init_weights(self.cfg["init-range"])
 
     def get_optimizer(self):
         return Adadelta(
