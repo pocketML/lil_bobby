@@ -244,5 +244,6 @@ def args_run_all():
 
     ap.add_argument("--name", type=str, default=None)
     ap.add_argument("--model-name", type=str, default=None)
+    ap.add_argument("--seed-names", type=str, nargs="+", choices=SEED_DICT.keys())
 
     return ap.parse_known_args()

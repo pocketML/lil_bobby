@@ -9,7 +9,12 @@ def main(args, args_remain):
         return
     args_str = " ".join(args_remain)
 
-    for seed_name in task_utils.SEED_DICT:
+    if args.seed_names == []:
+        seed_names = task_utils.SEED_DICT.keys()
+    else:
+        seed_names = args.seed_names
+
+    for seed_name in seed_names:
         full_cmd_str = f"sbatch submit.job experiment.py {args_str}"
         if name_1 is not None:
             full_cmd_str += f" --name {name_1}_{seed_name} --seed {task_utils.SEED_DICT[seed_name]}"
