@@ -24,8 +24,8 @@ def experiment_contains_args(exp_path, meta_args, search_args):
     # See if args used to run experiment matches given args.
     # We search for both cmd args given to experiment as well as model cfg args used.
     values_found = {x: False for x in search_args.__dict__}
-    column_value = None
-    row_value = None
+    data_found = {}
+
     for data_type in ("config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
 
@@ -56,17 +56,19 @@ def experiment_contains_args(exp_path, meta_args, search_args):
                 for value in values:
                     if str(experiment_value) == value:
                         value_found = True
-                        if key == meta_args.table_col:
-                            column_value = value
-                        elif key == meta_args.table_row:
-                            row_value = value
+                        data_found[key] = value
                         break
                 if value_found:
                     break
 
             values_found[key] = value_found
 
-    return all(values_found.values()), column_value, row_value
+    if not all(values_found.values()):
+        return None
+
+    name = exp_path.replace("\\", "/").split("/")[-1]
+    data_found["name"] = name
+    return data_found
 
 def get_experiment_date(folder):
     with open(folder + "/run.json", "r", encoding="utf-8") as fp:
@@ -83,57 +85,84 @@ def get_experiment_date(folder):
         second = int(dot_split[0])
         return datetime(year, month, day, hour, minute, second).timestamp()
 
-def find_matching_experiments(search_args, meta_args):
+def find_matching_experiments(meta_args, search_args):
     experiment_folders = list(filter(lambda x: "_sources" not in x, glob("experiments/*")))
 
     experiment_folders.sort(key=get_experiment_date, reverse=True)
 
-    data_dict = {x: [] for x in search_args.__dict__[meta_args.table_row]}
+    data = []
 
     for folder in experiment_folders:
-        experiment_matches, col_value, row_value = experiment_contains_args(folder, meta_args, search_args)
-        if experiment_matches:
+        experiment_data = experiment_contains_args(folder, meta_args, search_args)
+        if experiment_data is not None:
             with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
-                data = None
-                if meta_args.table_metric == "accuracy":
-                    if "test.accuracy" in metrics_data:
-                        accuracy = metrics_data["test.accuracy"]["values"][0]
-                    else:
-                        accuracy = max(metrics_data["validation.acc"]["values"])
-                    data = accuracy
 
-                if "model_params" in metrics_data and meta_args.table_metric == "params":
-                    data = metrics_data["model_params"]["values"][0]
+                if "test.accuracy" in metrics_data:
+                    accuracy = metrics_data["test.accuracy"]["values"][0]
+                else:
+                    accuracy = max(metrics_data["validation.acc"]["values"])
+                experiment_data["acc"] = f"{accuracy:.4f}"
 
-                if "model_size" in metrics_data and meta_args.table_metric == "size":
-                    data = metrics_data["model_size"]["values"][0]
+                if "model_params" in metrics_data:
+                    experiment_data["params"] = metrics_data["model_params"]["values"][0]
 
-                if len(data_dict[row_value]) < len(search_args.__dict__[meta_args.table_col]):
-                    data_dict[row_value].append((col_value, data))
+                if "model_size" in metrics_data:
+                    experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
+
+            data.append(experiment_data)
+
+    return data
+
+def format_found_data(found_data, meta_args, search_args):
+    data_dict = {x: [] for x in search_args.__dict__[meta_args.table_row]}
+
+    for experiment_data in found_data:
+        row_value = str(experiment_data[meta_args.table_row])
+        col_value = str(experiment_data[meta_args.table_col])
+        if not meta_args.metric in experiment_data:
+            raise KeyError(f"One of the experiments is missing the metric '{meta_args.metric}'")
+
+        result = experiment_data[meta_args.metric]
+        if len(data_dict[row_value]) < len(search_args.__dict__[meta_args.table_col]):
+            data_dict[row_value].append((col_value, result))
 
     ordered_data = [(k, v) for k, v in data_dict.items()]
 
     ordered_data.sort(key=lambda x: search_args.__dict__[meta_args.table_row].index(x[0]))
-    for row_key, data in ordered_data:
+    for _, data in ordered_data:
         data.sort(key=lambda x: search_args.__dict__[meta_args.table_col].index(x[0]))
 
     return ordered_data
 
 def main(meta_args, search_args):
-    row_data = find_matching_experiments(search_args, meta_args)
+    found_data = find_matching_experiments(meta_args, search_args)
     if meta_args.generate_table:
-        with open("test.txt", "w", encoding="utf-8") as fp:
-            if meta_args.table_headers is not None:
-                fp.write(" & " + " & ".join(meta_args.table_headers) + "\n")
-            else:
-                fp.write(" & " + " & ".join(search_args.__dict__[meta_args.table_col]) + "\n")
+        necessary_attr = ("metric", "table_col", "table_row")
+        for attr in necessary_attr:
+            if meta_args.__dict__[attr] is None:
+                print(f"Generate table: Missing necessary argument '--{attr}'")
+                exit(0)
 
-            for row_key, row_data in row_data:
-                line = f"{row_key}"
-                for col, data in row_data:
-                    line += f" & {data}"
-                fp.write(line + "\n")
+        ordered_data = format_found_data(found_data, meta_args, search_args)
+
+        if meta_args.table_headers is not None:
+            print(" & " + " & ".join(meta_args.table_headers))
+        else:
+            line = ""
+            for value in search_args.__dict__[meta_args.table_col]:
+                line += f" & {meta_args.table_col}={value}"
+            print(line)
+
+        for row_key, row_data in ordered_data:
+            line = f"{meta_args.table_row}={row_key}"
+            for col, data in row_data:
+                line += f" & {data}"
+            print(line)
+    else:
+        for data_point in found_data:
+            all_data = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
+            print(all_data)
 
 if __name__ == "__main__":
     META_ARGS, SEARCH_ARGS = args_search()

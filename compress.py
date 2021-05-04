@@ -111,7 +111,8 @@ def main(args, sacred_experiment=None):
     do_quantizing = "quantize" in args.compression_actions
 
     if "distill" in args.compression_actions:
-        model = load_student(task, student_type, use_gpu=use_gpu)
+        model = load_student(task, student_type, use_gpu=use_gpu, args=args)
+        exit(0)
         if sacred_experiment is not None:
             temp_name = "temp.json"
             with open(temp_name, "w", encoding="utf-8") as fp:

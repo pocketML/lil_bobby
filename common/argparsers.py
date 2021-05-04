@@ -1,8 +1,9 @@
 import argparse
-from sys import argv
+import json
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
+from compression.distillation.student_models.base import get_default_student_config
 from compression.distillation.models import STUDENT_MODELS
 
 FINETUNE_TASKS = list(TASK_INFO.keys())
@@ -64,6 +65,27 @@ def args_compress(args=None, namespace=None, parse_known=False):
     ap.add_argument("--seed-name", type=str, choices=SEED_DICT.keys(), default=None)
 
     compression_args, args_remain = ap.parse_known_args(args=args, namespace=namespace)
+
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
+    overwrite_ap = argparse.ArgumentParser()
+    cfg = get_default_student_config(compression_args.task, compression_args.student_arch)
+    for key, value in cfg.items():
+        if isinstance(value, bool):
+            overwrite_ap.add_argument("--" + key, type=str2bool, nargs="?", const=True, default=value)
+        else:
+            overwrite_ap.add_argument("--" + key, type=type(value))
+
+    compression_args, args_remain = overwrite_ap.parse_known_args(args_remain, namespace=compression_args)
+    print(compression_args)
 
     for action in compression_args.compression_actions:
         compression_args, args_remain = compression_actions[action](
@@ -193,10 +215,10 @@ def args_search():
     ap.add_argument("job", choices=task_choices)
 
     # Args for manipulating found results.
+    ap.add_argument("--metric", type=str, choices=("acc", "params", "size"), default="acc")
     ap.add_argument("--generate-table", action="store_true")
     ap.add_argument("--table-col", type=str)
     ap.add_argument("--table-row", type=str)
-    ap.add_argument("--table-metric", type=str, choices=("accuracy", "params", "size"))
     ap.add_argument("--table-headers", nargs="+")
 
     meta_args, args_remain = ap.parse_known_args()

@@ -1,5 +1,6 @@
 # pickled files
 *.pt
+table.txt
 
 # Dataset and model files
 models/*
