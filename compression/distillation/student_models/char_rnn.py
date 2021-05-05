@@ -23,7 +23,7 @@ class CharRNN(base.StudentModel):
             nn.Dropout(cfg['dropout']),
             nn.Linear(cfg['cls-hidden-dim'], self.n_classes)
         )
-        self.init_weights(0.1)
+        self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
 
     def forward(self, sents, lengths):
         emb = self.embedding(sents)
