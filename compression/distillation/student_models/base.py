@@ -47,14 +47,16 @@ class StudentModel(nn.Module):
             params.extend(p for p in m.parameters() if p.dim() == 2)
         return params
 
-    def init_weights(self, init_range):
-        if not self.embedding.load_pretrained:
-            self.embedding.init_weight_range(init_range)
-        for i in range(len(self.classifier)):
-            module = self.classifier[i]
-            if isinstance(module, nn.Linear):
-                module.bias.data.zero_()
-                module.weight.data.uniform_(-init_range, init_range)
+    def init_weights(self, embedding_init_range=None, classifier_init_range=None):
+        if not self.embedding.load_pretrained and embedding_init_range is not None:
+            self.embedding.init_weight_range(embedding_init_range)
+
+        if classifier_init_range is not None:
+            for i in range(len(self.classifier)):
+                module = self.classifier[i]
+                if isinstance(module, nn.Linear):
+                    module.bias.data.zero_()
+                    module.weight.data.uniform_(-classifier_init_range, classifier_init_range)
 
 class WarmupOptimizer:
     """Optim wrapper that implements rate."""

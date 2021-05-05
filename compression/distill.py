@@ -49,7 +49,7 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 if phase == "train":
                     loss = criterion(out_logits, target_logits, target_labels)
                     loss.backward()
-                    nn.utils.clip_grad_norm_(non_embedding_params, model.cfg['clip_grad'])
+                    nn.utils.clip_grad_norm_(non_embedding_params, model.cfg['clip-grad'])
                     optim.step()
                     running_loss += loss.item() * len(lens)
                 running_corrects += torch.sum(preds == target_labels.data).item()

@@ -74,16 +74,7 @@ class Transformer2(base.StudentModel):
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
-        self.init_weights()
-
-    def init_weights(self):
-        init_range = 0.1
-        if self.cfg['embedding-type'] == 'hash':
-            self.embedding.init_weight_range(init_range)
-        self.classifier[1].bias.data.zero_()
-        self.classifier[4].bias.data.zero_()
-        self.classifier[1].weight.data.uniform_(-init_range, init_range)
-        self.classifier[4].weight.data.uniform_(-init_range, init_range)
+        self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
 
     def apply_mask(self, x):
         mask = torch.LongTensor([0,0,0])

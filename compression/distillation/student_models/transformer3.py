@@ -139,7 +139,7 @@ class Transformer3(base.StudentModel):
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
-        self.init_weights(0.01)
+        self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
 
     def cmp(self, x, lens, batch_first=True):
         if self.cfg['use-gpu']:

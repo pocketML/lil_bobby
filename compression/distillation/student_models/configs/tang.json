@@ -1,11 +1,17 @@
 {
     "embedding-dim" : 300,
-    "vocab-size": 3000,
+    "vocab-size": 10000,
     "dropout": 0.1,
     "lr": 1,
     "weight-decay": 1e-3,
     "batch-size": 50,
     "cls-hidden-dim": 200,
     "encoder-hidden-dim": 150,
-    "rho": 0.95
+    "batch-first": true,
+    "num-layers": 1,
+    "bidirectional": true,
+    "type": "lstm",
+    "rho": 0.95,
+    "embedding-type": "bpe",
+    "clip-grad": 30000
 }

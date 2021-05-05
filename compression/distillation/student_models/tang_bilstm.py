@@ -12,8 +12,8 @@ class TangBILSTM(base.StudentModel):
         super().__init__(cfg)
 
         # embedding
-        self.embedding = embeddings.get_embedding(cfg)
-        
+        self.embedding = embeddings.get_embedding(cfg, False)
+
         # encoding
         self.bilstm = base.get_lstm(self.cfg)
 
@@ -21,13 +21,14 @@ class TangBILSTM(base.StudentModel):
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d
         self.classifier = base.get_classifier(inp_d, cfg)
+        self.init_weights(classifier_init_range=0.1)
+        self.embedding.unfreeze_()
 
     def get_optimizer(self):
         return Adadelta(
             self.parameters(), 
             lr=self.cfg['lr'],
-            rho=self.cfg['rho'],
-            weight_decay=self.cfg['weight-decay']
+            rho=self.cfg['rho']
         )
 
     def forward(self, x, lens):
