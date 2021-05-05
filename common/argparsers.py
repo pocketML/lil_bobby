@@ -195,9 +195,11 @@ def args_experiment():
 
     experiment_args, args_remain = ap.parse_known_args()
 
-    if (("evaluate" in experiment_args.jobs or "analyze" in experiment_args.jobs)
-            and "--model-name" not in args_remain):
-        args_remain.extend(["--model-name", experiment_args.name])
+    if "evaluate" in experiment_args.jobs or "analyze" in experiment_args.jobs:
+        if "--model-name" not in args_remain:
+            args_remain.extend(["--model-name", experiment_args.name])
+        if "--arch" not in args_remain:
+            args_remain.extend(["--arch", experiment_args.student_arch])
 
     argparse_funcs = {
         "finetune": args_finetune, "compress": args_compress,
