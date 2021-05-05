@@ -90,4 +90,7 @@ if __name__ == "__main__":
 
     RUN = EXPERIMENT._create_run("run_experiment", info={"name": RUN_ID})
     RUN._id = RUN_ID
-    RUN()
+    try:
+        RUN()
+    except UnicodeDecodeError:
+        pass
