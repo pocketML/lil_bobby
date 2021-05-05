@@ -48,7 +48,7 @@ class StudentModel(nn.Module):
         return params
 
     def init_weights(self, embedding_init_range=None, classifier_init_range=None):
-        if not self.embedding.load_pretrained and embedding_init_range is not None:
+        if embedding_init_range is not None:
             self.embedding.init_weight_range(embedding_init_range)
 
         if classifier_init_range is not None:

@@ -3,13 +3,15 @@ from embedding.bpe_emb import BPEmbedding
 from embedding.char_emb import CharEmbedding
 from embedding.cbow import CBOWEmbedding
 from embedding.word2vec import Word2VecEmbedding
+from embedding.google_news import GoogleNewsEmb
 
 EMBEDDING_ZOO = {
     'bpe': BPEmbedding,
     'hash': HashEmbedding,
     'char': CharEmbedding,
     'cbow': CBOWEmbedding,
-    "word2vec": Word2VecEmbedding
+    "word2vec": Word2VecEmbedding,
+    'google': GoogleNewsEmb
 }
 
 def get_embedding(cfg, load=True):

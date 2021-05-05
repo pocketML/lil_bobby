@@ -1,6 +1,6 @@
 {
     "embedding-dim" : 300,
-    "vocab-size": 10000,
+    "vocab-size": 15000,
     "dropout": 0.1,
     "lr": 1,
     "weight-decay": 1e-3,
@@ -12,6 +12,6 @@
     "bidirectional": true,
     "type": "lstm",
     "rho": 0.95,
-    "embedding-type": "bpe",
+    "embedding-type": "google",
     "clip-grad": 30000
 }

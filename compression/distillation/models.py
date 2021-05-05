@@ -12,7 +12,7 @@ from compression.distillation.student_models import base
 
 STUDENT_MODELS = {
     'glue' : GlueBILSTM,
-    'wasserblat-ffn': WASSERBLAT_FFN,
+    'wasserblat-ffn': EmbFFN,
     'tang': TangBILSTM,
     'char-rnn': CharRNN,
     'transformer': Transformer,

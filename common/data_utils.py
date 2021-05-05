@@ -129,7 +129,7 @@ def get_dataloader_dict(model, distillation_data, validation_data):
             datasets[x],
             batch_size=model.cfg['batch-size'],
             shuffle=True,
-            drop_last=True,
+            drop_last=x == 'train',
             collate_fn=create_collate_fn(model.cfg)) for x in ['train', 'val']}
     return dataloaders
 

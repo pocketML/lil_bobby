@@ -29,7 +29,7 @@ class EmbFFN(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        self.embedding = embeddings.get_embedding(cfg, False)
+        self.embedding = embeddings.get_embedding(cfg)
 
         #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
 
