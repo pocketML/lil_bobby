@@ -92,8 +92,6 @@ def distill_model(task, model, device, args, sacred_experiment):
     )
 
 def main(args, sacred_experiment=None):
-    print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
-
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     use_gpu = not args.cpu
     task = args.task
@@ -113,7 +111,7 @@ def main(args, sacred_experiment=None):
     if "distill" in args.compression_actions:
         model = load_student(task, student_type, use_gpu=use_gpu, args=args)
         if sacred_experiment is not None:
-            temp_name = "temp.json"
+            temp_name = f"temp_{sacred_experiment.info['name']}.json"
             with open(temp_name, "w", encoding="utf-8") as fp:
                 json.dump(model.cfg, fp, indent=4)
             sacred_experiment.add_artifact(temp_name, "model_cfg.json")

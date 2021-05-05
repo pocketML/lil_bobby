@@ -16,6 +16,7 @@
     "batch-first": true,
     "num-layers": 1,
     "bidirectional": true,
+    "init-range": 0.25,
     "type": "lstm",
     "rho": 0.95,
     "embedding-type": "bpe",
