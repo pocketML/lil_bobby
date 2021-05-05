@@ -12,7 +12,7 @@ class TangBILSTM(base.StudentModel):
         super().__init__(cfg)
 
         # embedding
-        self.embedding = embeddings.get_embedding(cfg, False)
+        self.embedding = embeddings.get_embedding(cfg)
 
         # encoding
         self.bilstm = base.get_lstm(self.cfg)
