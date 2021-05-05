@@ -3,7 +3,7 @@ import json
 import os
 import torch
 import torch.nn as nn
-from common import argparsers, data_utils, task_utils
+from common import argparsers, data_utils
 from compression.distill import train_loop
 from compression.distillation.models import DistLossFunction, load_student
 import evaluate
@@ -99,8 +99,6 @@ def main(args, sacred_experiment=None):
     task = args.task
     student_type = args.student_arch
     seed = args.seed
-    if args.seed_name is not None:
-        seed = task_utils.SEED_DICT[args.seed_name]
 
     random.seed(seed)
     torch.manual_seed(seed)

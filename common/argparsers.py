@@ -65,6 +65,9 @@ def args_compress(args=None, namespace=None, parse_known=False):
 
     compression_args, args_remain = ap.parse_known_args(args=args, namespace=namespace)
 
+    if compression_args.seed_name is not None:
+        setattr(compression_args, "seed", SEED_DICT[compression_args.seed_name])
+
     def str2bool(v):
         if isinstance(v, bool):
             return v
