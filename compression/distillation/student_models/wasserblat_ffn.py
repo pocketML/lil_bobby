@@ -27,7 +27,6 @@ class WASSERBLAT_FFN(StudentModel):
 
     def forward(self, x, lens):
         emb = self.embedding(x).float()
-
         # pad_amount = self.max_seq_len - emb.shape[1]
 
         # # Pad 2nd dimension to match max_seq_len.
