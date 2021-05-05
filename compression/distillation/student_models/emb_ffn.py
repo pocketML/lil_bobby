@@ -42,7 +42,7 @@ class EmbFFN(base.StudentModel):
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
-        self.init_weights(0.01)
+        self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
 
     def mean_with_lens(self, x, lens, dim=0):
         if self.cfg['use-gpu']:
