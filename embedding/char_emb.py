@@ -6,8 +6,7 @@ import unicodedata
 from embedding.base import Embedding
 
 class CharEmbedding(Embedding):
-    def __init__(self, cfg, load=True):
-        self.vocab = None
+    def __init__(self, cfg, load=False):
         super().__init__(cfg, load)
 
     def init_embeddings(self):

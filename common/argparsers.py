@@ -1,5 +1,4 @@
 import argparse
-import json
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
@@ -195,6 +194,22 @@ def args_experiment():
     task_args = {}
 
     experiment_args, args_remain = ap.parse_known_args()
+
+    # Fill in some missing arguments, that we can automatically infer, for convenience sake.
+    if "evaluate" in experiment_args.jobs or "analyze" in experiment_args.jobs:
+        if "--model-name" not in args_remain: # We are missing --model-name (copy --name).
+            args_remain.extend(["--model-name", experiment_args.name])
+        if ("--arch" in args_remain) ^ ("--student-arch" in args_remain):
+            # We are missing either --arch or --student-arch.
+            if "--arch" in args_remain: # Copy --arch value to --student-arch.
+                key = "--student-arch"
+                value = args_remain[args_remain.index("--arch") + 1]
+            else: # Copy --student-arch value to --arch.
+                key = "--arch"
+                value = args_remain[args_remain.index("--student-arch") + 1]
+
+            args_remain.extend([key, value])
+
     argparse_funcs = {
         "finetune": args_finetune, "compress": args_compress,
         "evaluate": args_evaluate, "analyze": args_analyze
@@ -244,5 +259,6 @@ def args_run_all():
 
     ap.add_argument("--name", type=str, default=None)
     ap.add_argument("--model-name", type=str, default=None)
+    ap.add_argument("--seed-names", type=str, nargs="+", choices=SEED_DICT.keys())
 
     return ap.parse_known_args()

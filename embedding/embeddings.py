@@ -14,14 +14,12 @@ EMBEDDING_ZOO = {
     'google': GoogleNewsEmb
 }
 
-def get_embedding(cfg, load=True):
-    # if cfg['embedding-type'] == 'cbow': # we have only trained cbow for these parameters
-    #     if cfg['vocab-size'] != 5000:
-    #         print(f"CBOW embedding fallback: vocab size from {cfg['vocab-size']} to 5000")
-    #         cfg['vocab-size'] = 5000
-    #     if cfg['embedding-dim'] != 16:
-    #         print(f"CBOW embedding fallback: embedding dimension from {cfg['embedding-dim']} to 16")
-    #         cfg['embedding-dim'] = 16
+def get_embedding(cfg, load=None):
+    if load is None:
+        if cfg['embedding-type'] in ['bpe', 'word2vec', 'cbow']:
+            load = True
+        else:
+            load = False
 
     try:
         return EMBEDDING_ZOO[cfg['embedding-type']](cfg, load)

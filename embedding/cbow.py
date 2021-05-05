@@ -47,7 +47,6 @@ class CBOWEmbedding(Embedding):
                 self.cfg['embedding-dim'],
                 padding_idx=self.specials['pad']
             )
-
         return embedding
 
     def tokenize(self, sentence):

@@ -1,9 +1,9 @@
 {
     "embedding-dim" : 300,
-    "vocab-size": 15000,
+    "vocab-size": 10000,
     "dropout": 0.1,
     "lr": 1,
-    "weight-decay": 1e-3,
+    "weight-decay": 0,
     "batch-size": 50,
     "cls-hidden-dim": 200,
     "encoder-hidden-dim": 150,
@@ -12,6 +12,9 @@
     "bidirectional": true,
     "type": "lstm",
     "rho": 0.95,
-    "embedding-type": "google",
-    "clip-grad": 30000
+    "embedding-type": "bpe",
+    "clip-grad": 30000,
+    "embedding-freeze": false,
+    "cls-init-range": 0.1,
+    "emb-init-range": 0.1
 }
