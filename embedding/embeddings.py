@@ -3,23 +3,23 @@ from embedding.bpe_emb import BPEmbedding
 from embedding.char_emb import CharEmbedding
 from embedding.cbow import CBOWEmbedding
 from embedding.word2vec import Word2VecEmbedding
+from embedding.google_news import GoogleNewsEmb
 
 EMBEDDING_ZOO = {
     'bpe': BPEmbedding,
     'hash': HashEmbedding,
     'char': CharEmbedding,
     'cbow': CBOWEmbedding,
-    "word2vec": Word2VecEmbedding
+    "word2vec": Word2VecEmbedding,
+    'google': GoogleNewsEmb
 }
 
-def get_embedding(cfg, load=True):
-    # if cfg['embedding-type'] == 'cbow': # we have only trained cbow for these parameters
-    #     if cfg['vocab-size'] != 5000:
-    #         print(f"CBOW embedding fallback: vocab size from {cfg['vocab-size']} to 5000")
-    #         cfg['vocab-size'] = 5000
-    #     if cfg['embedding-dim'] != 16:
-    #         print(f"CBOW embedding fallback: embedding dimension from {cfg['embedding-dim']} to 16")
-    #         cfg['embedding-dim'] = 16
+def get_embedding(cfg, load=None):
+    if load is None:
+        if cfg['embedding-type'] in ['bpe', 'word2vec', 'cbow']:
+            load = True
+        else:
+            load = False
 
     try:
         return EMBEDDING_ZOO[cfg['embedding-type']](cfg, load)

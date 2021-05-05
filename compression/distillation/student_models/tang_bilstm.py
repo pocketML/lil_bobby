@@ -21,15 +21,15 @@ class TangBILSTM(base.StudentModel):
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d
         self.classifier = base.get_classifier(inp_d, cfg)
-        self.init_weights(classifier_init_range=0.1)
 
-        self.init_weights(self.cfg["init-range"])
+        self.init_weights(embedding_init_range=self.cfg['emb-init-range'], classifier_init_range=self.cfg["cls-init-range"])
 
     def get_optimizer(self):
         return Adadelta(
             self.parameters(), 
             lr=self.cfg['lr'],
-            rho=self.cfg['rho']
+            rho=self.cfg['rho'],
+            weight_decay=self.cfg['weight-decay']
         )
 
     def forward(self, x, lens):
