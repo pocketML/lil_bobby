@@ -92,7 +92,7 @@ def distill_model(task, model, device, args, sacred_experiment):
     )
 
 def main(args, sacred_experiment=None):
-    print("Sit back, tighten your seat belt, and prepare for the ride of your life 🚀")
+    print("Sit back, tighten your seat belt, and prepare for the ride of your life")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     use_gpu = not args.cpu
