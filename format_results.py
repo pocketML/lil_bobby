@@ -2,6 +2,7 @@ import json
 from glob import glob
 from datetime import datetime
 
+from common.task_utils import SEED_DICT
 from common.argparsers import args_search
 
 def get_json_data(experiment_path, data_type):
@@ -89,10 +90,23 @@ def get_experiment_date(folder):
         second = int(dot_split[0])
         return datetime(year, month, day, hour, minute, second).timestamp()
 
+def get_experiment_name(folder):
+    with open(folder + "/info.json", "r", encoding="utf-8") as fp:
+        name = json.load(fp)["name"]
+        seed_list = list(SEED_DICT)
+
+        for index, seed_name in enumerate(seed_list):
+            if seed_name in name:
+                return index
+        return 0
+
 def find_matching_experiments(meta_args, search_args):
     experiment_folders = list(filter(lambda x: "_sources" not in x, glob("experiments/*")))
 
-    experiment_folders.sort(key=get_experiment_date, reverse=True)
+    if meta_args.sort == "time":
+        experiment_folders.sort(key=get_experiment_date, reverse=True)
+    elif meta_args.sort == "name":
+        experiment_folders.sort(key=get_experiment_date, reverse=True)
 
     data = []
 
