@@ -73,7 +73,10 @@ def experiment_contains_args(exp_path, meta_args, search_args):
 
 def get_experiment_date(folder):
     with open(folder + "/run.json", "r", encoding="utf-8") as fp:
-        data = json.load(fp)["stop_time"]
+        try:
+            data = json.load(fp)["stop_time"]
+        except KeyError:
+            return 0
         dash_split = data.split("-")
         year = int(dash_split[0])
         month = int(dash_split[1])
