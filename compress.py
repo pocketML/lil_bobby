@@ -46,18 +46,22 @@ def prune_model(task, model, device, args):
     dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(task))
 
     params, zero = prune.params_zero(model)
-    print(f"Sparsity: {int((params / zero) * 100)}%")
+    sparsity = int((zero / params) * 100)
+    print(f"Sparsity: {sparsity}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
 
-    if args.prune_magnitude_static:
+    if args.prune_magnitude:
         model = prune.magnitude_pruning(model, args.prune_threshold)
     elif args.prune_movement:
         model = prune.movement_pruning(model, args.prune_threshold)
+    elif args.prune_topk:
+        model = prune.topk_pruning(model, args.prune_threshold)
 
     params, zero = prune.params_zero(model)
-    print(f"Sparsity: {int((params / zero) * 100)}%")
+    sparsity = int((zero / params) * 100)
+    print(f"Sparsity: {sparsity}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
@@ -132,7 +136,6 @@ def main(args, sacred_experiment=None):
         model_name = args.load_trained_model
         model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
         model.to(device)
-        prune.initalize_mask_scores(model)
         prune_model(task, model, device, args)
 
 if __name__ == "__main__":

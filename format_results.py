@@ -14,19 +14,20 @@ def get_json_data(experiment_path, data_type):
     except FileNotFoundError:
         return None
 
-def experiment_contains_args(exp_path, meta_args, search_args):
-    if hasattr(search_args, "name"): # See if experiment matches name.
-        with open(exp_path + "/info.json", "r", encoding="utf-8") as fp:
-            if json.load(fp)["name"] == search_args.name:
-                return True
-        return False
+def value_matches(key, search_value, value):
+    if key == "name":
+        return search_value in value
+    if isinstance(value, bool):
+        return (search_value == "True") == value
+    return type(value)(search_value) == value
 
+def experiment_contains_args(exp_path, meta_args, search_args):
     # See if args used to run experiment matches given args.
     # We search for both cmd args given to experiment as well as model cfg args used.
     values_found = {x: False for x in search_args.__dict__}
     data_found = {}
 
-    for data_type in ("config", "model_cfg"):
+    for data_type in ("info", "config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
 
         if experiment_args is None:
@@ -53,10 +54,10 @@ def experiment_contains_args(exp_path, meta_args, search_args):
             value_found = False
 
             for experiment_value in experiment_args[key]:
-                for value in values:
-                    if str(experiment_value) == value:
+                for search_value in values:
+                    if value_matches(key, search_value, experiment_value):
                         value_found = True
-                        data_found[key] = value
+                        data_found[key] = search_value
                         break
                 if value_found:
                     break
@@ -98,11 +99,14 @@ def find_matching_experiments(meta_args, search_args):
             with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
 
+                accuracy = None
                 if "test.accuracy" in metrics_data:
                     accuracy = metrics_data["test.accuracy"]["values"][0]
-                else:
+                elif "validation.acc" in metrics_data:
                     accuracy = max(metrics_data["validation.acc"]["values"])
-                experiment_data["acc"] = f"{accuracy:.4f}"
+
+                if accuracy is not None:
+                    experiment_data["acc"] = f"{accuracy:.4f}"
 
                 if "model_params" in metrics_data:
                     experiment_data["params"] = metrics_data["model_params"]["values"][0]

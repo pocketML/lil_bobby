@@ -13,8 +13,8 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--epochs", type=int, default=50)
-    ap.add_argument("--temperature", type=int, default=1)
-    ap.add_argument("--alpha", type=float, default=0.5)
+    ap.add_argument("--temperature", type=int, default=3)
+    ap.add_argument("--alpha", type=float, default=0)
     ap.add_argument("--early-stopping", type=int, default=10)
     ap.add_argument("--original-data", action="store_true")
 
@@ -36,14 +36,24 @@ def args_quantize(args=None, namespace=None, parse_known=False):
 
 def args_prune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--prune-magnitude-static", action="store_true")
-    ap.add_argument("--prune-magnitude-aware", action="store_true")
+    ap.add_argument("--prune-magnitude", action="store_true")
+    ap.add_argument("--prune-topk", action="store_true")
     ap.add_argument("--prune-movement", action="store_true")
     ap.add_argument("--prune-threshold", type=float, required=True)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
     return ap.parse_args(args=args, namespace=namespace)
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 # define arguments for model compression
 def args_compress(args=None, namespace=None, parse_known=False):
@@ -67,16 +77,6 @@ def args_compress(args=None, namespace=None, parse_known=False):
 
     if compression_args.seed_name is not None:
         setattr(compression_args, "seed", SEED_DICT[compression_args.seed_name])
-
-    def str2bool(v):
-        if isinstance(v, bool):
-            return v
-        if v.lower() in ('yes', 'true', 't', 'y', '1'):
-            return True
-        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-            return False
-        else:
-            raise argparse.ArgumentTypeError('Boolean value expected.')
 
     overwrite_ap = argparse.ArgumentParser()
     cfg = get_default_student_config(compression_args.task, compression_args.student_arch)
@@ -225,6 +225,9 @@ def args_experiment():
     return experiment_args, task_args
 
 def args_search():
+    usage = """
+    Search for any 
+    """
     ap = argparse.ArgumentParser()
 
     # Job to search for.
@@ -247,13 +250,15 @@ def args_search():
     while index < len(args_remain):
         arg = args_remain[index]
         if arg.startswith("--"):
-            if index < len(args_remain) - 1 and not args_remain[index+1].startswith("--"):
-                search_ap.add_argument(arg, type=str, nargs="+")
-            else:
-                search_ap.add_argument(arg, action="store_true")
+            if index == len(args_remain) + 1:
+                print(f"Error: Missing value for argument {arg}")
+                exit(0)
+
+            search_ap.add_argument(arg, type=str, nargs="+")
         index += 1
 
     search_args = search_ap.parse_args(args_remain)
+    print(search_args)
 
     return meta_args, search_args
 

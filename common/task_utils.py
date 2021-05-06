@@ -139,7 +139,8 @@ SEED_DICT = {
     "cardi": 10111992,
     "simone": 2211933,
     "lovelace": 12101815,
-    "shannon": 4301916
+    "shannon": 4301916,
+    "elite": 1337
 }
 
 def get_processed_path(task):

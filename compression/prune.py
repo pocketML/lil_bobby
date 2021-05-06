@@ -10,30 +10,12 @@ class MagnitudePruning(prune.BasePruningMethod):
         super().__init__()
         self.threshold = threshold
 
-    def compute_mask(self, t, default_mask):
-        print(self._tensor_name)
+    def compute_mask(self, inputs, default_mask):
         mask = default_mask.clone()
-        mask[abs(t) < self.threshold] = 0
+        mask[abs(inputs) < self.threshold] = 0
         return mask
 
-class MovementAutogradWrappper(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, inputs, threshold):
-        mask = inputs.clone()
-        _, idx = inputs.flatten().sort(descending=True)
-        j = int(threshold * inputs.numel())
-
-        # flat_out and mask access the same memory.
-        flat_out = mask.flatten()
-        flat_out[idx[j:]] = 0
-        flat_out[idx[:j]] = 1
-        return mask
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output, None
-
-class MovementPruning(prune.BasePruningMethod):
+class TopKPruning(prune.BasePruningMethod):
     PRUNING_TYPE = "unstructured"
 
     def __init__(self, threshold):
@@ -41,14 +23,15 @@ class MovementPruning(prune.BasePruningMethod):
         self.threshold = threshold
 
     def compute_mask(self, inputs, default_mask):
-        mask = inputs.clone()
-        _, idx = inputs.flatten().sort(descending=True)
+        mask = default_mask.clone()
+        _, idx = inputs.flatten().sort(descending=False)
         j = int(self.threshold * inputs.numel())
 
         # flat_out and mask access the same memory.
-        flat_out = mask.flatten()
-        flat_out[idx[j:]] = 0
-        flat_out[idx[:j]] = 1
+        flattened = mask.flatten()
+        flattened[idx[:j]] = 0
+        print(default_mask)
+        print(mask)
         return mask
 
 def to_sparse(x):
@@ -84,24 +67,24 @@ def get_prunable_params(model):
 
             for container in containers:
                 params = container.named_parameters() if is_sequential else grouped_params[name]
-                for param_name, param_values in params:
+                for param_name, _ in params:
                     if "weight" in param_name:
                         name_fmt = param_name
                         if not is_sequential:
                             name_fmt = ".".join(param_name.split(".")[1:])
-                        parameters_to_prune.append((container, name_fmt, param_values))
+                        parameters_to_prune.append((container, name_fmt))
 
     return parameters_to_prune
 
-def do_pruning(params, prune_cls, importance_scores=None, sparsify=False, **kwargs):
+def do_pruning(params, prune_cls, sparsify=False, **kwargs):
     prune.global_unstructured(
-        [(x[0], x[1]) for x in params],
+        params,
         pruning_method=prune_cls,
-        importance_scores=importance_scores,
         **kwargs
     )
 
-    for module, param_name, _ in params:
+    for module, param_name in params:
+        prune.remove(module, param_name)
         if sparsify:
             dense_tensor = getattr(module, param_name)
             sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
@@ -124,44 +107,25 @@ def magnitude_pruning(model, threshold):
 
     do_pruning(params_to_prune, MagnitudePruning, threshold=threshold)
 
-    for module, param_name in params_to_prune:
-        prune.remove(module, param_name)
-
     return model
 
-def get_mask_scores(model):
-    grouped_params = model_utils.group_params_by_layer(model, "tang")
-
-    masks_dict = {}
-
-    for name in grouped_params:
-        if "mask" in name:
-            module = getattr(model, name)
-
-            is_sequential = isinstance(module, torch.nn.Sequential)
-
-            if is_sequential:
-                containers = module
-            else:
-                containers = [module]
-
-            for container in containers:
-                params = container.named_parameters() if is_sequential else grouped_params[name]
-                for param_name, param_mask in params:
-                    if "weight" in param_name:
-                        masks_dict[(container, param_name)] = param_mask
-
-    return masks_dict
-
 def movement_pruning(model, threshold):
+    """
+    Not implemented. Simply return model unchanged.
+    """
+    return model
+
+def topk_pruning(model, threshold):
+    """
+    Prune the lowest ratio of parameters according to threshold.
+    Threshold=0.3 would prune the weights with lowest value,
+    pruning 30% of all weights in the model.
+    """
     model = copy.deepcopy(model)
 
     params_to_prune = get_prunable_params(model)
-    mask_scores = get_mask_scores(model)
 
-    do_pruning(params_to_prune, MovementPruning, importance_scores=mask_scores, threshold=threshold)
-    for module, name in mask_scores:
-        setattr(model, name, mask_scores[(module, name)])
+    do_pruning(params_to_prune, TopKPruning, threshold=threshold)
 
     return model
 
