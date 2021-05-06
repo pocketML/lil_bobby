@@ -260,7 +260,6 @@ def args_search():
         index += 1
 
     search_args = search_ap.parse_args(args_remain)
-    print(search_args)
 
     return meta_args, search_args
 
