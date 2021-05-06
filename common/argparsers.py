@@ -236,6 +236,7 @@ def args_search():
 
     # Args for manipulating found results.
     ap.add_argument("--metric", type=str, choices=("acc", "params", "size"), default="acc")
+    ap.add_argument("--tab-separate", action="store_true")
     ap.add_argument("--generate-table", action="store_true")
     ap.add_argument("--table-col", type=str)
     ap.add_argument("--table-row", type=str)

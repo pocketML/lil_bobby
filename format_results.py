@@ -102,6 +102,9 @@ def find_matching_experiments(meta_args, search_args):
             with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
 
+                if meta_args.tab_separate: # Only include metrics.
+                    experiment_data = {}
+
                 accuracy = None
                 if "test.accuracy" in metrics_data:
                     accuracy = metrics_data["test.accuracy"]["values"][0]
@@ -168,8 +171,13 @@ def main(meta_args, search_args):
             print(line)
     else:
         for data_point in found_data:
-            all_data = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
-            print(all_data)
+            if meta_args.tab_separate:
+                sort_order = ["acc", "params", "size"]
+                sorted_data = sorted(list(data_point.keys()), key=sort_order.index)
+                line = "\t".join(str(data_point[x]) for x in sorted_data)
+            else:
+                line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
+            print(line)
 
 if __name__ == "__main__":
     META_ARGS, SEARCH_ARGS = args_search()
