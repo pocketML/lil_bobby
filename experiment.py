@@ -1,9 +1,8 @@
 import os
-import json
-from re import A
+from sys import stdin
+from sys import stdout
 from shutil import rmtree
 from glob import glob
-from numpy.lib.arraysetops import isin
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
