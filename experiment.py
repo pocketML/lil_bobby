@@ -26,7 +26,7 @@ def main(experiment_args, task_args):
     experiment_args, task_args = args_experiment()
 
     if stdout.encoding != "utf-8":
-        raise UnicodeError("Stdout encoding is not utf-8!")
+        raise UnicodeError(f"Stdout encoding is {stdout.encoding} (should be utf-8)!")
 
     experiment = Experiment(experiment_args.name)
 
