@@ -22,6 +22,19 @@ def value_matches(key, search_value, value):
         return (search_value == "True") == value
     return type(value)(search_value) == value
 
+def get_experiment_date(time_str):
+    dash_split = time_str.split("-")
+    year = int(dash_split[0])
+    month = int(dash_split[1])
+    colon_split = dash_split[2].split(":")
+    t_split = colon_split[0].split("T")
+    day = int(t_split[0])
+    hour = int(t_split[1])
+    minute = int(colon_split[1])
+    dot_split = colon_split[2].split(".")
+    second = int(dot_split[0])
+    return datetime(year, month, day, hour, minute, second).timestamp()
+
 def experiment_contains_args(exp_path, meta_args, search_args):
     # See if args used to run experiment matches given args.
     # We search for both cmd args given to experiment as well as model cfg args used.
@@ -30,6 +43,8 @@ def experiment_contains_args(exp_path, meta_args, search_args):
 
     for data_type in ("info", "config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
+        if data_type == "info" and "stop_time" in experiment_args:
+            data_found["timestamp"] = get_experiment_date(experiment_args["stop_time"])
 
         if experiment_args is None:
             continue
@@ -72,44 +87,16 @@ def experiment_contains_args(exp_path, meta_args, search_args):
     data_found["name"] = name
     return data_found
 
-def get_experiment_date(folder):
-    with open(folder + "/run.json", "r", encoding="utf-8") as fp:
-        try:
-            data = json.load(fp)["stop_time"]
-        except KeyError:
-            return 0
-        dash_split = data.split("-")
-        year = int(dash_split[0])
-        month = int(dash_split[1])
-        colon_split = dash_split[2].split(":")
-        t_split = colon_split[0].split("T")
-        day = int(t_split[0])
-        hour = int(t_split[1])
-        minute = int(colon_split[1])
-        dot_split = colon_split[2].split(".")
-        second = int(dot_split[0])
-        return datetime(year, month, day, hour, minute, second).timestamp()
+def get_seed_index(name):
+    seed_list = list(SEED_DICT)
 
-def get_experiment_name(folder):
-    try:
-        with open(folder + "/info.json", "r", encoding="utf-8") as fp:
-            name = json.load(fp)["name"]
-            seed_list = list(SEED_DICT)
-
-            for index, seed_name in enumerate(seed_list):
-                if seed_name in name:
-                    return index
-            return 0
-    except FileNotFoundError:
-        return 0
+    for index, seed_name in enumerate(seed_list):
+        if seed_name in name:
+            return index
+    return 0
 
 def find_matching_experiments(meta_args, search_args):
     experiment_folders = list(filter(lambda x: "_sources" not in x, glob("experiments/*")))
-
-    if meta_args.sort == "time":
-        experiment_folders.sort(key=get_experiment_date, reverse=True)
-    elif meta_args.sort == "name":
-        experiment_folders.sort(key=get_experiment_name, reverse=False)
 
     data = []
 
@@ -138,6 +125,11 @@ def find_matching_experiments(meta_args, search_args):
                     experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
 
             data.append(experiment_data)
+
+    if meta_args.sort == "time":
+        data.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+    elif meta_args.sort == "name":
+        data.sort(key=lambda x: get_seed_index(x["name"]), reverse=False)
 
     return data
 
