@@ -91,13 +91,16 @@ def get_experiment_date(folder):
         return datetime(year, month, day, hour, minute, second).timestamp()
 
 def get_experiment_name(folder):
-    with open(folder + "/info.json", "r", encoding="utf-8") as fp:
-        name = json.load(fp)["name"]
-        seed_list = list(SEED_DICT)
+    try:
+        with open(folder + "/info.json", "r", encoding="utf-8") as fp:
+            name = json.load(fp)["name"]
+            seed_list = list(SEED_DICT)
 
-        for index, seed_name in enumerate(seed_list):
-            if seed_name in name:
-                return index
+            for index, seed_name in enumerate(seed_list):
+                if seed_name in name:
+                    return index
+            return 0
+    except FileNotFoundError:
         return 0
 
 def find_matching_experiments(meta_args, search_args):
