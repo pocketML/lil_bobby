@@ -179,8 +179,7 @@ def main(meta_args, search_args):
         for data_point in found_data:
             if meta_args.tab_separate:
                 sort_order = ["acc", "params", "size"]
-                sorted_data = sorted(list(data_point.keys()), key=sort_order.index)
-                line = "\t".join(str(data_point[x]) for x in sorted_data)
+                line = "\t".join(str(data_point[x]) for x in sort_order)
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
             print(line)
