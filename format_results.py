@@ -43,13 +43,13 @@ def experiment_contains_args(exp_path, meta_args, search_args):
 
     for data_type in ("info", "config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
-        if data_type == "info" and "stop_time" in experiment_args:
-            data_found["timestamp"] = get_experiment_date(experiment_args["stop_time"])
 
         if experiment_args is None:
             continue
 
-        if data_type == "config":
+        if data_type == "info" and "stop_time" in experiment_args:
+            data_found["timestamp"] = get_experiment_date(experiment_args["stop_time"])
+        elif data_type == "config":
             if meta_args.job not in experiment_args:
                 break
 
