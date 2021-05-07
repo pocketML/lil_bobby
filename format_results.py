@@ -106,9 +106,6 @@ def find_matching_experiments(meta_args, search_args):
             with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
 
-                if meta_args.tab_separate: # Only include metrics.
-                    experiment_data = {}
-
                 accuracy = None
                 if "test.accuracy" in metrics_data:
                     accuracy = metrics_data["test.accuracy"]["values"][0]
