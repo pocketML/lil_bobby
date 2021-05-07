@@ -12,12 +12,18 @@ class HashEmbeddingTrainer(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.embedding = HashEmbedding(cfg)
-        self.fc = nn.Linear(100,300)
+        self.embedding.init_weight_range(0.1)
+        self.fc1 = nn.Linear(100, 128, bias=False)
+        self.fc1.weight.data.uniform_(-0.1,0.1)
+        self.fc2 = nn.Linear(128, 300, bias=False)
+        self.fc2.weight.data.uniform_(-0.1,0.1)
+
 
     def forward(self, x):
         x = self.embedding(x)
         x = x.view(x.shape[0], -1)
-        x = self.fc(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
         x = F.log_softmax(x, dim=1)
         return x
 
@@ -34,18 +40,21 @@ class GloveDataset(Dataset):
         return self.words[idx], self.logits[idx]
 
 def save_embeddings(model):
-    scalars = np.array(model.embedding.weights.weight.data)
-    vectors = np.array(model.embedding.embedding.weight.data)
+    scalars = np.array(model.embedding.scalars.weight.cpu().data)
+    vectors = np.array(model.embedding.vectors.weight.cpu().data)
     with open('data/hash_emb_pretrained.npy', 'wb') as f:
         np.save(f, scalars)
         np.save(f, vectors)
 
-def load_embeddings(model):
+def load_embeddings(emb):
     with open('data/hash_emb_pretrained.npy', 'rb') as f:
         scalars = np.load(f)
         vectors = np.load(f)
-        model.embedding.weights = nn.Embedding.from_pretrained(torch.from_numpy(scalars), freeze=False)
-        model.embedding.embedding = nn.EmbeddingBag.from_pretrained(
+        emb.scalars = nn.Embedding.from_pretrained(
+            torch.from_numpy(scalars), 
+            freeze=False
+        )
+        emb.vectors = nn.EmbeddingBag.from_pretrained(
             torch.from_numpy(vectors),
             mode='sum',
             freeze=False
@@ -91,7 +100,7 @@ def train_on_glove(num_hashes=3, vocab_size=5000, embedding_dim=100, hash_ratio=
     print("*** Data loaded... ***")
 
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001)
+    optimizer = optim.SGD(model.parameters(), lr=0.1)
     print("*** Preparing to train the embeddings... ***")
     best_loss = 2147483647.0
     for epoch in range(1, num_epochs + 1):

@@ -22,7 +22,12 @@ def get_embedding(cfg, load=None):
             load = False
 
     try:
-        return EMBEDDING_ZOO[cfg['embedding-type']](cfg, load)
+        emb = EMBEDDING_ZOO[cfg['embedding-type']](cfg, load)
+        if cfg['embedding-type'] == 'hash':
+            import hashemb
+            hashemb.load_embeddings(emb)
+        return emb
+
     except FileNotFoundError: # Embeddings with specified vocab/dim not found.
         err = (
             f"Embeddings '{cfg['embedding-type']}' could not be found " +
