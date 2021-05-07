@@ -11,8 +11,6 @@ from compress import main as compress_main
 from evaluate import main as evaluate_main
 from analyze import main as analyze_main
 
-OUTPUT_DIR = "experiments"
-
 TASK_FUNCS = {
     "finetune": finetune_main, "compress": compress_main,
     "evaluate": evaluate_main, "analyze": analyze_main
@@ -29,6 +27,8 @@ def main(experiment_args, task_args):
         raise UnicodeError(f"Stdout encoding is {stdout.encoding} (should be utf-8)!")
 
     experiment = Experiment(experiment_args.name)
+
+    output_dir = "experiments"
 
     if experiment_args.output_path is not None:
         output_dir = experiment_args.output_path
