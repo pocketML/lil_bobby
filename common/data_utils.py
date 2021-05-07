@@ -19,9 +19,15 @@ def load_train_data(task, ds_type='train'):
                 return sentences.readlines(), targets.readlines()
 
 # returns sentences, labels, logits
-def load_distillation_data(path):
+def load_distillation_data(path, chunk_size=20, base_chunk_size=20):
     with open(path, encoding="utf-8") as fip:
-        lines = [x.strip().split("\t") for x in fip.readlines()]
+        lines = []
+        i = 0
+        for line in fip:
+            if i % base_chunk_size < chunk_size: # TODO: this logic should reside in augment and not here
+                line = line.strip().split("\t")
+                lines.append(line)
+            i += 1
         return [list(x) for x in list(zip(*lines))]
 
 def load_val_data(task):
@@ -46,7 +52,10 @@ def load_all_distillation_data(task, only_original_data=False):
     else:
         train_files = glob(f"{base_path}/*.tsv")
     for filename in train_files:
-        loaded_data = load_distillation_data(filename)
+        if task in ['qqp', 'mnli'] and 'train.tsv' not in filename: # TODO: this logic should reside in augment and not here
+            loaded_data = load_distillation_data(filename, chunk_size=10)
+        else:
+            loaded_data = load_distillation_data(filename)
 
         if distillation_data == []:
             distillation_data = loaded_data
