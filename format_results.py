@@ -106,7 +106,7 @@ def find_matching_experiments(meta_args, search_args):
     if meta_args.sort == "time":
         experiment_folders.sort(key=get_experiment_date, reverse=True)
     elif meta_args.sort == "name":
-        experiment_folders.sort(key=get_experiment_date, reverse=False)
+        experiment_folders.sort(key=get_experiment_name, reverse=False)
 
     data = []
 
