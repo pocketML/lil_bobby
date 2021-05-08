@@ -60,7 +60,10 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
     iterator = tqdm(dl, leave=False) if args.loadbar else dl
 
     for x1, lens, target_labels, _ in iterator:
-        x1 = x1.to(device)
+        if task_utils.is_sentence_pair(model.cfg['task']):
+            x1 = x1[0].to(device), x1[1].to(device)
+        else:
+            x1 = x1.to(device)
         target_labels = target_labels.to(device)
         torch.set_grad_enabled(False)
         out_logits = model(x1, lens)
