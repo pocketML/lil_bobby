@@ -12,7 +12,7 @@
     "bidirectional": true,
     "type": "lstm",
     "rho": 0.95,
-    "embedding-type": "bpe",
+    "embedding-type": "hash",
     "clip-grad": 30000,
     "embedding-freeze": false,
     "cls-init-range": 0.1,
