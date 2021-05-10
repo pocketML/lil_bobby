@@ -1,6 +1,6 @@
 {
-    "embedding-dim" : 25,
-    "vocab-size": 5000,
+    "embedding-dim" : 300,
+    "vocab-size": 10000,
     "dropout": 0.1,
     "lr": 1,
     "weight-decay": 0,
@@ -12,7 +12,7 @@
     "bidirectional": true,
     "type": "lstm",
     "rho": 0.95,
-    "embedding-type": "hash",
+    "embedding-type": "bpe",
     "clip-grad": 30000,
     "embedding-freeze": false,
     "cls-init-range": 0.1,
