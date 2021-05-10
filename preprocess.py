@@ -1,5 +1,4 @@
-from torch._C import Value
-from common import argparsers, model_utils
+from common import argparsers, model_utils, task_utils
 from preprocessing import download, data_augment, distillation_loss
 import torch
 
@@ -9,8 +8,9 @@ def main(args):
         torch.cuda.manual_seed(args.seed)
 
     if args.glue_preprocess:
-        TARGET_FOLDER = download.TASK_INFO[args.task]["path"]
-        download.download_and_process_data(args.task, TARGET_FOLDER)
+        download_url = task_utils.TASK_INFO[args.task]['download_url']
+        target_folder = task_utils.TASK_INFO[args.task]["path"]
+        download.download_and_process_data(args.task, download_url, target_folder)
     elif args.augment is not None:
         data_augment.augment(args.task, args.augment, args.seed)
     elif args.generate_loss is not None:
