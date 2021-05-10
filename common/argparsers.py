@@ -39,6 +39,8 @@ def args_prune(args=None, namespace=None, parse_known=False):
     ap.add_argument("--prune-magnitude", action="store_true")
     ap.add_argument("--prune-topk", action="store_true")
     ap.add_argument("--prune-movement", action="store_true")
+    ap.add_argument("--prune-aware", action="store_true")
+    ap.add_argument("--prune-warmup", type=int, default=5)
     ap.add_argument("--prune-threshold", type=float, required=True)
 
     if parse_known:

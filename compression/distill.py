@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from tqdm import tqdm
 
-from common import transponder, model_utils, task_utils
+from common import transponder, task_utils
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
@@ -12,8 +12,7 @@ def save_checkpoint(model, student_arch, sacred_experiment=None):
     )
     model.save(model_name)
 
-# only works for single sentence prediction
-def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_experiment=None):
+def train_loop(model, criterion, optim, dl, device, args, num_epochs, compress_callback=None, sacred_experiment=None):
     best_val_acc = 0
     no_improvement = 0
 
@@ -34,8 +33,10 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
             for x1, lens, target_labels, target_logits in iterator:
                 if task_utils.is_sentence_pair(model.cfg['task']):
                     x1 = x1[0].to(device), x1[1].to(device)
+                    examples = len(lens[0])
                 else:
                     x1 = x1.to(device)
+                    examples = len(lens)
                 target_labels = target_labels.to(device)
                 if phase == "train":
                     target_logits = target_logits.to(device)
@@ -51,13 +52,17 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                     loss.backward()
                     nn.utils.clip_grad_norm_(non_embedding_params, model.cfg['clip-grad'])
                     optim.step()
-                    running_loss += loss.item() * len(lens)
+                    running_loss += loss.item() * examples
+
                 running_corrects += torch.sum(preds == target_labels.data).item()
-                num_examples += len(lens)
+                num_examples += examples
 
             accuracy = 0 if num_examples == 0 else running_corrects / num_examples
             if phase == "train":
                 print(f'|--> train loss: {running_loss / num_examples:.4f}')
+
+                if compress_callback is not None:
+                    model = compress_callback(model, args, epoch)
             else:
                 if accuracy > best_val_acc:
                     print(f'Saving new best model')
@@ -70,5 +75,6 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
                 if sacred_experiment is not None:
                     sacred_experiment.log_scalar("validation.acc", accuracy)
             print(f'|--> {phase} accuracy: {accuracy:.4f}')
+
             if no_improvement == args.early_stopping:
                 return
