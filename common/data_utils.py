@@ -68,12 +68,12 @@ def load_all_distillation_data(task, only_original_data=False):
     return distillation_data
 
 class DistillationData(Dataset):
-    def __init__(self, sents, labels, logits=None) -> None:
+    def __init__(self, sents, labels, logits, lengths) -> None:
         super().__init__()
         self.sents = sents
-        self.lengths = [torch.LongTensor([len(sent)]) for sent in self.sents]
+        self.lengths = lengths
         self.labels = labels
-        self.logits = logits if logits is not None else [None] * len(sents)
+        self.logits = logits
 
     def __len__(self):
         return len(self.sents)
@@ -82,14 +82,14 @@ class DistillationData(Dataset):
         return self.sents[idx], self.lengths[idx], self.labels[idx], self.logits[idx]
 
 class DistillationPairData(Dataset):
-    def __init__(self, sents1, sents2, labels, logits=None) -> None:
+    def __init__(self, sents1, sents2, labels, logits, lens1, lens2) -> None:
         super().__init__()
         self.sents1 = sents1
         self.sents2 = sents2
-        self.lens1 = [torch.LongTensor([len(sent)]) for sent in self.sents1]
-        self.lens2 = [torch.LongTensor([len(sent)]) for sent in self.sents2]
+        self.lens1 = lens1
+        self.lens2 = lens2
         self.labels = labels
-        self.logits = logits if logits is not None else [None] * len(sents1)
+        self.logits = logits
 
     def __len__(self):
         return len(self.sents1)
@@ -99,13 +99,15 @@ class DistillationPairData(Dataset):
 
 def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
     label_tensors = [torch.LongTensor([model.label_dict[x.strip()]]) for x in labels]
-    logit_tensors = None if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
+    logit_tensors = [None] * len(label_tensors) if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
     sents1_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences1]
+    lens1 = [torch.LongTensor([len(sent)]) for sent in sentences1]
     if sentences2 is not None:
+        lens2 = [torch.LongTensor([len(sent)]) for sent in sentences2]
         sents2_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences2]
-        return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors)
+        return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors, lens1, lens2)
     else:
-        return DistillationData(sents1_tensors, label_tensors, logit_tensors)
+        return DistillationData(sents1_tensors, label_tensors, logit_tensors, lens1)
 
 def get_dataloader_dict_val(model, validation_data):
     if len(validation_data) > 2:
