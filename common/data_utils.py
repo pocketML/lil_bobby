@@ -101,10 +101,10 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
     label_tensors = [torch.LongTensor([model.label_dict[x.strip()]]) for x in labels]
     logit_tensors = [None] * len(label_tensors) if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
     sents1_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences1]
-    lens1 = [torch.LongTensor([len(sent)]) for sent in sentences1]
+    lens1 = [torch.LongTensor([len(sent)]) for sent in sents1_tensors]
     if sentences2 is not None:
-        lens2 = [torch.LongTensor([len(sent)]) for sent in sentences2]
         sents2_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences2]
+        lens2 = [torch.LongTensor([len(sent)]) for sent in sents2_tensors]
         return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors, lens1, lens2)
     else:
         return DistillationData(sents1_tensors, label_tensors, logit_tensors, lens1)
