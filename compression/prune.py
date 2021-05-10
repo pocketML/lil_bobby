@@ -1,7 +1,10 @@
-import torch
-from common import model_utils
-import torch.nn.utils.prune as prune
 import copy
+
+import torch
+import torch.nn.utils.prune as prune
+
+from common import model_utils
+from embedding.base import Embedding
 
 class MagnitudePruning(prune.BasePruningMethod):
     PRUNING_TYPE = "unstructured"
@@ -24,15 +27,13 @@ class TopKPruning(prune.BasePruningMethod):
 
     def compute_mask(self, inputs, default_mask):
         mask = default_mask.clone()
-        _, idx = inputs.flatten().sort(descending=False)
+        _, idx = torch.abs(inputs.flatten()).sort(descending=False)
         j = int(self.threshold * inputs.numel())
 
         # flat_out and mask access the same memory.
         flattened = mask.flatten()
         flattened[idx[:j]] = 0
-        print(default_mask)
-        print(mask)
-        return mask
+        return flattened
 
 def to_sparse(x):
     """ converts dense tensor x to sparse format """
@@ -55,22 +56,27 @@ def get_prunable_params(model):
     parameters_to_prune = []
 
     for name in grouped_params:
-        if "embedding" not in name and "mask" not in name:
+        if True:#"bilstm" not in name:
             module = getattr(model, name)
 
             is_sequential = isinstance(module, torch.nn.Sequential)
+            is_embedding = isinstance(module, Embedding)
 
             if is_sequential:
                 containers = module
+            elif is_embedding:
+                containers = [module.embedding]
             else:
                 containers = [module]
 
             for container in containers:
-                params = container.named_parameters() if is_sequential else grouped_params[name]
+                params = grouped_params[name] if not is_sequential else container.named_parameters()
                 for param_name, _ in params:
                     if "weight" in param_name:
                         name_fmt = param_name
-                        if not is_sequential:
+                        if is_embedding:
+                            name_fmt = ".".join(param_name.split(".")[2:])
+                        elif not is_sequential:
                             name_fmt = ".".join(param_name.split(".")[1:])
                         parameters_to_prune.append((container, name_fmt))
 
@@ -101,13 +107,13 @@ def params_zero(model):
     return total_params, zero
 
 def magnitude_pruning(model, threshold):
-    model = copy.deepcopy(model)
+    model_copy = copy.deepcopy(model)
 
-    params_to_prune = get_prunable_params(model)
+    params_to_prune = get_prunable_params(model_copy)
 
     do_pruning(params_to_prune, MagnitudePruning, threshold=threshold)
 
-    return model
+    return model_copy
 
 def movement_pruning(model, threshold):
     """
@@ -121,17 +127,10 @@ def topk_pruning(model, threshold):
     Threshold=0.3 would prune the weights with lowest value,
     pruning 30% of all weights in the model.
     """
-    model = copy.deepcopy(model)
+    model_copy = copy.deepcopy(model)
 
-    params_to_prune = get_prunable_params(model)
+    params_to_prune = get_prunable_params(model_copy)
 
     do_pruning(params_to_prune, TopKPruning, threshold=threshold)
 
-    return model
-
-def initalize_mask_scores(model):
-    for m, n, p in get_prunable_params(model):
-        print(n)
-        mask_scores = torch.nn.Parameter(torch.Tensor(p.size()))
-        torch.nn.init.constant(mask_scores, val=0.0)
-        model.register_parameter(f"{n}_mask", mask_scores)
+    return model_copy

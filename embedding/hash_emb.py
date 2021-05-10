@@ -66,5 +66,5 @@ class HashEmbedding(Embedding):
         return x
 
     def init_weight_range(self, init_range):
-        self.scalars.weight.data.uniform_(-init_range, init_range)
+        self.scalars.weight.data.fill_(1) #uniform_(-init_range, init_range)
         self.vectors.weight.data.uniform_(-init_range, init_range)
