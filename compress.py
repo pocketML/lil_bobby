@@ -130,23 +130,23 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
             model, criterion, optim, dataloaders, device, args
         )
 
-        if val_acc > best_val_acc:
-            print(f'Saving new best model')
-            best_val_acc = val_acc
-            save_checkpoint(model, args.student_arch, sacred_experiment)
-            no_improvement = 0
-        else:
-            no_improvement += 1
-
-        transponder.send_train_status(epoch, val_acc)
-
-        if sacred_experiment is not None:
-            sacred_experiment.log_scalar("validation.acc", val_acc)
-
         chunk += 1
         del dataloaders
 
         if data_splitter is None or data_splitter == []:
+            if val_acc > best_val_acc:
+                print(f'Saving new best model')
+                best_val_acc = val_acc
+                save_checkpoint(model, args.student_arch, sacred_experiment)
+                no_improvement = 0
+            else:
+                no_improvement += 1
+
+            transponder.send_train_status(epoch, val_acc)
+
+            if sacred_experiment is not None:
+                sacred_experiment.log_scalar("validation.acc", val_acc)
+
             if callback is not None:
                 model = callback(model, args, epoch)
             epoch += 1
