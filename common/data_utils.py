@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 from glob import glob
+import gc
 
 from common.task_utils import TASK_INFO
 
@@ -68,46 +69,75 @@ def load_all_distillation_data(task, only_original_data=False):
     return distillation_data
 
 class DistillationData(Dataset):
-    def __init__(self, sents, labels, logits, lengths) -> None:
+    def __init__(self, data) -> None:
         super().__init__()
-        self.sents = sents
-        self.lengths = lengths
-        self.labels = labels
-        self.logits = logits
+        self.data = data
 
     def __len__(self):
-        return len(self.sents)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        return self.sents[idx], self.lengths[idx], self.labels[idx], self.logits[idx]
+        return self.data[idx]
 
 class DistillationPairData(Dataset):
-    def __init__(self, sents1, sents2, labels, logits, lens1, lens2) -> None:
+    def __init__(self, data) -> None:
         super().__init__()
-        self.sents1 = sents1
-        self.sents2 = sents2
-        self.lens1 = lens1
-        self.lens2 = lens2
-        self.labels = labels
-        self.logits = logits
+        self.data = data
 
     def __len__(self):
-        return len(self.sents1)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        return self.sents1[idx], self.lens1[idx], self.sents2[idx], self.lens2[idx], self.labels[idx], self.logits[idx]
+        return self.data[idx]
 
 def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
-    label_tensors = [torch.LongTensor([model.label_dict[x.strip()]]) for x in labels]
-    logit_tensors = [None] * len(label_tensors) if logits is None else [torch.tensor([float(x) for x in xs.split(',')]) for xs in logits]
-    sents1_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences1]
-    lens1 = [torch.LongTensor([len(sent)]) for sent in sents1_tensors]
+    from tqdm import tqdm
+
+    # labels
+    data = []
+    for i in tqdm(range(len(sentences1) - 1, -1, -1), leave=False):
+        # label
+        label_tensor = torch.LongTensor([model.label_dict[labels[i].strip()]])
+        del labels[i]
+
+        # logit
+        if logits is None:
+            logit_tensor = None
+        else:
+            logit_tensor = torch.tensor([float(x) for x in logits[i].split(',')])
+            del logits[i]
+        # sentences 1 encoding and len
+        encoded = model.embedding.encode(sentences1[i])
+        len1 = torch.LongTensor([len(encoded)])
+        sents1_tensor = torch.LongTensor(encoded)
+        del sentences1[i]
+        
+        # sentences2 to len and encoded tensor
+        if sentences2 is not None:
+            encoded = model.embedding.encode(sentences2[i])
+            len2 = torch.LongTensor([len(encoded)])
+            sents2_tensor = torch.LongTensor(encoded)
+            del sentences2[i]
+            data.append((sents1_tensor, len1, sents2_tensor,  len2, label_tensor, logit_tensor))
+        else:
+            data.append((sents1_tensor, len1, label_tensor, logit_tensor))
+        
+    sentences1.clear()
+    del sentences1
+    labels.clear()
+    del labels
+    if logits is not None:
+        logits.clear()
+        del logits
+    
     if sentences2 is not None:
-        sents2_tensors = [torch.LongTensor(model.embedding.encode(sent)) for sent in sentences2]
-        lens2 = [torch.LongTensor([len(sent)]) for sent in sents2_tensors]
-        return DistillationPairData(sents1_tensors, sents2_tensors, label_tensors, logit_tensors, lens1, lens2)
+        sentences2.clear()
+        del sentences2
+        gc.collect()
+        return DistillationPairData(data)
     else:
-        return DistillationData(sents1_tensors, label_tensors, logit_tensors, lens1)
+        gc.collect()
+        return DistillationData(data)
 
 def get_dataloader_dict_val(model, validation_data):
     if len(validation_data) > 2:

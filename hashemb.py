@@ -8,12 +8,14 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import numpy as np
 
+OUTPUT_DIM = 25
+
 class HashEmbeddingTrainer(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.embedding = HashEmbedding(cfg)
         self.embedding.init_weight_range(0.1)
-        self.fc1 = nn.Linear(100, 128, bias=False)
+        self.fc1 = nn.Linear(OUTPUT_DIM, 128, bias=False)
         self.fc1.weight.data.uniform_(-0.1,0.1)
         self.fc2 = nn.Linear(128, 300, bias=False)
         self.fc2.weight.data.uniform_(-0.1,0.1)
@@ -73,7 +75,7 @@ def load_glove(model):
         tensors.append(torch.FloatTensor(numbers))
     return torch.stack(words), torch.stack(tensors)
 
-def train_on_glove(num_hashes=3, vocab_size=5000, embedding_dim=100, hash_ratio=10, use_gpu=True):
+def train_on_glove(num_hashes=3, vocab_size=5000, embedding_dim=OUTPUT_DIM, hash_ratio=10, use_gpu=True):
     device =torch.device('cuda') if use_gpu else torch.device('cpu')
 
     cfg = base.get_default_student_config('sst-2', 'char-rnn')
