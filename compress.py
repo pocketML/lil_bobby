@@ -81,7 +81,9 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
     temperature = args.temperature
     model.to(device)
 
-    distillation_data = data_utils.load_all_distillation_data(task, only_original_data=args.original_data)
+    distillation_data = data_utils.load_all_distillation_data(
+        task, only_original_data=args.original_data, chunk_size=args.chunk_size
+    )
     print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
     
     val_data = data_utils.load_val_data(task)

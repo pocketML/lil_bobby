@@ -17,6 +17,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--alpha", type=float, default=0)
     ap.add_argument("--early-stopping", type=int, default=10)
     ap.add_argument("--original-data", action="store_true")
+    ap.add_argument("--chunk-size", type=int, default=None)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)

@@ -44,7 +44,7 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task, only_original_data=False):
+def load_all_distillation_data(task, only_original_data=False, chunk_size=None):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     distillation_data = []
     if only_original_data:
@@ -53,7 +53,8 @@ def load_all_distillation_data(task, only_original_data=False):
         train_files = glob(f"{base_path}/*.tsv")
     for filename in train_files:
         if task in ['qqp', 'mnli'] and 'train.tsv' not in filename: # TODO: this logic should reside in augment and not here
-            loaded_data = load_distillation_data(filename, chunk_size=10)
+            final_chunk_size = chunk_size if chunk_size is not None else 10
+            loaded_data = load_distillation_data(filename, chunk_size=final_chunk_size)
         else:
             loaded_data = load_distillation_data(filename)
 
