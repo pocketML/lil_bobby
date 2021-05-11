@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from torch.optim.adam import Adam
 from embedding import embeddings
 from compression.distillation.student_models.base import StudentModel
 
@@ -27,14 +26,6 @@ class WASSERBLAT_FFN(StudentModel):
 
     def forward(self, x, lens):
         emb = self.embedding(x).float()
-        # pad_amount = self.max_seq_len - emb.shape[1]
-
-        # # Pad 2nd dimension to match max_seq_len.
-        # x = torch.nn.functional.pad(emb, pad=(0, 0, 0, pad_amount, 0, 0), mode="constant")
-
-        #x = self.dropout1(emb)
-
-        #x = self.avg_pool(emb)
 
         x = torch.mean(emb, dim=1)
 

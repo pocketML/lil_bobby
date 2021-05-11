@@ -3,8 +3,8 @@ import json
 import os
 import torch
 import torch.nn as nn
-from common import argparsers, data_utils
-from compression.distill import train_loop
+from common import argparsers, data_utils, transponder
+from compression.distill import train_loop, save_checkpoint
 from compression.distillation.models import DistLossFunction, load_student
 import evaluate
 from compression import prune
@@ -77,17 +77,21 @@ def prune_model(model, device, args):
     print()
 
 def distill_model(task, model, device, args, callback, sacred_experiment):
-    epochs = args.epochs
     temperature = args.temperature
     model.to(device)
 
-    distillation_data = data_utils.load_all_distillation_data(
-        task, only_original_data=args.original_data, chunk_size=args.chunk_size
-    )
-    print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
-    
-    val_data = data_utils.load_val_data(task)
-    print(f"*** Loaded {len(val_data[0])} validation data samples ***")
+    data_splitter = None
+    if args.chunk_ratio < 1.0:
+        data_splitter = data_utils.DataSplitter(chunk_ratio=args.chunk_ratio)
+
+    best_val_acc = 0
+    no_improvement = 0
+    chunk = 1
+    epoch = 1
+
+    distillation_data = None
+    dataloader_train = None
+    val_data = None
 
     criterion = DistLossFunction(
         args.alpha, 
@@ -96,16 +100,56 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
         device,
         temperature=temperature,
     )
-    
-    dataloaders = data_utils.get_dataloader_dict(model, distillation_data, val_data)
-    print(f'*** Dataloaders created ***')
 
     optim = model.get_optimizer()
-    train_loop(
-        model, criterion, optim, dataloaders, device,
-        args, epochs, compress_callback=callback,
-        sacred_experiment=sacred_experiment
-    )
+
+    val_data = data_utils.load_val_data(task)
+    dataloader_val = data_utils.get_dataloader_dict_val(model, val_data)
+    print(f"*** Loaded {len(val_data[0])} validation data samples ***")
+
+    while epoch <= args.epochs:
+        if distillation_data is None or args.chunk_ratio < 1.0:
+            del distillation_data
+            distillation_data = data_utils.load_all_distillation_data(
+                task, only_original_data=args.original_data, data_splitter=data_splitter
+            )
+            print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
+
+            dataloader_train = data_utils.get_dataload_dict_train(model, distillation_data)
+            print(f'*** Dataloaders created ***')
+
+        desc = f'* Epoch {epoch}'
+        if args.chunk_ratio < 1.0:
+            desc += f" - Chunk: {chunk} / {int(1.0 / args.chunk_ratio)}"
+
+        print(desc)
+
+        dataloaders = {"train": dataloader_train, "val": dataloader_val}
+
+        val_acc = train_loop(
+            model, criterion, optim, dataloaders, device, args
+        )
+
+        if val_acc > best_val_acc:
+            print(f'Saving new best model')
+            best_val_acc = val_acc
+            save_checkpoint(model, args.student_arch, sacred_experiment)
+            no_improvement = 0
+        else:
+            no_improvement += 1
+
+        transponder.send_train_status(epoch, val_acc)
+
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("validation.acc", val_acc)
+
+        chunk += 1
+        del dataloaders
+
+        if data_splitter is None or data_splitter == []:
+            if callback is not None:
+                model = callback(model, args, epoch)
+            epoch += 1
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
