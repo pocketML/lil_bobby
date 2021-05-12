@@ -207,7 +207,7 @@ def get_dataload_dict_train(model, distillation_data, loadbar=True):
             dataset,
             batch_size=model.cfg['batch-size'],
             shuffle=True,
-            drop_last=False,
+            drop_last=True,
             collate_fn=create_collate_fn(model.cfg)
         )
 
