@@ -1,5 +1,4 @@
 import os
-from sys import stdin
 from sys import stdout
 from shutil import rmtree
 from glob import glob
@@ -12,8 +11,6 @@ from compress import main as compress_main
 from evaluate import main as evaluate_main
 from analyze import main as analyze_main
 
-OUTPUT_DIR = "experiments"
-
 TASK_FUNCS = {
     "finetune": finetune_main, "compress": compress_main,
     "evaluate": evaluate_main, "analyze": analyze_main
@@ -23,57 +20,62 @@ def run_experiment(task_args, _run):
     for task in task_args:
         TASK_FUNCS[task](task_args[task], sacred_experiment=_run)
 
-if __name__ == "__main__":
-    EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
+def main(experiment_args, task_args):
+    experiment_args, task_args = args_experiment()
 
-    EXPERIMENT = Experiment(EXPERIMENT_ARGS.name)
+    if stdout.encoding != "utf-8":
+        raise UnicodeError(f"Stdout encoding is {stdout.encoding} (should be utf-8)!")
 
-    if EXPERIMENT_ARGS.output_path is not None:
-        OUTPUT_DIR = EXPERIMENT_ARGS.output_path
+    experiment = Experiment(experiment_args.name)
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_dir = "experiments"
 
-    OUTPUT_STORAGE = FileStorageObserver(OUTPUT_DIR)
+    if experiment_args.output_path is not None:
+        output_dir = experiment_args.output_path
 
-    EXPERIMENT.observers.append(OUTPUT_STORAGE)
+    os.makedirs(output_dir, exist_ok=True)
 
-    RUN_ID = EXPERIMENT_ARGS.name
-    if os.path.exists(f"{OUTPUT_DIR}/{RUN_ID}"):
-        if EXPERIMENT_ARGS.overwrite:
-            rmtree(f"{OUTPUT_DIR}/{RUN_ID}")
+    output_storage = FileStorageObserver(output_dir)
+
+    experiment.observers.append(output_storage)
+
+    run_id = experiment_args.name
+    if os.path.exists(f"{output_dir}/{run_id}"):
+        if experiment_args.overwrite:
+            rmtree(f"{output_dir}/{run_id}")
         else:
-            PREVIOUS_RUN = glob(f"{OUTPUT_DIR}/{RUN_ID}*")
-            INDEX = PREVIOUS_RUN[-1].split("_")[-1]
+            previous_run = glob(f"{output_dir}/{run_id}*")
+            index = previous_run[-1].split("_")[-1]
             try:
-                INDEX = int(INDEX) + 1
+                index = int(index) + 1
             except ValueError:
-                INDEX = 2
-            RUN_ID = f"{RUN_ID}_{INDEX}"
+                index = 2
+            run_id = f"{run_id}_{index}"
 
             # Update model_name parameter for evaluate and analyze.
             for task_type in ("evaluate", "analyze"):
-                if task_type in TASK_ARGS and TASK_ARGS[task_type].model_name is not None:
-                    setattr(TASK_ARGS[task_type], "model_name", RUN_ID)
+                if task_type in task_args and task_args[task_type].model_name is not None:
+                    setattr(task_args[task_type], "model_name", run_id)
 
-    EXPERIMENT.add_config({
-        "task_args": TASK_ARGS
+    experiment.add_config({
+        "task_args": task_args
     })
-    EXPERIMENT.command(run_experiment)
+    experiment.command(run_experiment)
 
-    transponder.TRANSPONDER_ACTIVE = EXPERIMENT_ARGS.transponder
+    transponder.TRANSPONDER_ACTIVE = experiment_args.transponder
 
     transponder_args = None
     max_epochs = None
 
-    if "finetune" in TASK_ARGS:
-        FINETUNE_ARGS = TASK_ARGS["finetune"]
-        max_epochs = FINETUNE_ARGS.max_epochs
-        transponder_args = dict(FINETUNE_ARGS.__dict__)
+    if "finetune" in task_args:
+        finetune_args = task_args["finetune"]
+        max_epochs = finetune_args.max_epochs
+        transponder_args = dict(finetune_args.__dict__)
         del transponder_args["max_epochs"]
-    elif "compress" in TASK_ARGS and "distill" in TASK_ARGS["compress"].compression_actions:
-        DISTILLATION_ARGS = TASK_ARGS["compress"]
-        max_epochs = DISTILLATION_ARGS.epochs
-        transponder_args = dict(DISTILLATION_ARGS.__dict__)
+    elif "compress" in task_args and "distill" in task_args["compress"].compression_actions:
+        distillation_args = task_args["compress"]
+        max_epochs = distillation_args.epochs
+        transponder_args = dict(distillation_args.__dict__)
         del transponder_args["epochs"]
         del transponder_args["compression_actions"]
         args_to_delete = ["size"]
@@ -85,11 +87,15 @@ if __name__ == "__main__":
                 del transponder_args[arg]
 
     if transponder_args is not None:
-        transponder.send_train_start(RUN_ID, transponder_args, max_epochs)
+        transponder.send_train_start(run_id, transponder_args, max_epochs)
 
-    RUN = EXPERIMENT._create_run("run_experiment", info={"name": RUN_ID})
-    RUN._id = RUN_ID
+    run = experiment._create_run("run_experiment", info={"name": run_id})
+    run._id = run_id
     try:
-        RUN()
+        run()
     except UnicodeDecodeError:
         pass
+
+if __name__ == "__main__":
+    EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
+    main(EXPERIMENT_ARGS, TASK_ARGS)
