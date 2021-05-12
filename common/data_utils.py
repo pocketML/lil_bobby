@@ -16,11 +16,7 @@ class DataSplitter(list):
         self.chunk_size = None
 
     def shuffle(self):
-        for index in range(1, len(self)):
-            new_index = random.randint(0, index)
-            item = self.__getitem__(new_index)
-            self.__setitem__(new_index, self.__getitem__(index))
-            self.__setitem__(index,  item)
+        random.shuffle(self)
 
     def set_chunk_size(self):
         self.chunk_size = int(len(self) * self.chunk_ratio)
