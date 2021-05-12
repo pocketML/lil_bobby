@@ -177,17 +177,20 @@ def main(meta_args, search_args):
                 line += f" & {data}"
             print(line)
     else:
-        for data_point in found_data:
+        accuracies = np.array([float(data_point["acc"]) for data_point in found_data])
+        median = np.median(accuracies)
+        mean = np.mean(accuracies)
+        std_dev = np.std(accuracies)
+        for index, data_point in enumerate(found_data):
             if meta_args.tab_separate:
                 sort_order = ["acc", "params", "size"]
                 line = "\t".join(str(data_point[x]) for x in sort_order)
-                accuracies = np.array([float(acc) for acc in data_point["acc"]])
-                median = np.median(accuracies)
-                mean = np.mean(accuracies)
-                std_dev = np.std(accuracies)
-                line += f"\t{median}\t{mean}\t{std_dev}"
+                if index == 0:
+                    line += f"\t{median}\t{mean}\t{std_dev}"
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
+                if index == 0:
+                    line += f", median={median}, mean={mean}, std_dev={std_dev}"
             print(line)
 
 if __name__ == "__main__":
