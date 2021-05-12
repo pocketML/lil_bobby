@@ -2,7 +2,7 @@
 from compression.distillation.student_models.tang_bilstm import TangBILSTM
 from compression.distillation.student_models.glue_bilstm import GlueBILSTM
 from compression.distillation.student_models.wasserblat_ffn import WASSERBLAT_FFN
-from compression.distillation.student_models.char_rnn import CharRNN
+from compression.distillation.student_models.rnn import RNN
 from compression.distillation.student_models.transformer import Transformer
 from compression.distillation.student_models.transformer2 import Transformer2
 from compression.distillation.student_models.transformer3 import Transformer3
@@ -14,7 +14,7 @@ STUDENT_MODELS = {
     'glue' : GlueBILSTM,
     'wasserblat-ffn': WASSERBLAT_FFN,
     'tang': TangBILSTM,
-    'char-rnn': CharRNN,
+    'rnn': RNN,
     'transformer': Transformer,
     'trans2': Transformer2,
     'trans3': Transformer3,

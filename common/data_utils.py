@@ -43,6 +43,7 @@ def load_distillation_data(path, data_splitter=None):
         with open(path, encoding="utf-8") as fip:
             index = 0
             for line in fip:
+                line = line.strip()
                 if line != "" and index % skip_sentences == 0:
                     data_splitter.append(index)
                 index += 1
@@ -61,6 +62,7 @@ def load_distillation_data(path, data_splitter=None):
 
         i = 0
         for line in fip:
+            line = line.strip()
             if line != "" and (data_splitter is None or i in sentences_to_include):
                 line = line.strip().split("\t")
                 lines.append(line)
