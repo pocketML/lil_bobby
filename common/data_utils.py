@@ -46,8 +46,8 @@ def load_distillation_data(path, data_splitter=None):
 
         with open(path, encoding="utf-8") as fip:
             index = 0
-            for _ in fip:
-                if index % skip_sentences == 0:
+            for line in fip:
+                if line != "" and index % skip_sentences == 0:
                     data_splitter.append(index)
                 index += 1
 
@@ -65,7 +65,7 @@ def load_distillation_data(path, data_splitter=None):
 
         i = 0
         for line in fip:
-            if data_splitter is None or i in sentences_to_include: # TODO: this logic should reside in augment and not here
+            if line != "" and (data_splitter is None or i in sentences_to_include):
                 line = line.strip().split("\t")
                 lines.append(line)
             i += 1
