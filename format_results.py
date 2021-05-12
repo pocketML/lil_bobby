@@ -1,6 +1,7 @@
 import json
 from glob import glob
 from datetime import datetime
+import numpy as np
 
 from common.task_utils import SEED_DICT
 from common.argparsers import args_search
@@ -180,6 +181,11 @@ def main(meta_args, search_args):
             if meta_args.tab_separate:
                 sort_order = ["acc", "params", "size"]
                 line = "\t".join(str(data_point[x]) for x in sort_order)
+                accuracies = np.array(data_point["acc"])
+                median = np.median(accuracies)
+                mean = np.mean(accuracies)
+                std_dev = np.std(accuracies)
+                line += f"\t{median}\t{mean}\t{std_dev}"
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
             print(line)
