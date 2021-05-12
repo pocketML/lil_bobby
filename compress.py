@@ -81,7 +81,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
     model.to(device)
 
     data_splitter = None
-    if args.chunk_ratio < 1.0:
+    if args.chunk_ratio < 1.0 or args.data_ratio < 1.0:
         data_splitter = data_utils.DataSplitter(
             chunk_ratio=args.chunk_ratio, data_ratio=args.data_ratio
         )
