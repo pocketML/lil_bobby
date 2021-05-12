@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
 
 import random
 from glob import glob
@@ -127,12 +128,14 @@ class DistillationPairData(Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
-def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
-    from tqdm import tqdm
-
+def get_datasets(model, sentences1, labels, sentences2=None, logits=None, loadbar=True):
     # labels
     data = []
-    for i in tqdm(range(len(sentences1) - 1, -1, -1), leave=False):
+    iterator = range(len(sentences1) - 1, -1, -1)
+    if loadbar:
+        iterator = tqdm(range(len(sentences1) - 1, -1, -1), leave=False)
+
+    for i in iterator:
         # label
         label_tensor = torch.LongTensor([model.label_dict[labels[i].strip()]])
         del labels[i]
@@ -176,13 +179,13 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
         gc.collect()
         return DistillationData(data)
 
-def get_dataloader_dict_val(model, validation_data):
+def get_dataloader_dict_val(model, validation_data, loadbar=True):
     if len(validation_data) > 2:
         val_x1, val_labels, val_x2 = validation_data
-        dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
+        dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2, loadbar=loadbar)
     else:
         val_x1, val_labels = validation_data
-        dataset = get_datasets(model, val_x1, val_labels)
+        dataset = get_datasets(model, val_x1, val_labels, loadbar=loadbar)
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],
@@ -191,13 +194,13 @@ def get_dataloader_dict_val(model, validation_data):
             collate_fn=create_collate_fn(model.cfg)
         )
 
-def get_dataload_dict_train(model, distillation_data):
+def get_dataload_dict_train(model, distillation_data, loadbar=True):
     if len(distillation_data) > 3:
         train_x1, train_x2, train_labels, train_logits = distillation_data
-        dataset = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits)
+        dataset = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits, loadbar=loadbar)
     else:
         train_x1, train_labels, train_logits = distillation_data
-        dataset = get_datasets(model, train_x1, train_labels, logits=train_logits)
+        dataset = get_datasets(model, train_x1, train_labels, logits=train_logits, loadbar=loadbar)
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],

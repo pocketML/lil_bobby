@@ -107,7 +107,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
     val_data = data_utils.load_val_data(task)
     print(f"*** Loaded {len(val_data[0])} validation data samples ***")
-    dataloader_val = data_utils.get_dataloader_dict_val(model, val_data)
+    dataloader_val = data_utils.get_dataloader_dict_val(model, val_data, loadbar=args.loadbar)
 
     while epoch <= args.epochs:
         if distillation_data is None or args.chunk_ratio < 1.0:
@@ -118,7 +118,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
             print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
 
             print('*** Preparing data for Dataloaders ***')
-            dataloader_train = data_utils.get_dataload_dict_train(model, distillation_data)
+            dataloader_train = data_utils.get_dataload_dict_train(model, distillation_data, loadbar=args.loadbar)
             print('*** Dataloaders created ***')
 
         desc = f'* Epoch {epoch}'
