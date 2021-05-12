@@ -177,10 +177,12 @@ def main(meta_args, search_args):
                 line += f" & {data}"
             print(line)
     else:
-        accuracies = np.array([float(data_point["acc"]) for data_point in found_data])
-        median = np.median(accuracies)
-        mean = np.mean(accuracies)
-        std_dev = np.std(accuracies)
+        if found_data != []:
+            accuracies = np.array([float(data_point["acc"]) for data_point in found_data])
+            median = np.median(accuracies)
+            mean = np.mean(accuracies)
+            std_dev = np.std(accuracies)
+
         for index, data_point in enumerate(found_data):
             if meta_args.tab_separate:
                 sort_order = ["acc", "params", "size"]
