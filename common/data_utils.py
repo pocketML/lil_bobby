@@ -13,17 +13,17 @@ class DataSplitter(list):
         self.chunk_ratio = chunk_ratio
         self.data_ratio = data_ratio
         self.chunk_size = None
-        self.shuffle()
 
     def shuffle(self):
         for index in range(1, len(self)):
             new_index = random.randint(0, index)
-            item = self.__getitem__[new_index]
-            self.__setitem__[new_index] = self.__getitem__[index]
-            self.__setitem__[index] = item
+            item = self.__getitem__(new_index)
+            self.__setitem__(new_index, self.__getitem__(index))
+            self.__setitem__(index,  item)
 
-    def set_chunk_size(self, line_count):
-        self.chunk_size = int(line_count * self.chunk_ratio)
+    def set_chunk_size(self):
+        self.chunk_size = int(len(self) * self.chunk_ratio)
+        self.shuffle()
 
 # returns sentences, labels
 def load_train_data(task, ds_type='train'):
@@ -41,8 +41,8 @@ def load_train_data(task, ds_type='train'):
 # returns sentences, labels, logits
 def load_distillation_data(path, data_splitter=None):
     if data_splitter is not None and data_splitter == []:
-        # Repopulate data_splitter with index of all sentences
         skip_sentences = int(1 / data_splitter.data_ratio)
+
         with open(path, encoding="utf-8") as fip:
             index = 0
             for _ in fip:
@@ -50,7 +50,8 @@ def load_distillation_data(path, data_splitter=None):
                     data_splitter.append(index)
                 index += 1
 
-            data_splitter.set_chunk_size(index)
+        # Repopulate data_splitter with index of all sentences
+        data_splitter.set_chunk_size()
 
     with open(path, encoding="utf-8") as fip:
         lines = []

@@ -82,7 +82,9 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
     data_splitter = None
     if args.chunk_ratio < 1.0:
-        data_splitter = data_utils.DataSplitter(chunk_ratio=args.chunk_ratio)
+        data_splitter = data_utils.DataSplitter(
+            chunk_ratio=args.chunk_ratio, data_ratio=args.data_ratio
+        )
 
     best_val_acc = 0
     no_improvement = 0
