@@ -25,6 +25,8 @@ def load_distillation_data(path, chunk_size=20, base_chunk_size=20):
         lines = []
         i = 0
         for line in fip:
+            if line.strip() == "":
+                continue
             if i % base_chunk_size < chunk_size: # TODO: this logic should reside in augment and not here
                 line = line.strip().split("\t")
                 lines.append(line)

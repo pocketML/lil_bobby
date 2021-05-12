@@ -46,14 +46,18 @@ def train_loop(model, criterion, optim, dl, device, args, num_epochs, sacred_exp
 
                 _, preds = torch.max(out_logits, 1)
                 target_labels = target_labels.squeeze()
+                if task_utils.is_sentence_pair(model.cfg['task']):
+                    batch_examples = len(lens[0])
+                else:
+                    batch_examples = len(lens)
                 if phase == "train":
                     loss = criterion(out_logits, target_logits, target_labels)
                     loss.backward()
                     nn.utils.clip_grad_norm_(non_embedding_params, model.cfg['clip-grad'])
                     optim.step()
-                    running_loss += loss.item() * len(lens)
+                    running_loss += loss.item() * batch_examples
                 running_corrects += torch.sum(preds == target_labels.data).item()
-                num_examples += len(lens)
+                num_examples += batch_examples
 
             accuracy = 0 if num_examples == 0 else running_corrects / num_examples
             if phase == "train":
