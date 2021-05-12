@@ -86,8 +86,9 @@ def distill_model(task, model, device, args, sacred_experiment):
         temperature=temperature,
     )
     
+    print('*** Preparing data for Dataloaders ***')
     dataloaders = data_utils.get_dataloader_dict(model, distillation_data, val_data)
-    print(f'*** Dataloaders created ***')
+    print('*** Dataloaders created ***')
 
     optim = model.get_optimizer()
     train_loop(
