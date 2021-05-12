@@ -60,6 +60,8 @@ def load_distillation_data(path, data_splitter=None):
         if data_splitter is not None:
             for _ in range(data_splitter.chunk_size):
                 sentences_to_include.add(data_splitter.pop())
+            if len(data_splitter) < 256:
+                data_splitter.clear()
 
         i = 0
         for line in fip:
