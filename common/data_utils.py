@@ -8,9 +8,10 @@ import gc
 from common.task_utils import TASK_INFO
 
 class DataSplitter(list):
-    def __init__(self, chunk_ratio=1.0):
+    def __init__(self, chunk_ratio=1.0, data_ratio=1.0):
         super().__init__()
         self.chunk_ratio = chunk_ratio
+        self.data_ratio = data_ratio
         self.chunk_size = None
         self.shuffle()
 
@@ -41,10 +42,12 @@ def load_train_data(task, ds_type='train'):
 def load_distillation_data(path, data_splitter=None):
     if data_splitter is not None and data_splitter == []:
         # Repopulate data_splitter with index of all sentences
+        skip_sentences = int(1 / data_splitter.data_ratio)
         with open(path, encoding="utf-8") as fip:
             index = 0
             for _ in fip:
-                data_splitter.append(index)
+                if index % skip_sentences == 0:
+                    data_splitter.append(index)
                 index += 1
 
             data_splitter.set_chunk_size(index)

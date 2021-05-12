@@ -18,6 +18,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--early-stopping", type=int, default=10)
     ap.add_argument("--original-data", action="store_true")
     ap.add_argument("--chunk-ratio", type=float, default=1.0)
+    ap.add_argument("--data-ratio", type=float, default=1.0)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
