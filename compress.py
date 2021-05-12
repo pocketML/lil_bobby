@@ -3,8 +3,8 @@ import json
 import os
 import torch
 import torch.nn as nn
-from common import argparsers, data_utils
-from compression.distill import train_loop
+from common import argparsers, data_utils, transponder
+from compression.distill import train_loop, save_checkpoint
 from compression.distillation.models import DistLossFunction, load_student
 import evaluate
 from compression import prune
@@ -15,8 +15,8 @@ import random
 
 warnings.simplefilter("ignore", UserWarning)
 
-def quantize_model(task, model, device, args):
-    dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(task))
+def quantize_model(model, device, args):
+    dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(args.task))
     backend = 'fbgemm'
     torch.backends.quantized.engine = backend
     print("Starting point:")
@@ -42,41 +42,58 @@ def quantize_model(task, model, device, args):
     parameters.print_model_disk_size(model)
     print()
 
-def prune_model(task, model, device, args):
-    dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(task))
+def do_pruning(model, args, epoch=None):
+    threshold = args.prune_threshold
+    if epoch is not None:
+        threshold = threshold * (epoch / args.prune_warmup)
+
+    if args.prune_magnitude:
+        model = prune.magnitude_pruning(model, threshold)
+    elif args.prune_movement:
+        model = prune.movement_pruning(model, threshold)
+    elif args.prune_topk:
+        model = prune.topk_pruning(model, threshold)
+
+    return model
+
+def prune_model(model, device, args):
+    dl = data_utils.get_dataloader_dict_val(model, data_utils.load_val_data(args.task))
 
     params, zero = prune.params_zero(model)
-    sparsity = int((zero / params) * 100)
-    print(f"Sparsity: {sparsity}%")
+    sparsity = (zero / params) * 100
+    print(f"Sparsity: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
 
-    if args.prune_magnitude:
-        model = prune.magnitude_pruning(model, args.prune_threshold)
-    elif args.prune_movement:
-        model = prune.movement_pruning(model, args.prune_threshold)
-    elif args.prune_topk:
-        model = prune.topk_pruning(model, args.prune_threshold)
+    model = do_pruning(model, args)
 
     params, zero = prune.params_zero(model)
-    sparsity = int((zero / params) * 100)
-    print(f"Sparsity: {sparsity}%")
+    sparsity = (zero / params) * 100
+    print(f"Sparsity: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
 
-def distill_model(task, model, device, args, sacred_experiment):
-    epochs = args.epochs
+def distill_model(task, model, device, args, callback, sacred_experiment):
     temperature = args.temperature
     model.to(device)
 
-    distillation_data = data_utils.load_all_distillation_data(task, only_original_data=args.original_data)
-    print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
-    
-    val_data = data_utils.load_val_data(task)
-    print(f"*** Loaded {len(val_data[0])} validation data samples ***")
+    data_splitter = None
+    if args.chunk_ratio < 1.0:
+        data_splitter = data_utils.DataSplitter(
+            chunk_ratio=args.chunk_ratio, data_ratio=args.data_ratio
+        )
+
+    best_val_acc = 0
+    no_improvement = 0
+    chunk = 1
+    epoch = 1
+
+    distillation_data = None
+    dataloader_train = None
+    val_data = None
 
     criterion = DistLossFunction(
         args.alpha, 
@@ -85,16 +102,61 @@ def distill_model(task, model, device, args, sacred_experiment):
         device,
         temperature=temperature,
     )
-    
-    print('*** Preparing data for Dataloaders ***')
-    dataloaders = data_utils.get_dataloader_dict(model, distillation_data, val_data)
-    print('*** Dataloaders created ***')
 
     optim = model.get_optimizer()
-    train_loop(
-        model, criterion, optim, dataloaders, device,
-        args, epochs, sacred_experiment=sacred_experiment
-    )
+
+    val_data = data_utils.load_val_data(task)
+    print(f"*** Loaded {len(val_data[0])} validation data samples ***")
+    dataloader_val = data_utils.get_dataloader_dict_val(model, val_data, loadbar=args.loadbar)
+
+    while epoch <= args.epochs:
+        if distillation_data is None or args.chunk_ratio < 1.0:
+            del distillation_data
+            distillation_data = data_utils.load_all_distillation_data(
+                task, only_original_data=args.original_data, data_splitter=data_splitter
+            )
+            print(f"*** Loaded {len(distillation_data[0])} training data samples ***")
+
+            print('*** Preparing data for Dataloaders ***')
+            dataloader_train = data_utils.get_dataload_dict_train(model, distillation_data, loadbar=args.loadbar)
+            print('*** Dataloaders created ***')
+
+        desc = f'* Epoch {epoch}'
+        if args.chunk_ratio < 1.0:
+            desc += f" - Chunk: {chunk} / {int(1.0 / args.chunk_ratio)}"
+
+        print(desc)
+
+        dataloaders = {"train": dataloader_train, "val": dataloader_val}
+
+        val_acc = train_loop(
+            model, criterion, optim, dataloaders, device, args
+        )
+
+        chunk += 1
+        del dataloaders
+
+        if data_splitter is None or data_splitter == []:
+            if val_acc > best_val_acc:
+                print(f'Saving new best model')
+                best_val_acc = val_acc
+                save_checkpoint(model, args.student_arch, sacred_experiment)
+                no_improvement = 0
+            else:
+                no_improvement += 1
+
+            transponder.send_train_status(epoch, val_acc)
+
+            if sacred_experiment is not None:
+                sacred_experiment.log_scalar("validation.acc", val_acc)
+
+            if callback is not None:
+                model = callback(model, args, epoch)
+
+            if no_improvement == args.early_stopping:
+                break
+
+            epoch += 1
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
@@ -110,8 +172,8 @@ def main(args, sacred_experiment=None):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
-    do_pruning = "prune" in args.compression_actions
-    do_quantizing = "quantize" in args.compression_actions
+    should_prune = "prune" in args.compression_actions
+    should_quantize = "quantize" in args.compression_actions
 
     if "distill" in args.compression_actions:
         model = load_student(task, student_type, use_gpu=use_gpu, args=args)
@@ -122,22 +184,26 @@ def main(args, sacred_experiment=None):
             sacred_experiment.add_artifact(temp_name, "model_cfg.json")
             os.remove(temp_name)
 
-        distill_model(task, model, device, args, sacred_experiment)
+        callback_func = None
+        if should_prune and args.prune_aware:
+            callback_func = do_pruning
 
-    if do_quantizing:
+        distill_model(task, model, device, args, callback_func, sacred_experiment)
+
+    if should_quantize:
         use_gpu = False
         device = torch.device('cpu')
         model_name = args.load_trained_model
         model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
         model.to(device)
-        quantize_model(task, model, device, args)
+        quantize_model(model, device, args)
 
-    if do_pruning:
+    if should_prune:
         # Magnitude pruning after distillation (static).
         model_name = args.load_trained_model
         model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
         model.to(device)
-        prune_model(task, model, device, args)
+        prune_model(model, device, args)
 
 if __name__ == "__main__":
     ARGS, remain = argparsers.args_compress()

@@ -1,10 +1,26 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
 
+import random
 from glob import glob
 import gc
 
 from common.task_utils import TASK_INFO
+
+class DataSplitter(list):
+    def __init__(self, chunk_ratio=1.0, data_ratio=1.0):
+        super().__init__()
+        self.chunk_ratio = chunk_ratio
+        self.data_ratio = data_ratio
+        self.chunk_size = None
+
+    def shuffle(self):
+        random.shuffle(self)
+
+    def set_chunk_size(self):
+        self.chunk_size = int(len(self) * self.chunk_ratio)
+        self.shuffle()
 
 # returns sentences, labels
 def load_train_data(task, ds_type='train'):
@@ -20,14 +36,34 @@ def load_train_data(task, ds_type='train'):
                 return sentences.readlines(), targets.readlines()
 
 # returns sentences, labels, logits
-def load_distillation_data(path, chunk_size=20, base_chunk_size=20):
+def load_distillation_data(path, data_splitter=None):
+    if data_splitter is not None and data_splitter == []:
+        skip_sentences = int(1 / data_splitter.data_ratio)
+
+        with open(path, encoding="utf-8") as fip:
+            index = 0
+            for line in fip:
+                line = line.strip()
+                if line != "" and index % skip_sentences == 0:
+                    data_splitter.append(index)
+                index += 1
+
+        # Repopulate data_splitter with index of all sentences
+        data_splitter.set_chunk_size()
+
     with open(path, encoding="utf-8") as fip:
         lines = []
+        sentences_to_include = set()
+        if data_splitter is not None:
+            for _ in range(data_splitter.chunk_size):
+                sentences_to_include.add(data_splitter.pop())
+            if len(data_splitter) < 256:
+                data_splitter.clear()
+
         i = 0
         for line in fip:
-            if line.strip() == "":
-                continue
-            if i % base_chunk_size < chunk_size: # TODO: this logic should reside in augment and not here
+            line = line.strip()
+            if line != "" and (data_splitter is None or i in sentences_to_include):
                 line = line.strip().split("\t")
                 lines.append(line)
             i += 1
@@ -47,7 +83,7 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task, only_original_data=False):
+def load_all_distillation_data(task, only_original_data=False, data_splitter=None):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     distillation_data = []
     if only_original_data:
@@ -56,7 +92,7 @@ def load_all_distillation_data(task, only_original_data=False):
         train_files = glob(f"{base_path}/*.tsv")
     for filename in train_files:
         if task in ['qqp', 'mnli'] and 'train.tsv' not in filename: # TODO: this logic should reside in augment and not here
-            loaded_data = load_distillation_data(filename, chunk_size=10)
+            loaded_data = load_distillation_data(filename, data_splitter)
         else:
             loaded_data = load_distillation_data(filename)
 
@@ -92,12 +128,14 @@ class DistillationPairData(Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
-def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
-    from tqdm import tqdm
-
+def get_datasets(model, sentences1, labels, sentences2=None, logits=None, loadbar=True):
     # labels
     data = []
-    for i in tqdm(range(len(sentences1) - 1, -1, -1), leave=False):
+    iterator = range(len(sentences1) - 1, -1, -1)
+    if loadbar:
+        iterator = tqdm(range(len(sentences1) - 1, -1, -1), leave=False)
+
+    for i in iterator:
         # label
         label_tensor = torch.LongTensor([model.label_dict[labels[i].strip()]])
         del labels[i]
@@ -141,13 +179,13 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None):
         gc.collect()
         return DistillationData(data)
 
-def get_dataloader_dict_val(model, validation_data):
+def get_dataloader_dict_val(model, validation_data, loadbar=True):
     if len(validation_data) > 2:
         val_x1, val_labels, val_x2 = validation_data
-        dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
+        dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2, loadbar=loadbar)
     else:
         val_x1, val_labels = validation_data
-        dataset = get_datasets(model, val_x1, val_labels)
+        dataset = get_datasets(model, val_x1, val_labels, loadbar=loadbar)
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],
@@ -156,24 +194,33 @@ def get_dataloader_dict_val(model, validation_data):
             collate_fn=create_collate_fn(model.cfg)
         )
 
-def get_dataloader_dict(model, distillation_data, validation_data):
-    datasets = {}
-    if len(distillation_data) > 3: # sentence_pairs
+def get_dataload_dict_train(model, distillation_data, loadbar=True):
+    if len(distillation_data) > 3:
         train_x1, train_x2, train_labels, train_logits = distillation_data
-        val_x1, val_labels, val_x2 = validation_data # this is apparently different
-        datasets['train'] = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits)
-        datasets['val'] = get_datasets(model, val_x1, val_labels, sentences2=val_x2)
+        dataset = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits, loadbar=loadbar)
     else:
         train_x1, train_labels, train_logits = distillation_data
-        val_x1, val_labels = validation_data
-        datasets['train'] = get_datasets(model, train_x1, train_labels, logits=train_logits)
-        datasets['val'] = get_datasets(model, val_x1, val_labels)
+        dataset = get_datasets(model, train_x1, train_labels, logits=train_logits, loadbar=loadbar)
+    return DataLoader(
+            dataset,
+            batch_size=model.cfg['batch-size'],
+            shuffle=True,
+            drop_last=True,
+            collate_fn=create_collate_fn(model.cfg)
+        )
+
+def get_dataloader_dict(model, distillation_data, validation_data):
+    datasets = {
+        "train": get_dataload_dict_train(model, distillation_data),
+        "val": get_dataloader_dict_val(model, validation_data)
+    }
+
     dataloaders = {x: DataLoader(
             datasets[x],
             batch_size=model.cfg['batch-size'],
             shuffle=True,
             drop_last=x == 'train',
-            collate_fn=create_collate_fn(model.cfg)) for x in ['train', 'val']}
+            collate_fn=create_collate_fn(model.cfg)) for x in ("train", "val")}
     return dataloaders
 
 # pads sentences in a batch to equal length
