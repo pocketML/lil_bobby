@@ -4,7 +4,7 @@ import torch.nn as nn
 from embedding import embeddings
 from compression.distillation.student_models import base
 
-class CharRNN(base.StudentModel):
+class RNN(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 
