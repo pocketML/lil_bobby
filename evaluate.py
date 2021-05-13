@@ -56,23 +56,25 @@ def evaluate_accuracy(model, task, val_data_path, include_f1=False):
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
     model.to(device)
     model.eval()
-    running_corrects, num_examples = 0.0, 0.0
+    running_corrects, total_examples = 0.0, 0.0
     iterator = tqdm(dl, leave=False) if args.loadbar else dl
 
     for x1, lens, target_labels, _ in iterator:
         if task_utils.is_sentence_pair(model.cfg['task']):
             x1 = x1[0].to(device), x1[1].to(device)
+            num_examples = len(lens[0])
         else:
             x1 = x1.to(device)
+            num_examples = len(lens)
         target_labels = target_labels.to(device)
         torch.set_grad_enabled(False)
         out_logits = model(x1, lens)
         _, preds = torch.max(out_logits, 1)
         target_labels = target_labels.squeeze()
         running_corrects += torch.sum(preds == target_labels.data).item()
-        num_examples += len(lens)
+        total_examples += num_examples
 
-    accuracy = 0 if num_examples == 0 else running_corrects / num_examples
+    accuracy = 0 if total_examples == 0 else running_corrects / total_examples
     if sacred_experiment is not None:
         sacred_experiment.log_scalar("test.accuracy", accuracy)
     print(f'|--> eval val accuracy: {accuracy:.4f}')

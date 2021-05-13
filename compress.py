@@ -47,12 +47,15 @@ def do_pruning(model, args, epoch=None):
     if epoch is not None:
         threshold = threshold * (epoch / args.prune_warmup)
 
+    prune_class = None
     if args.prune_magnitude:
-        model = prune.magnitude_pruning(model, threshold)
+        prune_class = prune.MagnitudePruning
     elif args.prune_movement:
-        model = prune.movement_pruning(model, threshold)
+        pass
     elif args.prune_topk:
-        model = prune.topk_pruning(model, threshold)
+        prune_class = prune.TopKPruning
+
+    model = prune.prune_model(model, prune_class, threshold, args.prune_local)
 
     return model
 

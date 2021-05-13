@@ -1,6 +1,7 @@
 # pickled files
 *.pt
 table.txt
+rename.py
 
 # Dataset and model files
 models/*
