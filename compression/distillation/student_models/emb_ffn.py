@@ -93,7 +93,7 @@ class EmbFFN(base.StudentModel):
         warmup_start_lr = self.cfg['lr'] / 100
         base_optimizer = torch.optim.Adam(
             self.parameters(), 
-            lr=self.cfg['lr']        
+            lr=self.cfg['lr']     
         )
         optimizer = base.WarmupOptimizer(
             base_optimizer, 

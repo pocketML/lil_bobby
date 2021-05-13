@@ -1,16 +1,18 @@
 {
-    "embedding-dim": 25,
-    "encoder-hidden-dim": 150,
-    "cls-hidden-dim": 200,
-    "bidirectional": false,
+    "embedding-dim": 100,
+    "encoder-hidden-dim": 100,
+    "cls-hidden-dim": 100,
+    "bidirectional": true,
+    "batch-first": true,
     "batch-size": 50,
     "num-layers": 1,
-    "lr": 5e-4,
+    "lr": 1e-4,
     "weight-decay": 1e-5,
     "dropout": 0.2,
     "type": "rnn",
-    "embedding-type": "hash",
+    "embedding-type": "char",
     "vocab-size": 5000,
     "hash-ratio": 10,
-    "num-hashes": 3
+    "num-hashes": 3,
+    "embedding-freeze": false
 }

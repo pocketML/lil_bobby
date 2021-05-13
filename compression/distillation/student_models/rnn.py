@@ -10,14 +10,12 @@ class RNN(base.StudentModel):
 
         self.embedding = embeddings.get_embedding(cfg)
         
-        self.encoder = nn.RNN(cfg["embedding-dim"], cfg['encoder-hidden-dim'])
+        self.encoder = base.get_rnn(cfg)
 
         inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
         inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d        
         self.classifier = base.get_classifier(inp_d, cfg)
         
-        self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
-
     def forward(self, x, lens):
         def embed_encode_sents(sents, lengths, enforce_sorted=True):
             #embedding
