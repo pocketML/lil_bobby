@@ -108,9 +108,9 @@ def prune_globally(params, prune_cls, threshold):
     )
 
 def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
-    model_copy = copy.deepcopy(model)
+    #model_copy = copy.deepcopy(model)
 
-    params_to_prune = get_prunable_params(model_copy)
+    params_to_prune = get_prunable_params(model)
 
     if prune_local:
         for module, name, values in params_to_prune:
@@ -125,7 +125,7 @@ def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
             sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
             setattr(module, param_name, sparse_tensor)
 
-    return model_copy
+    return model
 
 def params_zero(model):
     zero = 0
