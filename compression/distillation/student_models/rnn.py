@@ -1,5 +1,4 @@
-import torch
-import torch.nn as nn
+import torch.optim as optim
 
 from embedding import embeddings
 from compression.distillation.student_models import base
