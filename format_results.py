@@ -16,9 +16,9 @@ def get_json_data(experiment_path, data_type):
     except FileNotFoundError:
         return None
 
-def value_matches(key, search_value, value):
+def value_matches(key, search_value, value, suffix):
     if key == "name":
-        return search_value in value
+        return search_value in value and (suffix is None or f"_{suffix}" in value)
     if isinstance(value, bool):
         return (search_value == "True") == value
     return type(value)(search_value) == value
@@ -72,7 +72,7 @@ def experiment_contains_args(exp_path, meta_args, search_args):
 
             for experiment_value in experiment_args[key]:
                 for search_value in values:
-                    if value_matches(key, search_value, experiment_value):
+                    if value_matches(key, search_value, experiment_value, meta_args.suffix):
                         value_found = True
                         data_found[key] = search_value
                         break
