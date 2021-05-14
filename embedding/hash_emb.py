@@ -17,6 +17,10 @@ from compression.distillation.student_models import base
 from compression.distillation.student_models import base
 from preprocessing import download
 
+GLOVE_UNCASED_URL = "http://nlp.stanford.edu/data/glove.42B.300d.zip"
+GLOVE_FILENAME = "glove.42B.300d.txt"
+BASE_FOLDER = "data/hashemb/"
+
 class HashEmbedding(Embedding):
     def __init__(self, cfg, load=False):
         super().__init__(cfg, load)
@@ -100,10 +104,6 @@ class HashEmbedding(Embedding):
     def init_weight_range(self, init_range):
         self.scalars.weight.data.fill_(1) #uniform_(-init_range, init_range)
         self.vectors.weight.data.uniform_(-init_range, init_range)
-
-GLOVE_UNCASED_URL = "http://nlp.stanford.edu/data/glove.42B.300d.zip"
-GLOVE_FILENAME = "glove.42B.300d.txt"
-BASE_FOLDER = "data/hashemb/"
 
 class HashEmbeddingTrainer(nn.Module):
     def __init__(self, cfg):
