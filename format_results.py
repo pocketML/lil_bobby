@@ -191,7 +191,7 @@ def main(meta_args, search_args):
                     data_point["mean"] = mean
                     data_point["std_dev"] = std_dev
                     actual_sort_order = ["acc", "mean", "std_dev", "params", "size"]
-                line = "\t".join(str(data_point[x]) for x in actual_sort_order)
+                line = " ".join(str(data_point[x]) for x in actual_sort_order)
             else:
                 if index == 0:
                     data_point["mean"] = mean
