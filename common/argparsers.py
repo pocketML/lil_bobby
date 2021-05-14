@@ -15,7 +15,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--temperature", type=int, default=3)
     ap.add_argument("--alpha", type=float, default=0)
-    ap.add_argument("--early-stopping", type=int, default=10)
+    ap.add_argument("--early-stopping", type=int, default=7)
     ap.add_argument("--original-data", action="store_true")
     ap.add_argument("--chunk-ratio", type=float, default=1.0)
     ap.add_argument("--data-ratio", type=float, default=1.0)
