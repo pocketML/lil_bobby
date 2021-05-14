@@ -1,7 +1,5 @@
 from common import argparsers
-from embedding import embeddings
-from embedding import cbow
-from embedding import word2vec
+from embedding import embeddings, cbow, word2vec, hash_emb
 
 def train_embeddings(emb):
     pass
@@ -21,6 +19,8 @@ def main(args, sacred_experiment=None):
         )
     elif args.embed_type == "word2vec":
         word2vec.train_embeddings(emb, args)
+    elif args.embed_type == "hash":
+        hash_emb.train_on_glove(cfg)
     else:
         raise ValueError("Embedding type not supported for pre-training (yet)")
 

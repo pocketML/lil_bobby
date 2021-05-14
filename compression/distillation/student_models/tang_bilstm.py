@@ -1,5 +1,4 @@
-import torch.nn as nn
-from torch.optim.adadelta import Adadelta
+import torch.optim as optim
 
 from embedding import embeddings
 from compression.distillation.student_models import base
@@ -25,7 +24,7 @@ class TangBILSTM(base.StudentModel):
         self.init_weights(embedding_init_range=self.cfg['emb-init-range'], classifier_init_range=self.cfg["cls-init-range"])
 
     def get_optimizer(self):
-        return Adadelta(
+        return optim.Adadelta(
             self.parameters(), 
             lr=self.cfg['lr'],
             rho=self.cfg['rho'],
