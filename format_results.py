@@ -180,15 +180,17 @@ def main(meta_args, search_args):
         if found_data != []:
             accuracies = np.array([float(data_point["acc"]) for data_point in found_data])
             mean = np.mean(accuracies)
-            std_dev = np.std(accuracies)
+            std_dev = np.std(accuracies) * 100
 
-        sort_order = ["acc", "mean", "std_dev", "params", "size"]
+        sort_order = ["acc"]
 
         for index, data_point in enumerate(found_data):
             if meta_args.tab_separate:
                 actual_sort_order = sort_order
-                data_point["mean"] = mean if index == 0 else " "
-                data_point["std_dev"] = std_dev if index == 0 else " "
+                if index == 0:
+                    data_point["mean"] = mean
+                    data_point["std_dev"] = std_dev
+                    actual_sort_order = ["acc", "mean", "std_dev", "params", "size"]
                 line = "\t".join(str(data_point[x]) for x in actual_sort_order)
             else:
                 if index == 0:
