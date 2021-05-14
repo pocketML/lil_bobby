@@ -1,6 +1,6 @@
 {
     "embedding-dim" : 300,
-    "vocab-size": 10000,
+    "vocab-size": 5000,
     "dropout": 0.1,
     "lr": 1,
     "weight-decay": 0,
