@@ -44,7 +44,7 @@ def quantize_model(model, device, args):
 
 def do_pruning(model, args, epoch=None):
     threshold = args.prune_threshold
-    if epoch is not None:
+    if epoch is not None and epoch < args.prune_warmup:
         threshold = threshold * (epoch / args.prune_warmup)
 
     prune_class = None
@@ -57,6 +57,10 @@ def do_pruning(model, args, epoch=None):
 
     model = prune.prune_model(model, prune_class, threshold, args.prune_local)
 
+    params, zero = prune.params_zero(model)
+    sparsity = (zero / params) * 100
+    print(f"Sparsity: {sparsity:.2f}%")
+
     return model
 
 def prune_model(model, device, args):
@@ -64,16 +68,12 @@ def prune_model(model, device, args):
 
     params, zero = prune.params_zero(model)
     sparsity = (zero / params) * 100
-    print(f"Sparsity: {sparsity:.2f}%")
+    print(f"Sparsity before: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
 
     model = do_pruning(model, args)
-
-    params, zero = prune.params_zero(model)
-    sparsity = (zero / params) * 100
-    print(f"Sparsity: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
@@ -201,7 +201,7 @@ def main(args, sacred_experiment=None):
         model.to(device)
         quantize_model(model, device, args)
 
-    if should_prune:
+    if should_prune and not args.prune_aware:
         # Magnitude pruning after distillation (static).
         model_name = args.load_trained_model
         model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
