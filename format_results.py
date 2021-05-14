@@ -182,15 +182,13 @@ def main(meta_args, search_args):
             mean = np.mean(accuracies)
             std_dev = np.std(accuracies)
 
-        sort_order = ["acc", "params", "size"]
+        sort_order = ["acc", "mean", "std_dev", "params", "size"]
 
         for index, data_point in enumerate(found_data):
             if meta_args.tab_separate:
                 actual_sort_order = sort_order
-                if index == 0:
-                    data_point["mean"] = mean
-                    data_point["std_dev"] = std_dev
-                    actual_sort_order = ["acc", "mean", "std_dev", "params", "size"]
+                data_point["mean"] = mean if index == 0 else " "
+                data_point["std_dev"] = std_dev if index == 0 else " "
                 line = "\t".join(str(data_point[x]) for x in actual_sort_order)
             else:
                 if index == 0:
