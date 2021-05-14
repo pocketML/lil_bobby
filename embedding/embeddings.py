@@ -16,19 +16,12 @@ EMBEDDING_ZOO = {
 
 def get_embedding(cfg, load=None):
     if load is None:
-        if cfg['embedding-type'] in ['bpe', 'word2vec', 'cbow']:
+        if cfg['embedding-type'] in ['bpe', 'word2vec', 'cbow', 'hash']:
             load = True
         else:
             load = False
-
     try:
-        emb = EMBEDDING_ZOO[cfg['embedding-type']](cfg, load)
-        if cfg['embedding-type'] == 'hash':
-            import hashemb
-            hashemb.load_embeddings(emb)
-            emb.load_pretrained = True
-        return emb
-
+        return EMBEDDING_ZOO[cfg['embedding-type']](cfg, load)
     except FileNotFoundError: # Embeddings with specified vocab/dim not found.
         err = (
             f"Embeddings '{cfg['embedding-type']}' could not be found " +

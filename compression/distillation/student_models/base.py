@@ -95,8 +95,9 @@ def get_default_student_config(task, arch, model_name=None):
     cfg['use-sentence-pairs'] = TASK_INFO[task]['settings']['use-sentence-pairs']
 
     # update with base student model config settings
-    filepath = f'compression/distillation/student_models/configs/{arch}.json'
-    cfg = update_student_config_from_file(cfg, filepath)
+    if arch is not None:
+        filepath = f'compression/distillation/student_models/configs/{arch}.json'
+        cfg = update_student_config_from_file(cfg, filepath)
 
     # update with saved model config settings
     if model_name is not None:
