@@ -247,6 +247,7 @@ def args_search():
     ap.add_argument("--table-col", type=str)
     ap.add_argument("--table-row", type=str)
     ap.add_argument("--table-headers", nargs="+")
+    ap.add_argument("--suffix", type=int)
 
     meta_args, args_remain = ap.parse_known_args()
 
