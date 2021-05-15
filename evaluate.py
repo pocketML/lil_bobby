@@ -117,7 +117,7 @@ def main(args, sacred_experiment=None):
         )
         model.eval()
         if task in ['sst-2', 'rte']:
-            accuracy, f1 = evaluate_accuracy(model, task, val_data_path, include_f1=True)
+            accuracy = evaluate_accuracy(model, task, val_data_path)
             print(f'| Accuracy: {accuracy:.4f}')
             if sacred_experiment is not None:
                 sacred_experiment.log_scalar("test.accuracy", accuracy)
