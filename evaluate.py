@@ -139,7 +139,6 @@ def main(args, sacred_experiment=None):
             raise Exception(f'task {task} not currently supported')
     else: # we have a student model
         model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
-        model.cfg['batch-size'] = 4
         if task == 'mnli':
             for subtask in ['matched', 'mismatched']:
                 val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
