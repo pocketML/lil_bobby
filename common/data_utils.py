@@ -70,12 +70,9 @@ def load_distillation_data(path, data_splitter=None):
 
 def load_val_data(task, mnli_subtask='both'):
     if task == 'mnli':
-        if mnli_subtask == 'both':
-            matched = load_train_data(task, ds_type='dev_matched')
-            mismatched = load_train_data(task, ds_type='dev_mismatched')
-            return matched[0] + mismatched[0], matched[1] + mismatched[1], matched[2] + mismatched[2]
-        else: # should be either matched or mismatched load_mnli == 'matched':
-            return load_train_data(task, ds_type='dev_' + mnli_subtask)
+        mnli_subtasks = ['matched', 'mismatched'] if mnli_subtask == 'both' else [mnli_subtask]
+        out = [load_train_data(task, ds_type='dev_' + subtask) for subtask in mnli_subtasks]
+        return out[0][0] + out[1][0], out[0][1] + out[1][1], out[0][2] + out[1][2]
     else:
         return load_train_data(task, ds_type='dev')
 
