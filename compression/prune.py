@@ -3,7 +3,6 @@ import torch.nn.utils.prune as prune
 
 from common import model_utils
 from embedding.base import Embedding
-from embedding.hash_emb import HashEmbedding
 
 class MagnitudePruning(prune.BasePruningMethod):
     PRUNING_TYPE = "unstructured"
