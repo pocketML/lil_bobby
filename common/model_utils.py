@@ -30,7 +30,7 @@ def group_params_by_layer(model, arch):
                 key = 'sentence_encoder'
             else:
                 key = 'lm_head'
-        else: # we have a studen model
+        else: # we have a student model
             key = name.split('.')[0]
         values = layers.get(key, [])
         values.append((name,param))
