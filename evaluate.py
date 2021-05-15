@@ -27,7 +27,7 @@ def prepare_eval_data(model, task, filepath):
             eval_data.append((encoded, target))
     return eval_data
 
-def update_f1_counts(pred_label, target, tp, fp, fn):
+def update_f1_counts_roberta(pred_label, target, tp, fp, fn):
     tp += int(pred_label == '1' and target == '1')
     fp += int(pred_label == '1' and target == '0')
     fn += int(pred_label == '0' and target == '1')
@@ -44,7 +44,7 @@ def evaluate_accuracy(model, task, val_data_path, include_f1=False):
         pred_label = label_fn(pred)
         ncorrect += int(pred_label == target)
         if include_f1:
-            tp, fp, fn = update_f1_counts(pred_label, target, tp, fp, fn)
+            tp, fp, fn = update_f1_counts_roberta(pred_label, target, tp, fp, fn)
 
     accuracy = ncorrect / len(eval_data)
     if include_f1:
@@ -53,29 +53,56 @@ def evaluate_accuracy(model, task, val_data_path, include_f1=False):
     else:
         return accuracy
 
-def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None):
+def update_f1_counts_distilled(pred_labels, target_labels, tp, fp, fn):
+    pred_ones = pred_labels == 1
+    target_ones = target_labels == 1
+    pred_zeros = pred_labels == 0
+    target_zeros = target_labels == 0
+    tp += torch.count_nonzero(torch.logical_and(pred_ones, target_ones))
+    fp += torch.count_nonzero(torch.logical_and(pred_ones, target_zeros))
+    fn += torch.count_nonzero(torch.logical_and(pred_zeros, target_ones))
+    return tp, fp, fn
+
+def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, include_f1=False, mnli_subtask=None):
     model.to(device)
     model.eval()
-    running_corrects, num_examples = 0.0, 0.0
+    running_corrects, num_examples, tp, fp, fn = 0, 0, 0, 0, 0
     iterator = tqdm(dl, leave=False) if args.loadbar else dl
 
     for x1, lens, target_labels, _ in iterator:
         if task_utils.is_sentence_pair(model.cfg['task']):
             x1 = x1[0].to(device), x1[1].to(device)
+            examples = len(lens[0])
         else:
             x1 = x1.to(device)
+            examples = len(lens)
         target_labels = target_labels.to(device)
         torch.set_grad_enabled(False)
         out_logits = model(x1, lens)
         _, preds = torch.max(out_logits, 1)
         target_labels = target_labels.squeeze()
         running_corrects += torch.sum(preds == target_labels.data).item()
-        num_examples += len(lens)
+        num_examples += examples
+        if include_f1:
+            tp, fp, fn = update_f1_counts_distilled(preds, target_labels, tp, fp, fn)
 
     accuracy = 0 if num_examples == 0 else running_corrects / num_examples
-    if sacred_experiment is not None:
-        sacred_experiment.log_scalar("test.accuracy", accuracy)
-    print(f'|--> eval val accuracy: {accuracy:.4f}')
+    
+    if include_f1:
+        f1_score = tp / (tp + 0.5 * (fp + fn))
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("test.accuracy", accuracy)
+            sacred_experiment.log_scalar("test.f1", f1_score)
+        print(f'|--> eval val accuracy: {accuracy:.4f}')
+        print(f'|--> eval val f1 score: {f1_score:.4f}')
+    elif mnli_subtask is not None:
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar(f"test.{mnli_subtask}.accuracy", accuracy)
+        print(f'|--> eval val {mnli_subtask} accuracy: {accuracy:.4f}')
+    else:
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("test.accuracy", accuracy)
+        print(f'|--> eval val accuracy: {accuracy:.4f}')
 
 def main(args, sacred_experiment=None):
     task = args.task
@@ -112,9 +139,19 @@ def main(args, sacred_experiment=None):
             raise Exception(f'task {task} not currently supported')
     else: # we have a student model
         model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
-        val_data = data_utils.load_val_data(task)
-        dl = data_utils.get_dataloader_dict_val(model, val_data)
-        evaluate_distilled_model(model, dl, device, args, sacred_experiment)
+        if task == 'mnli':
+            for subtask in ['matched', 'mismatched']:
+                val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
+                dl = data_utils.get_dataloader_dict_val(model, val_data)
+                evaluate_distilled_model(model, dl, device, args, sacred_experiment, mnli_subtask=subtask)
+        elif task == 'qqp':
+            val_data = data_utils.load_val_data(task)
+            dl = data_utils.get_dataloader_dict_val(model, val_data)
+            evaluate_distilled_model(model, dl, device, args, sacred_experiment, include_f1=True)
+        else:
+            val_data = data_utils.load_val_data(task)
+            dl = data_utils.get_dataloader_dict_val(model, val_data)
+            evaluate_distilled_model(model, dl, device, args, sacred_experiment)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()
