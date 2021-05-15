@@ -204,11 +204,10 @@ def main(args, sacred_experiment=None):
     if should_quantize:
         use_gpu = False
         device = torch.device('cpu')
-        model.cfg['use-gpu'] = False
-        #args.cpu = True
         model_name = args.load_trained_model
         if model is None:
             model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.cfg['use-gpu'] = False
         model.to(device)
         quantize_model(model, device, args)
 
