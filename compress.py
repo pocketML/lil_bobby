@@ -36,11 +36,11 @@ def quantize_model(model, device, args):
         print("** quantizing classifier **")
         model = ptq.quantize_classifier(model, args, dl, device, type='static')
 
-    print(model)
-
-    evaluate.evaluate_distilled_model(model, dl, device, args, None)
+    print('** Quantization finished.. **')
     parameters.print_model_disk_size(model)
+    evaluate.evaluate_distilled_model(model, dl, device, args, None)
     print()
+    return model
 
 def do_pruning(model, args, epoch=None):
     threshold = args.prune_threshold
@@ -75,6 +75,7 @@ def prune_model(model, device, args):
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
+    return model
 
 def distill_model(task, model, device, args, callback, sacred_experiment):
     temperature = args.temperature
@@ -175,6 +176,8 @@ def main(args, sacred_experiment=None):
     should_prune = "prune" in args.compression_actions
     should_quantize = "quantize" in args.compression_actions
 
+    model = None
+
     if "distill" in args.compression_actions:
         model = load_student(task, student_type, use_gpu=use_gpu, args=args)
         if sacred_experiment is not None:
@@ -190,23 +193,26 @@ def main(args, sacred_experiment=None):
 
         distill_model(task, model, device, args, callback_func, sacred_experiment)
 
+    if should_prune:
+        # Magnitude pruning after distillation (static).
+        model_name = args.load_trained_model
+        if model is None:
+            model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.to(device)
+        model = prune_model(model, device, args)
+
     if should_quantize:
         use_gpu = False
         device = torch.device('cpu')
         model_name = args.load_trained_model
-        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        if model is None:
+            model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.cfg['use-gpu'] = False
         model.to(device)
         quantize_model(model, device, args)
 
-    if should_prune:
-        # Magnitude pruning after distillation (static).
-        model_name = args.load_trained_model
-        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
-        model.to(device)
-        prune_model(model, device, args)
-
 if __name__ == "__main__":
-    ARGS, remain = argparsers.args_compress()
-    if len(remain) > 0:
-        raise ArgumentError(None, f"Couldn't parse the following arguments: {remain}")
+    ARGS, REMAIN = argparsers.args_compress()
+    if len(REMAIN) > 0:
+        raise ArgumentError(None, f"Couldn't parse the following arguments: {REMAIN}")
     main(ARGS)
