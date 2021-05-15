@@ -16,7 +16,7 @@ EMBEDDING_ZOO = {
 
 def get_embedding(cfg, load=None):
     if load is None:
-        if cfg['embedding-type'] in ['bpe', 'word2vec', 'cbow', 'hash']:
+        if cfg['embedding-type'] in ['bpe', 'word2vec', 'cbow']:
             load = True
         else:
             load = False

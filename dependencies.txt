@@ -1,4 +1,4 @@
-python 3.6.9
+python 3.8
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 pip install fairseq // not working.  Follow instructions on https://github.com/pytorch/fairseq
 pip install sacred
