@@ -142,7 +142,7 @@ def main(args, sacred_experiment=None):
         model.cfg['batch-size'] = 4
         if task == 'mnli':
             for subtask in ['matched', 'mismatched']:
-                val_data = data_utils.load_val_data(task, load_mnli=subtask)
+                val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
                 dl = data_utils.get_dataloader_dict_val(model, val_data)
                 evaluate_distilled_model(model, dl, device, args, sacred_experiment, mnli_subtask=subtask)
         elif task == 'qqp':

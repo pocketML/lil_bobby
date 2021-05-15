@@ -68,16 +68,14 @@ def load_distillation_data(path, data_splitter=None):
             i += 1
         return [list(x) for x in list(zip(*lines))]
 
-def load_val_data(task, load_mnli='both'):
+def load_val_data(task, mnli_subtask='both'):
     if task == 'mnli':
-        if load_mnli == 'both':
+        if mnli_subtask == 'both':
             matched = load_train_data(task, ds_type='dev_matched')
             mismatched = load_train_data(task, ds_type='dev_mismatched')
             return matched[0] + mismatched[0], matched[1] + mismatched[1], matched[2] + mismatched[2]
-        elif load_mnli == 'matched':
-            return load_train_data(task, ds_type='dev_matched')
-        elif load_mnli == 'mismatched':
-            return load_train_data(task, ds_type='dev_mismatched')
+        else: # should be either matched or mismatched load_mnli == 'matched':
+            return load_train_data(task, ds_type='dev_' + mnli_subtask)
     else:
         return load_train_data(task, ds_type='dev')
 
