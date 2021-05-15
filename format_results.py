@@ -200,15 +200,15 @@ def main(meta_args, search_args):
             if meta_args.tab_separate:
                 line = f"{data_point['acc_1']}"
                 if accuracies_2 is not None:
-                    line += f"/{data_point['acc_2']}"
+                    line += f" {data_point['acc_2']}"
 
                 if index == 0:
                     line += f" {mean_1}"
                     if accuracies_2 is not None:
-                        line += f"/{mean_2}"
+                        line += f" {mean_2}"
                     line += f" {std_dev_1}"
                     if accuracies_2 is not None:
-                        line += f"/{std_dev_2}"
+                        line += f" {std_dev_2}"
 
                     line += f" {data_point['params']} {data_point['size']}"
             else:
