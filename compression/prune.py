@@ -1,10 +1,9 @@
-import copy
-
 import torch
 import torch.nn.utils.prune as prune
 
 from common import model_utils
 from embedding.base import Embedding
+from embedding.hash_emb import HashEmbedding
 
 class MagnitudePruning(prune.BasePruningMethod):
     PRUNING_TYPE = "unstructured"
@@ -78,7 +77,10 @@ def get_prunable_params(model):
             if is_sequential:
                 containers = module
             elif is_embedding:
-                containers = [module.embedding]
+                if isinstance(module, HashEmbedding):
+                    containers = [module.scalars, module.vectors]
+                else:
+                    containers = [module.embedding]
             else:
                 containers = [module]
 
@@ -111,6 +113,10 @@ def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
     #model_copy = copy.deepcopy(model)
 
     params_to_prune = get_prunable_params(model)
+
+    for module, param_name, _ in params_to_prune:
+        print(module)
+        print(param_name)
 
     if prune_local:
         for module, name, values in params_to_prune:
