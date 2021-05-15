@@ -24,9 +24,8 @@ class DataSplitter(list):
 
 # returns sentences, labels
 def load_train_data(task, ds_type='train'):
-    files = [ds_type + x for x in ['.raw.input0', '.raw.input1', '.label']]
     folder = f'{TASK_INFO[task]["path"]}/processed/'
-
+    files = [ds_type + x for x in ['.raw.input0', '.raw.input1', '.label']]
     with open(folder + files[0], encoding='utf-8') as sentences:
         with open(folder + files[2], encoding='utf-8') as targets:
             try:
@@ -69,8 +68,13 @@ def load_distillation_data(path, data_splitter=None):
             i += 1
         return [list(x) for x in list(zip(*lines))]
 
-def load_val_data(task):
-    return load_train_data(task, ds_type="dev")
+def load_val_data(task, mnli_subtask='both'):
+    if task == 'mnli':
+        subtasks = ['matched', 'mismatched'] if mnli_subtask == 'both' else [mnli_subtask]
+        out = [load_train_data(task, ds_type='dev_' + subtask) for subtask in subtasks]
+        return out[0][0] + out[1][0], out[0][1] + out[1][1], out[0][2] + out[1][2]
+    else:
+        return load_train_data(task, ds_type='dev')
 
 def load_augment_data(task, augment_type):
     files = [f'{augment_type}.input0', f'{augment_type}.input1']
