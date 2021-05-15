@@ -160,6 +160,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
                 break
 
             epoch += 1
+            chunk = 1
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
