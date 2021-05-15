@@ -1,5 +1,3 @@
-import copy
-
 import torch
 import torch.nn.utils.prune as prune
 
@@ -64,34 +62,33 @@ def to_dense(x):
     return x.to_dense()
 
 def get_prunable_params(model):
-    grouped_params = model_utils.group_params_by_layer(model, "tang")
-
+    grouped_params = model_utils.group_params_by_layer(model, None)
     parameters_to_prune = []
 
     for name in grouped_params:
-        if True:#"embedding" not in name and "bilstm" not in name:
-            module = getattr(model, name)
+        module = getattr(model, name)
 
-            is_sequential = isinstance(module, torch.nn.Sequential)
-            is_embedding = isinstance(module, Embedding)
+        is_sequential = isinstance(module, torch.nn.Sequential)
+        is_embedding = isinstance(module, Embedding)
 
-            if is_sequential:
-                containers = module
-            elif is_embedding:
+        if is_sequential:
+            containers = module
+        elif is_embedding:
+            if module.embedding is not None:
                 containers = [module.embedding]
             else:
-                containers = [module]
+                containers = [module.vectors, module.scalars]
+        else:
+            containers = [module]
 
-            for container in containers:
-                params = grouped_params[name] if not is_sequential else container.named_parameters()
-                for param_name, param_values in params:
-                    if "weight" in param_name:
-                        name_fmt = param_name
-                        if is_embedding:
-                            name_fmt = ".".join(param_name.split(".")[2:])
-                        elif not is_sequential:
-                            name_fmt = ".".join(param_name.split(".")[1:])
-                        parameters_to_prune.append((container, name_fmt, param_values))
+        for container in containers:
+            params = container.named_parameters() if is_sequential or is_embedding else grouped_params[name]
+            for param_name, _ in params:
+                if "weight" in param_name:
+                    name_fmt = param_name
+                    if not is_sequential and not is_embedding:
+                        name_fmt = ".".join(param_name.split(".")[1:])
+                    parameters_to_prune.append((container, name_fmt))
 
     return parameters_to_prune
 
@@ -111,6 +108,10 @@ def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
     #model_copy = copy.deepcopy(model)
 
     params_to_prune = get_prunable_params(model)
+
+    for module, param_name, _ in params_to_prune:
+        print(module)
+        print(param_name)
 
     if prune_local:
         for module, name, values in params_to_prune:
