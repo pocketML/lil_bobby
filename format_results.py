@@ -201,14 +201,20 @@ def main(meta_args, search_args):
                 line = f"{data_point['acc_1']}"
                 if accuracies_2 is not None:
                     line += f" {data_point['acc_2']}"
+                else:
+                    line += " "
 
                 if index == 0:
                     line += f" {mean_1}"
                     if accuracies_2 is not None:
                         line += f" {mean_2}"
+                    else:
+                        line += " "
                     line += f" {std_dev_1}"
                     if accuracies_2 is not None:
                         line += f" {std_dev_2}"
+                    else:
+                        line += " "
 
                     line += f" {data_point['params']} {data_point['size']}"
             else:
