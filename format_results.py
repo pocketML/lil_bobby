@@ -16,9 +16,9 @@ def get_json_data(experiment_path, data_type):
     except FileNotFoundError:
         return None
 
-def value_matches(key, search_value, value):
+def value_matches(key, search_value, value, suffix):
     if key == "name":
-        return search_value in value
+        return search_value in value and (suffix is None or f"_{suffix}" in value)
     if isinstance(value, bool):
         return (search_value == "True") == value
     return type(value)(search_value) == value
@@ -72,7 +72,7 @@ def experiment_contains_args(exp_path, meta_args, search_args):
 
             for experiment_value in experiment_args[key]:
                 for search_value in values:
-                    if value_matches(key, search_value, experiment_value):
+                    if value_matches(key, search_value, experiment_value, meta_args.suffix):
                         value_found = True
                         data_found[key] = search_value
                         break
@@ -107,14 +107,21 @@ def find_matching_experiments(meta_args, search_args):
             with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
 
-                accuracy = None
-                if "test.accuracy" in metrics_data:
-                    accuracy = metrics_data["test.accuracy"]["values"][0]
-                elif "validation.acc" in metrics_data:
-                    accuracy = max(metrics_data["validation.acc"]["values"])
+                accuracy_1 = None
+                accuracy_2 = None
+                for key in ("test.accuracy", "test.matched.accuracy"):
+                    if key in metrics_data:
+                        accuracy_1 = metrics_data[key]["values"][0]
+                if accuracy_1 is None:
+                    accuracy_1 = max(metrics_data["validation.acc"]["values"])
+                for key in ("test.f1", "test.mismatched.accuracy"):
+                    if key in metrics_data:
+                        accuracy_2 = metrics_data[key]["values"][0]
 
-                if accuracy is not None:
-                    experiment_data["acc"] = f"{accuracy:.4f}"
+                if accuracy_1 is not None:
+                    experiment_data["acc_1"] = f"{accuracy_1:.4f}"
+                if accuracy_2 is not None:
+                    experiment_data["acc_2"] = f"{accuracy_2:.4f}"
 
                 if "model_params" in metrics_data:
                     experiment_data["params"] = metrics_data["model_params"]["values"][0]
@@ -178,21 +185,34 @@ def main(meta_args, search_args):
             print(line)
     else:
         if found_data != []:
-            accuracies = np.array([float(data_point["acc"]) for data_point in found_data])
-            median = np.median(accuracies)
-            mean = np.mean(accuracies)
-            std_dev = np.std(accuracies)
+            accuracies_1 = np.array([float(data_point["acc_1"]) for data_point in found_data])
+            mean_1 = np.mean(accuracies_1)
+            std_dev_1 = np.std(accuracies_1) * 100
+            accuracies_2 = None
+            mean_2 = None
+            std_dev_2 = None
+            if "acc_2" in found_data[0]:
+                accuracies_2 = np.array([float(data_point["acc_2"]) for data_point in found_data])
+                mean_2 = np.mean(accuracies_2)
+                std_dev_2 = np.std(accuracies_2) * 100
 
         for index, data_point in enumerate(found_data):
             if meta_args.tab_separate:
-                sort_order = ["acc", "params", "size"]
-                line = "\t".join(str(data_point[x]) for x in sort_order)
+                line = f"{data_point['acc_1']}"
+                if accuracies_2 is not None:
+                    line += f" {data_point['acc_2']}"
+
                 if index == 0:
-                    line += f"\t{median}\t{mean}\t{std_dev}"
+                    line += f" {mean_1}"
+                    if accuracies_2 is not None:
+                        line += f" {mean_2}"
+                    line += f" {std_dev_1}"
+                    if accuracies_2 is not None:
+                        line += f" {std_dev_2}"
+
+                    line += f" {data_point['params']} {data_point['size']}"
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
-                if index == 0:
-                    line += f", median={median}, mean={mean}, std_dev={std_dev}"
             print(line)
 
 if __name__ == "__main__":

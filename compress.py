@@ -44,15 +44,22 @@ def quantize_model(model, device, args):
 
 def do_pruning(model, args, epoch=None):
     threshold = args.prune_threshold
-    if epoch is not None:
+    if epoch is not None and epoch < args.prune_warmup:
         threshold = threshold * (epoch / args.prune_warmup)
 
+    prune_class = None
     if args.prune_magnitude:
-        model = prune.magnitude_pruning(model, threshold)
+        prune_class = prune.MagnitudePruning
     elif args.prune_movement:
-        model = prune.movement_pruning(model, threshold)
+        pass
     elif args.prune_topk:
-        model = prune.topk_pruning(model, threshold)
+        prune_class = prune.TopKPruning
+
+    model = prune.prune_model(model, prune_class, threshold, args.prune_local)
+
+    params, zero = prune.params_zero(model)
+    sparsity = (zero / params) * 100
+    print(f"Sparsity: {sparsity:.2f}%")
 
     return model
 
@@ -61,16 +68,12 @@ def prune_model(model, device, args):
 
     params, zero = prune.params_zero(model)
     sparsity = (zero / params) * 100
-    print(f"Sparsity: {sparsity:.2f}%")
+    print(f"Sparsity before: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
 
     model = do_pruning(model, args)
-
-    params, zero = prune.params_zero(model)
-    sparsity = (zero / params) * 100
-    print(f"Sparsity: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
@@ -158,6 +161,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
                 break
 
             epoch += 1
+            chunk = 1
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
@@ -193,7 +197,7 @@ def main(args, sacred_experiment=None):
 
         distill_model(task, model, device, args, callback_func, sacred_experiment)
 
-    if should_prune:
+    if should_prune and not args.prune_aware:
         # Magnitude pruning after distillation (static).
         model_name = args.load_trained_model
         if model is None:

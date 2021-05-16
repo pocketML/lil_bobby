@@ -41,8 +41,9 @@ def args_prune(args=None, namespace=None, parse_known=False):
     ap.add_argument("--prune-magnitude", action="store_true")
     ap.add_argument("--prune-topk", action="store_true")
     ap.add_argument("--prune-movement", action="store_true")
+    ap.add_argument("--prune-local", action="store_true")
     ap.add_argument("--prune-aware", action="store_true")
-    ap.add_argument("--prune-warmup", type=int, default=5)
+    ap.add_argument("--prune-warmup", type=int, default=1)
     ap.add_argument("--prune-threshold", type=float, required=True)
 
     if parse_known:
@@ -246,6 +247,7 @@ def args_search():
     ap.add_argument("--table-col", type=str)
     ap.add_argument("--table-row", type=str)
     ap.add_argument("--table-headers", nargs="+")
+    ap.add_argument("--suffix", type=int)
 
     meta_args, args_remain = ap.parse_known_args()
 
