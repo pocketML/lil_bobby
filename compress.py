@@ -4,14 +4,8 @@ import torch.nn as nn
 from argparse import ArgumentError
 import json
 import os
-<<<<<<< HEAD
-
-import torch
-import torch.nn as nn
-=======
 import warnings
 import random
->>>>>>> f653c2e6b5a4d56c52cae3d7b6b66bf8d0d89dcb
 import numpy as np
 
 from common import argparsers, data_utils, transponder
@@ -184,7 +178,6 @@ def main(args, sacred_experiment=None):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    np.random.seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
