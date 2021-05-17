@@ -163,7 +163,6 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
             epoch += 1
 
 def main(args, sacred_experiment=None):
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8' # (will increase library footprint in GPU memory by approximately 24MiB). 
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
