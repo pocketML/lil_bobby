@@ -1,9 +1,11 @@
+import torch
+import torch.nn as nn
+
 from argparse import ArgumentError
 import json
 import os
-
-import torch
-import torch.nn as nn
+import warnings
+import random
 import numpy as np
 
 from common import argparsers, data_utils, transponder
@@ -13,8 +15,6 @@ import evaluate
 from compression import prune
 from compression import quantize as ptq
 from analysis import parameters
-import warnings
-import random
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -178,8 +178,12 @@ def main(args, sacred_experiment=None):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    np.random.seed(seed)
+    torch.use_deterministic_algorithms(True)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     should_prune = "prune" in args.compression_actions
     should_quantize = "quantize" in args.compression_actions
