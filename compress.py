@@ -1,8 +1,11 @@
 from argparse import ArgumentError
 import json
 import os
+
 import torch
 import torch.nn as nn
+import numpy as np
+
 from common import argparsers, data_utils, transponder
 from compression.distill import train_loop, save_checkpoint
 from compression.distillation.models import DistLossFunction, load_student
@@ -173,6 +176,7 @@ def main(args, sacred_experiment=None):
     seed = args.seed
 
     random.seed(seed)
+    np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
