@@ -64,8 +64,6 @@ def main(experiment_args, task_args):
     elif "finetune" in task_args:
         sacred_cfg["seed"] = task_args["finetune"].seed
 
-    print(sacred_cfg)
-
     experiment.add_config(sacred_cfg)
     experiment.command(run_experiment)
 
