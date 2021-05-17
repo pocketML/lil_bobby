@@ -1,8 +1,13 @@
+import torch
+import torch.nn as nn
+
 from argparse import ArgumentError
 import json
 import os
-import torch
-import torch.nn as nn
+import warnings
+import random
+import numpy as np
+
 from common import argparsers, data_utils, transponder
 from compression.distill import train_loop, save_checkpoint
 from compression.distillation.models import DistLossFunction, load_student
@@ -10,8 +15,6 @@ import evaluate
 from compression import prune
 from compression import quantize as ptq
 from analysis import parameters
-import warnings
-import random
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -160,6 +163,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
             epoch += 1
 
 def main(args, sacred_experiment=None):
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8' # (will increase library footprint in GPU memory by approximately 24MiB). 
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
@@ -170,8 +174,12 @@ def main(args, sacred_experiment=None):
 
     random.seed(seed)
     torch.manual_seed(seed)
+    np.random.seed(seed)
+    torch.use_deterministic_algorithms(True)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     should_prune = "prune" in args.compression_actions
     should_quantize = "quantize" in args.compression_actions
