@@ -58,9 +58,15 @@ def main(experiment_args, task_args):
                 if task_type in task_args and task_args[task_type].model_name is not None:
                     setattr(task_args[task_type], "model_name", run_id)
 
-    experiment.add_config({
-        "task_args": task_args
-    })
+    sacred_cfg = {"task_args": task_args}
+    if "compress" in task_args:
+        sacred_cfg["seed"] = task_args["compress"].seed
+    elif "finetune" in task_args:
+        sacred_cfg["seed"] = task_args["finetune"].seed
+
+    print(sacred_cfg)
+
+    experiment.add_config(sacred_cfg)
     experiment.command(run_experiment)
 
     transponder.TRANSPONDER_ACTIVE = experiment_args.transponder
