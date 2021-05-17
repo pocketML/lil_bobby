@@ -114,8 +114,8 @@ def get_dist_loss_function(alpha, criterion_distill, criterion_label, device, te
     temperature = 1.0 / temperature
     def loss(pred_logits, target_logits, target_label):
         # assuming input is batch x logits
-        pred_temp = nn.functional.softmax(pred_logits * temperature, dim=1)
-        target_temp = nn.functional.softmax(target_logits * temperature, dim=1)
+        pred_temp = pred_logits #nn.functional.softmax(pred_logits * temperature, dim=1)
+        target_temp = target_logits #nn.functional.softmax(target_logits * temperature, dim=1)
         distill_loss = beta * criterion_distill(pred_temp, target_temp)
         label_loss = alpha * criterion_label(pred_logits, target_label)
         return distill_loss + label_loss
