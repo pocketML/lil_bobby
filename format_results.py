@@ -126,7 +126,9 @@ def find_matching_experiments(meta_args, search_args):
                 if "model_params" in metrics_data:
                     experiment_data["params"] = metrics_data["model_params"]["values"][0]
 
-                if "model_size" in metrics_data:
+                if "model_disk_size" in metrics_data:
+                    experiment_data["size"] = f"{metrics_data['model_disk_size']['values'][0]:.3f}"
+                elif "model_size" in metrics_data:
                     experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
 
             data.append(experiment_data)

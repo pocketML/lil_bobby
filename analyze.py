@@ -15,9 +15,12 @@ def main(args, sacred_experiment=None):
     if args.model_disk_size:
         #model_static_quant = quantize.quantize_model(model)
         parameters.print_model_disk_size(model)
+        disk_size = parameters.get_model_disk_size(model)
         #parameters.print_model_disk_size(model_static_quant)
         #print(model)
         #print(model_static_quant)
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("model_disk_size", disk_size)
     if args.model_size:
         parameters.print_model_size(model)
         total_params, total_bits = parameters.get_model_size(model)
