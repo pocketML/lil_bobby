@@ -10,7 +10,7 @@ import numpy as np
 
 from common import argparsers, data_utils, transponder
 from compression.distill import train_loop, save_checkpoint
-from compression.distillation.models import DistLossFunction, load_student
+from compression.distillation.models import load_student
 import evaluate
 from compression import prune
 from compression import quantize as ptq
@@ -102,7 +102,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
     dataloader_train = None
     val_data = None
 
-    criterion = DistLossFunction(
+    criterion = model.get_combined_loss_function(
         args.alpha, 
         nn.MSELoss(), 
         nn.CrossEntropyLoss(), 
@@ -178,7 +178,6 @@ def main(args, sacred_experiment=None):
     random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
-    torch.use_deterministic_algorithms(True)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True

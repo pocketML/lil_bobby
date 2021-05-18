@@ -58,6 +58,18 @@ class StudentModel(nn.Module):
                     module.bias.data.zero_()
                     module.weight.data.uniform_(-classifier_init_range, classifier_init_range)
 
+    # combines distillation loss function with label loss function
+    # weighted with (1 - alpha) and alpha respectively
+    def get_combined_loss_function(self, alpha, criterion_distill, criterion_label, device, temperature=None):
+        beta = 1 - alpha
+        criterion_distill.to(device)
+        criterion_label.to(device)
+        def loss(pred_logits, target_logits, target_label):
+            distill_loss = beta * criterion_distill(pred_logits, target_logits)
+            label_loss = alpha * criterion_label(pred_logits, target_label)
+            return distill_loss + label_loss
+        return loss
+
 class WarmupOptimizer:
     """Optim wrapper that implements rate."""
 
@@ -106,17 +118,6 @@ def get_default_student_config(task, arch, model_name=None):
 
     return cfg
 
-# combines distillation loss function with label loss function
-def get_dist_loss_function(alpha, criterion_distill, criterion_label, device, temperature=1.0):
-    beta = 1 - alpha
-    criterion_distill.to(device)
-    criterion_label.to(device)
-    def loss(pred_logits, target_logits, target_label):
-        # assuming input is batch x logitsk
-        distill_loss = beta * criterion_distill(pred_logits, target_logits)
-        label_loss = alpha * criterion_label(pred_logits, target_label)
-        return distill_loss + label_loss
-    return loss
 
 # returns the last hidden state (both fw and bw) for each embedded sentence
 def pack_rnn_unpack(rnn, cfg, embedded, lens, batch_size, enforce_sorted=True):

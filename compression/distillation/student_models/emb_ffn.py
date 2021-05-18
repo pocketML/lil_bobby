@@ -102,3 +102,18 @@ class EmbFFN(base.StudentModel):
             start_lr=warmup_start_lr
         )
         return optimizer
+
+    # combines distillation loss function with label loss function
+    # weighted with (1 - alpha) and alpha respectively
+    def get_combined_loss_function(self, alpha, criterion_distill, criterion_label, device, temperature=3):
+        beta = 1 - alpha
+        criterion_distill.to(device)
+        criterion_label.to(device)
+        temperature = 1.0/temperature
+        def loss(pred_logits, target_logits, target_label):
+            pred_temp = nn.functional.softmax(pred_logits * temperature, dim=1)
+            target_temp = nn.functional.softmax(target_logits * temperature, dim=1)
+            distill_loss = beta * criterion_distill(pred_temp, target_temp)
+            label_loss = alpha * criterion_label(pred_logits, target_label)
+            return distill_loss + label_loss
+        return loss
