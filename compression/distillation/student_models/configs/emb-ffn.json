@@ -1,5 +1,5 @@
 {
-    "embedding-dim" : 300,
+    "embedding-dim" : 25,
     "vocab-size": 5000,
     "cls-hidden-dim": 100,
     "dropout": 0.2,

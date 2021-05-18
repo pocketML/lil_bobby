@@ -45,39 +45,50 @@ def create_show_pie_chart(data, labels):
     plt.show()
 
 def weight_pie_chart(model, arch):
+    def count_module_size(mod):
+        p_count = 0
+        for _, params in mod:
+            p_count += reduce(lambda acc, x: acc * x, params.shape, 1)
+        return p_count
+    def get_labels(labels, p_count):
+        total = sum(p_count)
+        pcts = [f'{(c / total) * 100.0:.2f}%\n({"{:,}".format(c).replace(",", " ")})' for c in p_count]
+        labels = [labels[i] + '\n' + pcts[i] for i in range(len(labels))]
+        return labels
+
     grouped = model_utils.group_params_by_layer(model, arch)
     if arch in model_utils.MODEL_INFO.keys(): # either roberta large or base
         p_count = [0,0,0]
-        labels = ['Sentence encoder', 'Transformer layers', 'LM Head']
         for key in grouped:
-            for _,params in grouped[key]:
-                nparams = reduce(lambda acc, x: acc * x, params.shape, 1)
-                if 'encoder' in key:
-                    p_count[0] += nparams
-                elif 'layer_' in key:
-                    p_count[1] += nparams
-                elif 'head' in key:
-                    p_count[2] += nparams
+            if 'encoder' in key:
+                p_count[0] = count_module_size(grouped[key])
+            elif 'layer_' in key:
+                p_count[1] = count_module_size(grouped[key])
+            elif 'head' in key:
+                p_count[2] = count_module_size(grouped[key])
 
-        total = sum(p_count)
-        pcts = [f'{(c / total) * 100.0:.2f}%\n({"{:,}".format(c).replace(",", " ")})' for c in p_count]
-        labels = [labels[i] + '\n' + pcts[i] for i in range(len(labels))]
+        labels = get_labels(['Sentence encoder', 'Transformer layers', 'LM Head'], p_count)
         create_show_pie_chart(p_count, labels)
     if arch == 'glue':
-        # full GloVe 42B token, 22m vocab, 300 dim embedding param count = 22000000 * 300 = 6 600 000 000
         # original ELMO embedding param count = 93 600 000
         p_count = [93600000, 0, 0] # first entry is GloVe 42B token, 22m vocab, 300 dim embedding
-        labels = ['Embedding layer', 'BiLSTM', 'Classifier']
-        grouped = model_utils.group_params_by_layer(model, arch)
-        for _, params in grouped['bilstm']:
-            p_count[1] += reduce(lambda acc, x: acc * x, params.shape, 1)
-        for _, params in grouped['classifier']:
-            p_count[2] += reduce(lambda acc, x: acc * x, params.shape, 1)
-        total = sum(p_count)
-        pcts = [f'{(c / total) * 100.0:.2f}%\n({"{:,}".format(c).replace(",", " ")})' for c in p_count]
-        labels = [labels[i] + '\n' + pcts[i] for i in range(len(labels))]
+        p_count[1] = count_module_size(grouped['bilstm'])
+        p_count[2] = count_module_size(grouped['classifier'])
+        labels = get_labels(['Embedding layer', 'BiLSTM', 'Classifier'], p_count)
         create_show_pie_chart(p_count, labels)        
-
+    else: # presumably we have a student model
+        if arch == 'emb-ffn':
+            module_names = ['embedding', 'classifier']
+            labels = ['Embedding layer', 'Classifier']
+        elif arch == 'rnn':
+            module_names = ['embedding', 'encoder', 'classifier']
+            labels = ['Embedding layer', 'RNN', 'Classifier']
+        elif arch == 'tang':
+            module_names = ['embedding', 'bilstm', 'classifier']
+            labels = ['Embedding layer', 'BiLSTM', 'Classifier']
+        p_count = [count_module_size(grouped[x]) for x in module_names]
+        labels = get_labels(labels, p_count)
+        create_show_pie_chart(p_count, labels)
 
 # TODO: only works for RoBERTa models at the moment
 def weight_histogram_for_all_transformers(model, arch, num_bins=2000):
