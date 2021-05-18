@@ -24,9 +24,7 @@ def run_experiment(task_args, _run):
 
 def main(experiment_args, task_args):
     SETTINGS["CAPTURE_MODE"] = "no"
-    experiment_args, task_args = args_experiment()
 
-    print(stdout.encoding)
     if stdout.encoding != "utf-8" and stdout.encoding != "UTF-8" :
         raise UnicodeError(f"Stdout encoding is {stdout.encoding} (should be utf-8)!")
 
