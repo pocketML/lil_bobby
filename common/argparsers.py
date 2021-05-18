@@ -1,4 +1,6 @@
 import argparse
+from copy import deepcopy
+
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
@@ -221,15 +223,20 @@ def args_experiment():
             args_remain.extend([key, value])
 
     argparse_funcs = {
-        "finetune": args_finetune, "compress": args_compress,
-        "evaluate": args_evaluate, "analyze": args_analyze
+        "finetune": args_finetune, 
+        "compress": args_compress,
+        "evaluate": args_evaluate, 
+        "analyze": args_analyze
     }
 
+    actually_remain = []
     for task in experiment_args.jobs:
-        args_for_task = argparse_funcs[task](args_remain, parse_known=True)[0]
+        args_for_task, remaining = argparse_funcs[task](args_remain, parse_known=True)
         task_args[task] = args_for_task
+        actually_remain.append(set([x for x in remaining if '--' in x]))
 
-    return experiment_args, task_args
+    actually_remain = set.intersection(*actually_remain)
+    return experiment_args, task_args, actually_remain
 
 def args_search():
     usage = """

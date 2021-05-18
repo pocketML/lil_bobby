@@ -4,9 +4,30 @@ import numpy as np
 
 from common import model_utils
 
+# from https://github.com/OrdnanceSurvey/GeoDataViz-Toolkit/tree/master/Colours
+COLORS_QUALITATIVE = [
+	"#FF1F5B",
+	"#00CD6C",
+	"#009ADE",
+	"#AF58BA",
+	"#FFC61E",
+	"#F28522",
+	"#A0B1BA",
+	"#A6761D",
+	"#E9002D",
+	"#FFAA00",
+	"#00B000"]
+
+COLORS_Q_CBLIND_FRIENDLY = [
+    COLORS_QUALITATIVE[1],
+    COLORS_QUALITATIVE[2],
+    COLORS_QUALITATIVE[3],
+    COLORS_QUALITATIVE[4]
+]
+
 def create_show_pie_chart(data, labels):
-    fig, ax = plt.subplots(figsize=(8, 6), subplot_kw=dict(aspect="equal"))
-    wedges, texts = ax.pie(data, wedgeprops=dict(width=0.5), startangle=-40)
+    fig, ax = plt.subplots(figsize=(5, 4), subplot_kw=dict(aspect="equal"))
+    wedges, texts = ax.pie(data, wedgeprops=dict(width=0.5), startangle=-40, colors=COLORS_Q_CBLIND_FRIENDLY)
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
     kw = dict(arrowprops=dict(arrowstyle="-"),
             bbox=bbox_props, zorder=0, va="center")
@@ -19,13 +40,15 @@ def create_show_pie_chart(data, labels):
         kw["arrowprops"].update({"connectionstyle": connectionstyle})
         ax.annotate(labels[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                     horizontalalignment=horizontalalignment, **kw)
+    plt.tight_layout()
+    plt.savefig('sample.pdf', bbox_inches="tight")
     plt.show()
 
 def weight_pie_chart(model, arch):
     grouped = model_utils.group_params_by_layer(model, arch)
     if arch in model_utils.MODEL_INFO.keys(): # either roberta large or base
         p_count = [0,0,0]
-        labels = ['Sentence encoder', 'Transformer layers', 'LM/Classification Head']
+        labels = ['Sentence encoder', 'Transformer layers', 'LM Head']
         for key in grouped:
             for _,params in grouped[key]:
                 nparams = reduce(lambda acc, x: acc * x, params.shape, 1)
@@ -41,7 +64,9 @@ def weight_pie_chart(model, arch):
         labels = [labels[i] + '\n' + pcts[i] for i in range(len(labels))]
         create_show_pie_chart(p_count, labels)
     if arch == 'glue':
-        p_count = [22000000 * 300, 0, 0] # first entry is GloVe 42B token, 22m vocab, 300 dim embedding
+        # full GloVe 42B token, 22m vocab, 300 dim embedding param count = 22000000 * 300 = 6 600 000 000
+        # original ELMO embedding param count = 93 600 000
+        p_count = [93600000, 0, 0] # first entry is GloVe 42B token, 22m vocab, 300 dim embedding
         labels = ['Embedding layer', 'BiLSTM', 'Classifier']
         grouped = model_utils.group_params_by_layer(model, arch)
         for _, params in grouped['bilstm']:

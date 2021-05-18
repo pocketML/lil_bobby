@@ -5,6 +5,8 @@ from glob import glob
 from sacred import Experiment, SETTINGS
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
+from argparse import ArgumentError
+
 from common import transponder
 from finetune import main as finetune_main
 from compress import main as compress_main
@@ -22,9 +24,7 @@ def run_experiment(task_args, _run):
 
 def main(experiment_args, task_args):
     SETTINGS["CAPTURE_MODE"] = "no"
-    experiment_args, task_args = args_experiment()
 
-    print(stdout.encoding)
     if stdout.encoding != "utf-8" and stdout.encoding != "UTF-8" :
         raise UnicodeError(f"Stdout encoding is {stdout.encoding} (should be utf-8)!")
 
@@ -97,13 +97,13 @@ def main(experiment_args, task_args):
 
     run = experiment._create_run("run_experiment", info={"name": run_id})
     run._id = run_id
-    print("test")
-    exit()
     try:
         run()
     except UnicodeDecodeError:
         print("Unicode error for some reason.")
 
 if __name__ == "__main__":
-    EXPERIMENT_ARGS, TASK_ARGS = args_experiment()
+    EXPERIMENT_ARGS, TASK_ARGS, REMAIN = args_experiment()
+    if len(REMAIN) > 0:
+        raise ArgumentError(None, f"Couldn't parse the following arguments: {REMAIN}")
     main(EXPERIMENT_ARGS, TASK_ARGS)
