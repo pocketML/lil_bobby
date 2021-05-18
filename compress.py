@@ -10,7 +10,7 @@ import numpy as np
 
 from common import argparsers, data_utils, transponder
 from compression.distill import train_loop, save_checkpoint
-from compression.distillation.models import DistLossFunction, load_student
+from compression.distillation.models import load_student
 import evaluate
 from compression import prune
 from compression import quantize as ptq
@@ -102,7 +102,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
     dataloader_train = None
     val_data = None
 
-    criterion = DistLossFunction(
+    criterion = model.get_combined_loss_function(
         args.alpha, 
         nn.MSELoss(), 
         nn.CrossEntropyLoss(), 
