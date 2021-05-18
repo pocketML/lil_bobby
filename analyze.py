@@ -8,7 +8,7 @@ from custom import glue_bilstm
 def main(args, sacred_experiment=None):
     is_roberta_model = model_utils.is_finetuned_model(args.arch)
     if is_roberta_model:
-        if args.non_finetuned_roberta:
+        if args.non_finetuned:
             model = model_utils.load_roberta_model(args.arch, use_cpu=True)
         else:
             model_path = model_utils.get_model_path(args.task, "finetuned")
