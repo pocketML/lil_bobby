@@ -184,6 +184,7 @@ def args_analyze(args=None, namespace=None, parse_known=False):
     ap.add_argument('--weight-thresholds', action='store_true')
     ap.add_argument('--model-disk-size', action="store_true")
     ap.add_argument('--pie-chart', action='store_true')
+    ap.add_argument('--non-finetuned-roberta', action='store_true')
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
