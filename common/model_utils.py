@@ -62,6 +62,19 @@ def get_model_path(task, model_type):
 
 def load_teacher(task, checkpoint_path, use_cpu=False, model_name='checkpoint_best.pt'):
     bin_path = task_utils.get_processed_path(task)
+    print(checkpoint_path)
+    print(model_name)
+    print(bin_path)
+    import os.path
+
+    if os.path.isfile(checkpoint_path + "/" + model_name):
+        print ("File exist")
+    else:
+        print ("File not exist")
+    if os.path.exists(bin_path):
+        print("PATH IS THERE")
+    else:
+        print("NO no no no nononononono")
     model = RobertaModel.from_pretrained(
         checkpoint_path,
         checkpoint_file=model_name,

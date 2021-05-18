@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from functools import reduce
 from common import model_utils
 import os
+import numpy as np
 
 def dtype_bits(param):
     dt = param.dtype
@@ -48,6 +49,45 @@ def weight_histogram_for_layer(layer, num_bins=1000):
     weights = concat_weights_in_layer(layer)
     plt.hist(weights, bins=num_bins)
     plt.show()
+
+def weight_pie_chart(model, arch):
+    grouped = model_utils.group_params_by_layer(model, arch)
+    if arch in model_utils.MODEL_INFO.keys(): # either roberta large or base
+        p_count = [0,0,0]
+        labels = ['Sentence encoder', 'Transformer layers', 'LM/Classification Head']
+        for key in grouped:
+            for _,params in grouped[key]:
+                nparams = reduce(lambda acc, x: acc * x, params.shape, 1)
+                if 'encoder' in key:
+                    p_count[0] += nparams
+                elif 'layer_' in key:
+                    p_count[1] += nparams
+                elif 'head' in key:
+                    p_count[2] += nparams
+
+        total = sum(p_count)
+        pcts = [f'{(c / total) * 100.0:.2f}%\n({"{:,}".format(c).replace(",", " ")})' for c in p_count]
+
+        fig, ax = plt.subplots(figsize=(8, 6), subplot_kw=dict(aspect="equal"))
+
+        wedges, texts = ax.pie(p_count, wedgeprops=dict(width=0.5), startangle=-40)
+        bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
+        kw = dict(arrowprops=dict(arrowstyle="-"),
+                bbox=bbox_props, zorder=0, va="center")
+
+        for i, p in enumerate(wedges):
+            ang = (p.theta2 - p.theta1)/2. + p.theta1
+            y = np.sin(np.deg2rad(ang))
+            x = np.cos(np.deg2rad(ang))
+            horizontalalignment = {-1: "right", 1: "left"}[int(np.sign(x))]
+            connectionstyle = "angle,angleA=0,angleB={}".format(ang)
+            kw["arrowprops"].update({"connectionstyle": connectionstyle})
+            ax.annotate(labels[i] + '\n' + pcts[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
+                        horizontalalignment=horizontalalignment, **kw)
+
+        ax.set_title("Parameter distribution in RoBERTa.large")
+
+        plt.show()
 
 # TODO: only works for RoBERTa models at the moment
 def weight_histogram_for_all_transformers(model, arch, num_bins=2000):
