@@ -37,7 +37,7 @@ def main(args, sacred_experiment=None):
     if args.weight_hist and is_roberta_model:
         plotting.weight_histogram_for_all_transformers(model, args.arch)
     if args.pie_chart:
-        plotting.weight_pie_chart(model, args.arch)
+        plotting.weight_pie_chart(model, args.arch, args.save_pdf)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_analyze()
