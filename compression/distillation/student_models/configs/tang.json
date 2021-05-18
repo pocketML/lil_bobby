@@ -2,7 +2,7 @@
     "embedding-dim" : 300,
     "vocab-size": 5000,
     "dropout": 0.1,
-    "lr": 1,
+    "lr": 1.0,
     "weight-decay": 0,
     "batch-size": 50,
     "cls-hidden-dim": 200,

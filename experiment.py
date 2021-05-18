@@ -2,7 +2,7 @@ import os
 from sys import stdout
 from shutil import rmtree
 from glob import glob
-from sacred import Experiment
+from sacred import Experiment, SETTINGS
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
 from common import transponder
@@ -21,6 +21,7 @@ def run_experiment(task_args, _run):
         TASK_FUNCS[task](task_args[task], sacred_experiment=_run)
 
 def main(experiment_args, task_args):
+    SETTINGS["CAPTURE_MODE"] = "no"
     experiment_args, task_args = args_experiment()
 
     print(stdout.encoding)
@@ -97,7 +98,7 @@ def main(experiment_args, task_args):
     try:
         run()
     except UnicodeDecodeError:
-        pass
+        print("Unicode error for some reason.")
 
 if __name__ == "__main__":
     EXPERIMENT_ARGS, TASK_ARGS = args_experiment()

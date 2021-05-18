@@ -85,6 +85,7 @@ class HashEmbedding(Embedding):
     # is inplace
     def convert_to_quantized(self):
         quant.convert(self.vectors, inplace=True)
+        self.scalars.half()
 
     def _apply(self, fn):
         super()._apply(fn)
@@ -95,7 +96,7 @@ class HashEmbedding(Embedding):
         batch_size = x.shape[0]
         seq_len = x.shape[1]
         scalar_idx = (x + self.hash_offsets).view(batch_size, -1)
-        scalars = self.scalars(scalar_idx).view(batch_size * seq_len, -1)
+        scalars = self.scalars(scalar_idx).view(batch_size * seq_len, -1).float()
         indices = (x // self.ratio).view(batch_size * seq_len, -1)
         x = self.vectors(indices, per_sample_weights=scalars)
         x = x.view(batch_size, seq_len, -1)

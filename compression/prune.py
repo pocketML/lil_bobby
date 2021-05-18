@@ -1,5 +1,3 @@
-import copy
-
 import torch
 import torch.nn.utils.prune as prune
 
@@ -9,9 +7,10 @@ from embedding.base import Embedding
 class MagnitudePruning(prune.BasePruningMethod):
     PRUNING_TYPE = "unstructured"
 
-    def __init__(self, threshold):
+    def __init__(self, threshold, module_to_prune=None):
         super().__init__()
         self.threshold = threshold
+        self.module_to_prune = module_to_prune
 
     def compute_mask(self, inputs, default_mask):
         mask = default_mask.clone()
@@ -19,11 +18,23 @@ class MagnitudePruning(prune.BasePruningMethod):
         return mask
 
 class TopKPruning(prune.BasePruningMethod):
+    """
+    Prune the lowest ratio of parameters according to threshold.
+    Threshold=0.3 would prune the weights with lowest value,
+    pruning 30% of all weights in the model.
+    """
     PRUNING_TYPE = "unstructured"
 
-    def __init__(self, threshold):
+    def __init__(self, threshold, module_to_prune=None):
         super().__init__()
         self.threshold = threshold
+        self.module_to_prune = module_to_prune
+
+        if self.module_to_prune is not None:
+            if isinstance(self.module_to_prune, torch.nn.LSTM):
+                self.threshold *= 0.25
+            elif isinstance(self.module_to_prune, torch.nn.Embedding):
+                self.threshold *= 0.5
 
     def compute_mask(self, inputs, default_mask):
         mask = default_mask.clone()
@@ -33,7 +44,7 @@ class TopKPruning(prune.BasePruningMethod):
         # flat_out and mask access the same memory.
         flattened = mask.flatten()
         flattened[idx[:j]] = 0
-        return flattened
+        return mask
 
 def to_sparse(x):
     """ converts dense tensor x to sparse format """
@@ -51,50 +62,71 @@ def to_dense(x):
     return x.to_dense()
 
 def get_prunable_params(model):
-    grouped_params = model_utils.group_params_by_layer(model, "tang")
-
+    grouped_params = model_utils.group_params_by_layer(model, None)
     parameters_to_prune = []
 
     for name in grouped_params:
-        if True:#"bilstm" not in name:
-            module = getattr(model, name)
+        module = getattr(model, name)
 
-            is_sequential = isinstance(module, torch.nn.Sequential)
-            is_embedding = isinstance(module, Embedding)
+        is_sequential = isinstance(module, torch.nn.Sequential)
+        is_embedding = isinstance(module, Embedding)
 
-            if is_sequential:
-                containers = module
-            elif is_embedding:
+        if is_sequential:
+            containers = module
+        elif is_embedding:
+            if module.embedding is not None:
                 containers = [module.embedding]
             else:
-                containers = [module]
+                containers = [module.vectors, module.scalars]
+        else:
+            containers = [module]
 
-            for container in containers:
-                params = grouped_params[name] if not is_sequential else container.named_parameters()
-                for param_name, _ in params:
-                    if "weight" in param_name:
-                        name_fmt = param_name
-                        if is_embedding:
-                            name_fmt = ".".join(param_name.split(".")[2:])
-                        elif not is_sequential:
-                            name_fmt = ".".join(param_name.split(".")[1:])
-                        parameters_to_prune.append((container, name_fmt))
+        for container in containers:
+            params = container.named_parameters() if is_sequential or is_embedding else grouped_params[name]
+            for param_name, _ in params:
+                if "weight" in param_name:
+                    name_fmt = param_name
+                    if not is_sequential and not is_embedding:
+                        name_fmt = ".".join(param_name.split(".")[1:])
+                    parameters_to_prune.append((container, name_fmt))
 
     return parameters_to_prune
 
-def do_pruning(params, prune_cls, sparsify=False, **kwargs):
+def prune_locally(module, name, values, prune_cls, threshold):
+    pruning_instance = prune_cls(threshold, module_to_prune=module)
+    mask = pruning_instance.compute_mask(values, torch.ones_like(values))
+    prune.custom_from_mask(module, name, mask)
+
+def prune_globally(params, prune_cls, threshold):
     prune.global_unstructured(
-        params,
+        [(x[0], x[1]) for x in params],
         pruning_method=prune_cls,
-        **kwargs
+        threshold=threshold
     )
 
-    for module, param_name in params:
+def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
+    #model_copy = copy.deepcopy(model)
+
+    params_to_prune = get_prunable_params(model)
+
+    for module, param_name, _ in params_to_prune:
+        print(module)
+        print(param_name)
+
+    if prune_local:
+        for module, name, values in params_to_prune:
+            prune_locally(module, name, values, prune_cls, threshold)
+    else:
+        prune_globally(params_to_prune, prune_cls, threshold)
+
+    for module, param_name, _ in params_to_prune:
         prune.remove(module, param_name)
         if sparsify:
             dense_tensor = getattr(module, param_name)
             sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
             setattr(module, param_name, sparse_tensor)
+
+    return model
 
 def params_zero(model):
     zero = 0
@@ -105,32 +137,3 @@ def params_zero(model):
         zero += (num_params - non_zero)
         total_params += num_params
     return total_params, zero
-
-def magnitude_pruning(model, threshold):
-    model_copy = copy.deepcopy(model)
-
-    params_to_prune = get_prunable_params(model_copy)
-
-    do_pruning(params_to_prune, MagnitudePruning, threshold=threshold)
-
-    return model_copy
-
-def movement_pruning(model, threshold):
-    """
-    Not implemented. Simply return model unchanged.
-    """
-    return model
-
-def topk_pruning(model, threshold):
-    """
-    Prune the lowest ratio of parameters according to threshold.
-    Threshold=0.3 would prune the weights with lowest value,
-    pruning 30% of all weights in the model.
-    """
-    model_copy = copy.deepcopy(model)
-
-    params_to_prune = get_prunable_params(model_copy)
-
-    do_pruning(params_to_prune, TopKPruning, threshold=threshold)
-
-    return model_copy

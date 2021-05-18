@@ -1,8 +1,13 @@
+import torch
+import torch.nn as nn
+
 from argparse import ArgumentError
 import json
 import os
-import torch
-import torch.nn as nn
+import warnings
+import random
+import numpy as np
+
 from common import argparsers, data_utils, transponder
 from compression.distill import train_loop, save_checkpoint
 from compression.distillation.models import DistLossFunction, load_student
@@ -10,8 +15,6 @@ import evaluate
 from compression import prune
 from compression import quantize as ptq
 from analysis import parameters
-import warnings
-import random
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -36,23 +39,30 @@ def quantize_model(model, device, args):
         print("** quantizing classifier **")
         model = ptq.quantize_classifier(model, args, dl, device, type='static')
 
-    print(model)
-
-    evaluate.evaluate_distilled_model(model, dl, device, args, None)
+    print('** Quantization finished.. **')
     parameters.print_model_disk_size(model)
+    evaluate.evaluate_distilled_model(model, dl, device, args, None)
     print()
+    return model
 
 def do_pruning(model, args, epoch=None):
     threshold = args.prune_threshold
-    if epoch is not None:
+    if epoch is not None and epoch < args.prune_warmup:
         threshold = threshold * (epoch / args.prune_warmup)
 
+    prune_class = None
     if args.prune_magnitude:
-        model = prune.magnitude_pruning(model, threshold)
+        prune_class = prune.MagnitudePruning
     elif args.prune_movement:
-        model = prune.movement_pruning(model, threshold)
+        pass
     elif args.prune_topk:
-        model = prune.topk_pruning(model, threshold)
+        prune_class = prune.TopKPruning
+
+    model = prune.prune_model(model, prune_class, threshold, args.prune_local)
+
+    params, zero = prune.params_zero(model)
+    sparsity = (zero / params) * 100
+    print(f"Sparsity: {sparsity:.2f}%")
 
     return model
 
@@ -61,20 +71,17 @@ def prune_model(model, device, args):
 
     params, zero = prune.params_zero(model)
     sparsity = (zero / params) * 100
-    print(f"Sparsity: {sparsity:.2f}%")
+    print(f"Sparsity before: {sparsity:.2f}%")
 
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
 
     model = do_pruning(model, args)
 
-    params, zero = prune.params_zero(model)
-    sparsity = (zero / params) * 100
-    print(f"Sparsity: {sparsity:.2f}%")
-
     parameters.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
+    return model
 
 def distill_model(task, model, device, args, callback, sacred_experiment):
     temperature = args.temperature
@@ -157,6 +164,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
                 break
 
             epoch += 1
+            chunk = 1
 
 def main(args, sacred_experiment=None):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
@@ -169,11 +177,16 @@ def main(args, sacred_experiment=None):
 
     random.seed(seed)
     torch.manual_seed(seed)
+    np.random.seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     should_prune = "prune" in args.compression_actions
     should_quantize = "quantize" in args.compression_actions
+
+    model = None
 
     if "distill" in args.compression_actions:
         model = load_student(task, student_type, use_gpu=use_gpu, args=args)
@@ -190,23 +203,26 @@ def main(args, sacred_experiment=None):
 
         distill_model(task, model, device, args, callback_func, sacred_experiment)
 
+    if should_prune and not args.prune_aware:
+        # Magnitude pruning after distillation (static).
+        model_name = args.load_trained_model
+        if model is None:
+            model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.to(device)
+        model = prune_model(model, device, args)
+
     if should_quantize:
         use_gpu = False
         device = torch.device('cpu')
         model_name = args.load_trained_model
-        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        if model is None:
+            model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
+        model.cfg['use-gpu'] = False
         model.to(device)
         quantize_model(model, device, args)
 
-    if should_prune:
-        # Magnitude pruning after distillation (static).
-        model_name = args.load_trained_model
-        model = load_student(task, student_type, use_gpu=use_gpu, model_name=model_name)
-        model.to(device)
-        prune_model(model, device, args)
-
 if __name__ == "__main__":
-    ARGS, remain = argparsers.args_compress()
-    if len(remain) > 0:
-        raise ArgumentError(None, f"Couldn't parse the following arguments: {remain}")
+    ARGS, REMAIN = argparsers.args_compress()
+    if len(REMAIN) > 0:
+        raise ArgumentError(None, f"Couldn't parse the following arguments: {REMAIN}")
     main(ARGS)
