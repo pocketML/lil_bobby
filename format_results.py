@@ -115,32 +115,33 @@ def find_matching_experiments(meta_args, search_args):
     for folder in experiment_folders:
         experiment_data = experiment_contains_args(folder, meta_args, search_args)
         if experiment_data is not None:
-            with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
-                metrics_data = json.load(fp)
+            if not meta_args.no_metrics:
+                with open(folder + "/metrics.json", "r", encoding="utf-8") as fp:
+                    metrics_data = json.load(fp)
 
-                accuracy_1 = None
-                accuracy_2 = None
-                for key in ("test.accuracy", "test.matched.accuracy"):
-                    if key in metrics_data:
-                        accuracy_1 = metrics_data[key]["values"][0]
-                if accuracy_1 is None and "validation.acc" in metrics_data:
-                    accuracy_1 = max(metrics_data["validation.acc"]["values"])
-                for key in ("test.f1", "test.mismatched.accuracy"):
-                    if key in metrics_data:
-                        accuracy_2 = metrics_data[key]["values"][0]
+                    accuracy_1 = None
+                    accuracy_2 = None
+                    for key in ("test.accuracy", "test.matched.accuracy"):
+                        if key in metrics_data:
+                            accuracy_1 = metrics_data[key]["values"][0]
+                    if accuracy_1 is None and "validation.acc" in metrics_data:
+                        accuracy_1 = max(metrics_data["validation.acc"]["values"])
+                    for key in ("test.f1", "test.mismatched.accuracy"):
+                        if key in metrics_data:
+                            accuracy_2 = metrics_data[key]["values"][0]
 
-                if accuracy_1 is not None:
-                    experiment_data["acc_1"] = f"{accuracy_1:.4f}"
-                if accuracy_2 is not None:
-                    experiment_data["acc_2"] = f"{accuracy_2:.4f}"
+                    if accuracy_1 is not None:
+                        experiment_data["acc_1"] = f"{accuracy_1:.4f}"
+                    if accuracy_2 is not None:
+                        experiment_data["acc_2"] = f"{accuracy_2:.4f}"
 
-                if "model_params" in metrics_data:
-                    experiment_data["params"] = metrics_data["model_params"]["values"][0]
+                    if "model_params" in metrics_data:
+                        experiment_data["params"] = metrics_data["model_params"]["values"][0]
 
-                if "model_disk_size" in metrics_data:
-                    experiment_data["size"] = f"{metrics_data['model_disk_size']['values'][0]:.3f}"
-                elif "model_size" in metrics_data:
-                    experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
+                    if "model_disk_size" in metrics_data:
+                        experiment_data["size"] = f"{metrics_data['model_disk_size']['values'][0]:.3f}"
+                    elif "model_size" in metrics_data:
+                        experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
 
             data.append(experiment_data)
 
