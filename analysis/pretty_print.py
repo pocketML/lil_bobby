@@ -26,6 +26,6 @@ def print_threshold_stats(model, arch):
     for layer_name, layer in layers.items():
         print(layer_name)
         for threshold in thresholds:
-            below, total = count_below_threshold_in_layer(layer, threshold)
+            below, total = parameters.count_below_threshold_in_layer(layer, threshold)
             print(f'below {threshold} in {layer_name}: {below}/{total} ({below/total:.4f})')
         print('-'*20)

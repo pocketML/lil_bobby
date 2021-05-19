@@ -1,8 +1,6 @@
 from analysis import parameters, pretty_print, plotting
 from compression.distillation import models as distill_models
-from compression import quantize
 from common import argparsers, model_utils
-from fairseq.models.roberta import RobertaModel
 from custom import glue_bilstm
 
 def main(args, sacred_experiment=None):
@@ -21,6 +19,9 @@ def main(args, sacred_experiment=None):
     model.eval()
     if args.model_disk_size:
         pretty_print.print_model_disk_size(model)
+        disk_size = parameters.get_model_disk_size(model)
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("model_disk_size", disk_size)
     if args.model_size:
         pretty_print.print_model_size(model)
         total_params, total_bits = parameters.get_model_size(model)
@@ -36,7 +37,7 @@ def main(args, sacred_experiment=None):
     if args.weight_hist and is_roberta_model:
         plotting.weight_histogram_for_all_transformers(model, args.arch)
     if args.pie_chart:
-        plotting.weight_pie_chart(model, args.arch)
+        plotting.weight_pie_chart(model, args.arch, args.save_pdf)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_analyze()

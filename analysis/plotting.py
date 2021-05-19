@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from common import model_utils
+from analysis import parameters
 
 # from https://github.com/OrdnanceSurvey/GeoDataViz-Toolkit/tree/master/Colours
 COLORS_QUALITATIVE = [
@@ -25,7 +26,7 @@ COLORS_Q_CBLIND_FRIENDLY = [
     COLORS_QUALITATIVE[4]
 ]
 
-def create_show_pie_chart(data, labels):
+def create_show_pie_chart(data, labels, save_pdf):
     fig, ax = plt.subplots(figsize=(5, 4), subplot_kw=dict(aspect="equal"))
     wedges, texts = ax.pie(data, wedgeprops=dict(width=0.5), startangle=-40, colors=COLORS_Q_CBLIND_FRIENDLY)
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
@@ -41,10 +42,11 @@ def create_show_pie_chart(data, labels):
         ax.annotate(labels[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                     horizontalalignment=horizontalalignment, **kw)
     plt.tight_layout()
-    plt.savefig('sample.pdf', bbox_inches="tight")
+    if save_pdf:
+        plt.savefig('pie_chart.pdf', bbox_inches="tight")
     plt.show()
 
-def weight_pie_chart(model, arch):
+def weight_pie_chart(model, arch, save_pdf=False):
     def count_module_size(mod):
         p_count = 0
         for _, params in mod:
@@ -88,7 +90,7 @@ def weight_pie_chart(model, arch):
             labels = ['Embedding layer', 'BiLSTM', 'Classifier']
         p_count = [count_module_size(grouped[x]) for x in module_names]
         labels = get_labels(labels, p_count)
-        create_show_pie_chart(p_count, labels)
+        create_show_pie_chart(p_count, labels, save_pdf)
 
 # TODO: only works for RoBERTa models at the moment
 def weight_histogram_for_all_transformers(model, arch, num_bins=2000):
@@ -101,7 +103,7 @@ def weight_histogram_for_all_transformers(model, arch, num_bins=2000):
     for i, ax in enumerate(axs.flat):
         name = transformers[i]
         layer = layers[name]
-        weights = concat_weights_in_layer(layer)
+        weights = parameters.concat_weights_in_layer(layer)
         ax.hist(weights, bins=num_bins)
         ax.set(xlabel='Weight value',ylabel='Frequency', xlim=(-.3,.3), ylim=(0,74000),title=name)
     for ax in axs.flat:
@@ -109,6 +111,6 @@ def weight_histogram_for_all_transformers(model, arch, num_bins=2000):
     plt.show()
 
 def weight_histogram_for_layer(layer, num_bins=1000):
-    weights = concat_weights_in_layer(layer)
+    weights = parameters.concat_weights_in_layer(layer)
     plt.hist(weights, bins=num_bins)
     plt.show()

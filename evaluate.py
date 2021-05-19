@@ -61,7 +61,7 @@ def update_f1_counts_distilled(pred_labels, target_labels, tp, fp, fn):
     tp += torch.count_nonzero(torch.logical_and(pred_ones, target_ones))
     fp += torch.count_nonzero(torch.logical_and(pred_ones, target_zeros))
     fn += torch.count_nonzero(torch.logical_and(pred_zeros, target_ones))
-    return tp, fp, fn
+    return tp.item(), fp.item(), fn.item()
 
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, include_f1=False, mnli_subtask=None):
     model.to(device)
@@ -87,7 +87,7 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
             tp, fp, fn = update_f1_counts_distilled(preds, target_labels, tp, fp, fn)
 
     accuracy = 0 if num_examples == 0 else running_corrects / num_examples
-    
+
     if include_f1:
         f1_score = tp / (tp + 0.5 * (fp + fn))
         if sacred_experiment is not None:
