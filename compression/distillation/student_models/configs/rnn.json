@@ -1,7 +1,7 @@
 {
     "embedding-dim": 100,
-    "encoder-hidden-dim": 100,
-    "cls-hidden-dim": 100,
+    "encoder-hidden-dim": 150,
+    "cls-hidden-dim": 200,
     "bidirectional": true,
     "batch-first": true,
     "batch-size": 50,

@@ -17,6 +17,9 @@ def get_json_data(experiment_path, data_type):
         return None
 
 def value_matches(key, search_value, value, suffix):
+    if value is None:
+        return False
+
     if key == "name":
         return search_value in value and (suffix is None or f"_{suffix}" in value)
     if isinstance(value, bool):
@@ -112,7 +115,7 @@ def find_matching_experiments(meta_args, search_args):
                 for key in ("test.accuracy", "test.matched.accuracy"):
                     if key in metrics_data:
                         accuracy_1 = metrics_data[key]["values"][0]
-                if accuracy_1 is None:
+                if accuracy_1 is None and "validation.acc" in metrics_data:
                     accuracy_1 = max(metrics_data["validation.acc"]["values"])
                 for key in ("test.f1", "test.mismatched.accuracy"):
                     if key in metrics_data:
@@ -186,7 +189,7 @@ def main(meta_args, search_args):
                 line += f" & {data}"
             print(line)
     else:
-        if found_data != []:
+        if meta_args.tab_separate and found_data != []:
             accuracies_1 = np.array([float(data_point["acc_1"]) for data_point in found_data])
             mean_1 = np.mean(accuracies_1)
             std_dev_1 = np.std(accuracies_1) * 100
@@ -225,5 +228,7 @@ def main(meta_args, search_args):
 
 if __name__ == "__main__":
     META_ARGS, SEARCH_ARGS = args_search()
+
+    print(SEARCH_ARGS)
 
     main(META_ARGS, SEARCH_ARGS)
