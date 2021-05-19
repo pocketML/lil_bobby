@@ -12,7 +12,15 @@ def get_json_data(experiment_path, data_type):
             data = json.load(fp)
             if data_type == "config":
                 data = data["task_args"]
-            return data
+
+            formatted_data = {}
+            for key in data:
+                key_fmt = key
+                if "-" in key:
+                    key_fmt = key.replace("-", "_")
+                formatted_data[key_fmt] = data[key]
+
+            return formatted_data
     except FileNotFoundError:
         return None
 
@@ -228,7 +236,5 @@ def main(meta_args, search_args):
 
 if __name__ == "__main__":
     META_ARGS, SEARCH_ARGS = args_search()
-
-    print(SEARCH_ARGS)
 
     main(META_ARGS, SEARCH_ARGS)
