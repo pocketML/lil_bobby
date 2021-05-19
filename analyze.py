@@ -13,11 +13,10 @@ def main(args, sacred_experiment=None):
         else:
             model_path = model_utils.get_model_path(args.task, "finetuned")
             model = model_utils.load_teacher(args.task, f"{model_path}/{args.model_name}", use_cpu=True)
-        
-    elif args.arch in distill_models.STUDENT_MODELS.keys():
-        model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
     elif args.arch == 'glue':
         model = glue_bilstm.Model()
+    elif args.arch in distill_models.STUDENT_MODELS.keys():
+        model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
 
     model.eval()
     if args.model_disk_size:
