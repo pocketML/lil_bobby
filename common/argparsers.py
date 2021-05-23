@@ -272,11 +272,23 @@ def args_search():
 
     return meta_args, search_args
 
-def args_run_all():
+def args_run_all(args=None):
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--name", type=str, default=None)
     ap.add_argument("--model-name", type=str, default=None)
     ap.add_argument("--seed-names", type=str, nargs="+", choices=SEED_DICT.keys())
 
-    return ap.parse_known_args()
+    return ap.parse_known_args(args)
+
+def args_run_experiment():
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--alpha", type=int, required=True)
+    ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
+    ap.add_argument("--embedding-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
+    ap.add_argument("--embedding-dim", type=int, required=True)
+    ap.add_argument("--original-data", action="store_true")
+
+    return ap.parse_args()
