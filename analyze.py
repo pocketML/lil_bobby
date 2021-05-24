@@ -1,3 +1,5 @@
+from argparse import ArgumentError
+
 from analysis import parameters, pretty_print, plotting
 from compression.distillation import models as distill_models
 from common import argparsers, model_utils
@@ -10,12 +12,11 @@ def main(args, sacred_experiment=None):
             model = model_utils.load_roberta_model(args.arch, use_cpu=True)
         else:
             model_path = model_utils.get_model_path(args.task, "finetuned")
-            model = model_utils.load_teacher(args.task, f"{model_path}/{args.model_name}", use_cpu=True)
-        
-    elif args.arch in distill_models.STUDENT_MODELS.keys():
-        model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
+            model = model_utils.load_teacher(args.task, f"{model_path}/{args.model_name}", use_cpu=True)    
     elif args.arch == 'glue':
         model = glue_bilstm.Model()
+    elif args.arch in distill_models.STUDENT_MODELS.keys():
+        model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name, args=args)
 
     model.eval()
     if args.model_disk_size:
@@ -41,6 +42,7 @@ def main(args, sacred_experiment=None):
         plotting.weight_pie_chart(model, args.arch, args.save_pdf)
 
 if __name__ == "__main__":
-    ARGS = argparsers.args_analyze()
-
+    ARGS, REMAIN = argparsers.args_analyze()
+    if len(REMAIN) > 0:
+        raise ArgumentError(None, f"Couldn't parse the following arguments: {REMAIN}")
     main(ARGS)

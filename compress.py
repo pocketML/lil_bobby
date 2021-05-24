@@ -27,7 +27,6 @@ def quantize_model(model, device, args):
     pretty_print.print_model_disk_size(model)
     print()
 
-
     if args.ptq_embedding:
         print("** quantizing embedding layer **")
         model = ptq.quantize_embeddings(model, args, dl, device)
