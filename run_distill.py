@@ -72,8 +72,9 @@ def main(args):
     dt_now = datetime.now()
     month_names = ["may", "june", "july", "august"]
     date_fmt = f"{month_names[dt_now.month - 5]}{dt_now.day}"
+    arch_fmt = args.student_arch if args.student_arch != "emb-ffn" else "embffn"
     task_fmt = args.task.replace("sst-2", "sst")
-    name = f"{args.student_arch}_{task_fmt}_alpha{alpha_fmt}_{args.embedding_type}{args.embedding_dim}"
+    name = f"{arch_fmt}_{task_fmt}_alpha{alpha_fmt}_{args.embedding_type}{args.embedding_dim}"
     if args.original_data:
         name += "_og"
     name += f"_{date_fmt}"
