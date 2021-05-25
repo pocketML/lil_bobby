@@ -1,4 +1,6 @@
 import argparse
+from copy import deepcopy
+
 from common.task_utils import TASK_INFO, SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
@@ -7,6 +9,18 @@ from compression.distillation.models import STUDENT_MODELS
 
 FINETUNE_TASKS = list(TASK_INFO.keys())
 MODEL_ARCHS = list(MODEL_INFO.keys()) + list(STUDENT_MODELS.keys())
+
+def parse_student_config_args(task, arch):
+    overwrite_ap = argparse.ArgumentParser()
+    if arch in STUDENT_MODELS:
+        cfg = get_default_student_config(task, arch)
+        for key, value in cfg.items():
+            if isinstance(value, bool):
+                overwrite_ap.add_argument("--" + key, type=str2bool, nargs="?", const=True, default=value)
+            else:
+                overwrite_ap.add_argument("--" + key, type=type(value))
+    return overwrite_ap
+
 
 # define arguments for knowledge distillation
 def args_distill(args=None, namespace=None, parse_known=False):
@@ -83,14 +97,7 @@ def args_compress(args=None, namespace=None, parse_known=False):
     if compression_args.seed_name is not None:
         setattr(compression_args, "seed", SEED_DICT[compression_args.seed_name])
 
-    overwrite_ap = argparse.ArgumentParser()
-    cfg = get_default_student_config(compression_args.task, compression_args.student_arch)
-    for key, value in cfg.items():
-        if isinstance(value, bool):
-            overwrite_ap.add_argument("--" + key, type=str2bool, nargs="?", const=True, default=value)
-        else:
-            overwrite_ap.add_argument("--" + key, type=type(value))
-
+    overwrite_ap = parse_student_config_args(compression_args.task, compression_args.student_arch)
     compression_args, args_remain = overwrite_ap.parse_known_args(args_remain, namespace=compression_args)
 
     for action in compression_args.compression_actions:
@@ -185,11 +192,13 @@ def args_analyze(args=None, namespace=None, parse_known=False):
     ap.add_argument('--model-disk-size', action="store_true")
     ap.add_argument('--pie-chart', action='store_true')
     ap.add_argument('--non-finetuned', action='store_true')
+    ap.add_argument('--save-pdf', action='store_true')
 
-    if parse_known:
-        return ap.parse_known_args(args=args, namespace=namespace)
+    analyze_args, args_remain = ap.parse_known_args(args=args, namespace=namespace)
+    overwrite_ap = parse_student_config_args(analyze_args.task, analyze_args.arch)
+    analyze_args, args_remain = overwrite_ap.parse_known_args(args_remain, namespace=analyze_args)
 
-    return ap.parse_args(args=args, namespace=namespace)
+    return analyze_args, args_remain
 
 def args_experiment():
     ap = argparse.ArgumentParser()
@@ -221,15 +230,20 @@ def args_experiment():
             args_remain.extend([key, value])
 
     argparse_funcs = {
-        "finetune": args_finetune, "compress": args_compress,
-        "evaluate": args_evaluate, "analyze": args_analyze
+        "finetune": args_finetune, 
+        "compress": args_compress,
+        "evaluate": args_evaluate, 
+        "analyze": args_analyze
     }
 
+    actually_remain = []
     for task in experiment_args.jobs:
-        args_for_task = argparse_funcs[task](args_remain, parse_known=True)[0]
+        args_for_task, remaining = argparse_funcs[task](args_remain, parse_known=True)
         task_args[task] = args_for_task
+        actually_remain.append(set([x for x in remaining if '--' in x]))
 
-    return experiment_args, task_args
+    actually_remain = set.intersection(*actually_remain)
+    return experiment_args, task_args, actually_remain
 
 def args_search():
     usage = """

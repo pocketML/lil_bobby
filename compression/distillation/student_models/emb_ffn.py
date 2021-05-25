@@ -1,29 +1,8 @@
 import torch
 import torch.nn as nn
 
-import math
-
 from compression.distillation.student_models import base
 from embedding import embeddings
-
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.1, max_len=200):
-        super().__init__()
-
-        self.dropout = nn.Dropout(p=dropout)
-
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:,0::2] = torch.sin(position * div_term)
-        pe[:,1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
-        x = self.dropout(x)
-        return x
 
 class EmbFFN(base.StudentModel):
     def __init__(self, cfg):
@@ -31,10 +10,7 @@ class EmbFFN(base.StudentModel):
 
         self.embedding = embeddings.get_embedding(cfg)
 
-        #self.pos_encoder = PositionalEncoding(cfg['embedding-dim'], cfg['dropout'])
-
         inp_d = self.cfg['embedding-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['embedding-dim']
-
         self.classifier = nn.Sequential(
             nn.Dropout(cfg['dropout']),
             nn.Linear(inp_d, cfg['cls-hidden-dim']),
@@ -44,48 +20,23 @@ class EmbFFN(base.StudentModel):
         )
         self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
 
-    def mean_with_lens(self, x, lens, dim=0):
+    def mean_with_lens(self, x, lens):
         if self.cfg['use-gpu']:
             lens = lens.cuda()
-        idx = torch.arange(x.shape[1])
-        x = x.cumsum(dim)[lens - 1, idx, :]
+        idx = torch.arange(x.shape[0]) # assumes batch first
+        x = x.cumsum(1)[idx, lens - 1, :] # cumulative sum over the channels, dim=1, select the sum for the len of the input
         x = x / lens.view(-1, 1)
         return x
 
-    def cmp(self, x, lens, batch_first=True):
-        if self.cfg['use-gpu']:
-            lens = lens.cuda()
-
-        x1 = torch.nn.functional.relu(x)
-        x2 = self.sigmoid(x)
-        if batch_first:
-            idx = torch.arange(x.shape[0])
-            x1 = x1.cumsum(1)[idx, lens - 1, :]
-            x2 = x2.cumsum(1)[idx, lens - 1, :]
-            x3 = x.cumsum(1)[idx, lens - 1, :]
-        else:
-            idx = torch.arange(x.shape[1])
-            x1 = x1.cumsum(0)[lens - 1, idx, :]
-            x2 = x2.cumsum(0)[lens - 1, idx, :]
-            x3 = x.cumsum(0)[lens - 1, idx, :]
-
-        # mean
-        x3 = x3 / lens.view(-1, 1)
-        return torch.cat([x1, x2, x3], dim=1)
-
     def forward(self, x, lens):
-        def embed_mean(inp, lengths):
-            out = self.embedding(inp)
-            out = out.permute(1,0,2)
-            out = self.mean_with_lens(out, lengths)
-            return out
-        
         if self.cfg['use-sentence-pairs']:
-            x1 = embed_mean(x[0], lens[0])
-            x2 = embed_mean(x[1], lens[1])
+            x1, x2 = self.embedding(x[0]), self.embedding(x[1])
+            x1 = self.mean_with_lens(x1, lens[0])
+            x2 = self.mean_with_lens(x2, lens[1])
             x = base.cat_cmp(x1, x2)
         else:
-            x = embed_mean(x, lens)
+            x = self.embedding(x)
+            x = self.mean_with_lens(x, lens)
         x = self.classifier(x)
         return x
 

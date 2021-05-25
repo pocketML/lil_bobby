@@ -37,6 +37,7 @@ def load_train_data(task, ds_type='train'):
 # returns sentences, labels, logits
 def load_distillation_data(path, data_splitter=None):
     if data_splitter is not None and data_splitter == []:
+            
         skip_sentences = int(1 / data_splitter.data_ratio)
 
         with open(path, encoding="utf-8") as fip:
