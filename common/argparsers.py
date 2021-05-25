@@ -299,7 +299,7 @@ def args_run_experiment():
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
-    ap.add_argument("--alpha", type=int, required=True)
+    ap.add_argument("--alpha", type=float, required=True)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--embedding-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
     ap.add_argument("--embedding-dim", type=int, required=True)
