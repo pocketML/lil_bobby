@@ -1,5 +1,5 @@
 
-from compression.distillation.student_models.tang_bilstm import TangBILSTM
+from compression.distillation.student_models.bilstm import BiLSTM
 from compression.distillation.student_models.rnn import RNN
 from compression.distillation.student_models.transformer import Transformer
 from compression.distillation.student_models.transformer2 import Transformer2
@@ -9,7 +9,7 @@ from compression.distillation.student_models import base
 
 STUDENT_MODELS = {
     'glue': None,
-    'tang': TangBILSTM,
+    'bilstm': BiLSTM,
     'rnn': RNN,
     'transformer': Transformer,
     'trans2': Transformer2,
