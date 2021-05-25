@@ -109,17 +109,13 @@ def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
 
     params_to_prune = get_prunable_params(model)
 
-    for module, param_name, _ in params_to_prune:
-        print(module)
-        print(param_name)
-
     if prune_local:
         for module, name, values in params_to_prune:
             prune_locally(module, name, values, prune_cls, threshold)
     else:
         prune_globally(params_to_prune, prune_cls, threshold)
 
-    for module, param_name, _ in params_to_prune:
+    for module, param_name, in params_to_prune:
         prune.remove(module, param_name)
         if sparsify:
             dense_tensor = getattr(module, param_name)

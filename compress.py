@@ -14,7 +14,7 @@ from compression.distillation.models import load_student
 import evaluate
 from compression import prune
 from compression import quantize as ptq
-from analysis import parameters
+from analysis import pretty_print
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -23,7 +23,8 @@ def quantize_model(model, device, args):
     backend = 'fbgemm'
     torch.backends.quantized.engine = backend
     print("Starting point:")
-    parameters.print_model_disk_size(model)
+    evaluate.evaluate_distilled_model(model, dl, device, args, None)
+    pretty_print.print_model_disk_size(model)
     print()
 
     if args.ptq_embedding:
@@ -40,7 +41,7 @@ def quantize_model(model, device, args):
         model = ptq.quantize_classifier(model, args, dl, device, type='static')
 
     print('** Quantization finished.. **')
-    parameters.print_model_disk_size(model)
+    pretty_print.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args, None)
     print()
     return model
@@ -73,12 +74,12 @@ def prune_model(model, device, args):
     sparsity = (zero / params) * 100
     print(f"Sparsity before: {sparsity:.2f}%")
 
-    parameters.print_model_disk_size(model)
+    pretty_print.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
 
     model = do_pruning(model, args)
 
-    parameters.print_model_disk_size(model)
+    pretty_print.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
     return model
