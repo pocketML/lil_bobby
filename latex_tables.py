@@ -156,7 +156,7 @@ def group_and_format_data(results):
                     max_measure_1 = 0
                     max_measure_index_2 = 0
                     max_measure_2 = 0
-                    for index in range(grouped_by_emb[key][measurement]):
+                    for index in range(len(grouped_by_emb[key][measurement])):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
                         if val_1 > max_measure_1:
                             max_measure_1 = val_1
@@ -165,7 +165,7 @@ def group_and_format_data(results):
                             max_measure_2 = val_2
                             max_measure_index_2 = index
 
-                    for index in range(grouped_by_emb[key][measurement]):
+                    for index in range(len(grouped_by_emb[key][measurement])):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
                         fmt_val = f"{val_1:.1f}"
                         if index == max_measure_index_1:
