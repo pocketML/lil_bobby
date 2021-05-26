@@ -134,17 +134,14 @@ def group_and_format_data(results):
                 key = f"{data['emb-type']}_{data['emb-dim']}"
 
                 if key not in grouped_by_emb:
-                    grouped_by_emb[key] = {}
+                    grouped_by_emb[key] = {
+                        data['emb-type'], data['emb-dim'],
+                        data["params"], data["size"]
+                    }
                     grouped_by_emb[key]["acc"] = ["" for _ in range(4)]
                     grouped_by_emb[key]["std"] = ["" for _ in range(4)]
 
                 alpha_index = 0 if data["og"] else alpha_indices[data["alpha"]]
-
-                grouped_by_emb[key][alpha_index] = {
-                    data['emb-type'], data['emb-dim'],
-                    data["params"], data["size"],
-                    data["acc"], data["std"]
-                }
 
                 grouped_by_emb[key]["acc"][alpha_index] = data["acc"]
                 grouped_by_emb[key]["std"][alpha_index] = data["std"]
