@@ -1,7 +1,7 @@
 import argparse
-from copy import deepcopy
 
-from common.task_utils import TASK_INFO, SEED_DICT
+from common.task_utils import TASK_INFO
+from common.seed_utils import SEED_DICT
 from common.model_utils import MODEL_INFO
 from embedding.embeddings import EMBEDDING_ZOO
 from compression.distillation.student_models.base import get_default_student_config
@@ -21,18 +21,15 @@ def parse_student_config_args(task, arch):
                 overwrite_ap.add_argument("--" + key, type=type(value))
     return overwrite_ap
 
-
 # define arguments for knowledge distillation
 def args_distill(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-
     ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--temperature", type=int, default=3)
     ap.add_argument("--alpha", type=float, default=0)
     ap.add_argument("--early-stopping", type=int, default=7)
-    ap.add_argument("--original-data", action="store_true")
-    ap.add_argument("--chunk-ratio", type=float, default=1.0)
-    ap.add_argument("--data-ratio", type=float, default=1.0)
+    ap.add_argument("--only-original-data", action="store_true")
+    ap.add_argument("--bootstrap-data-ratio", type=float, default=1.0)
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)
@@ -85,7 +82,7 @@ def args_compress(args=None, namespace=None, parse_known=False):
     ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
 
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
-    ap.add_argument("--load-trained-model", type=str)
+    ap.add_argument("--load-trained-model", type=str, default=None)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--loadbar", action="store_true")
@@ -108,11 +105,10 @@ def args_compress(args=None, namespace=None, parse_known=False):
     return compression_args, args_remain
 
 def args_preprocess(args=None, namespace=None, parse_known=False):
-    ap = argparse.ArgumentParser()
-
     augmenters = ["tinybert", "masked", "pos", "ngram"]
     teacher_archs = ["roberta_large", "roberta_base"]
 
+    ap = argparse.ArgumentParser()
     ap.add_argument("--glue-preprocess", action="store_true")
     ap.add_argument("--augment", type=str, choices=augmenters, default=None)
     ap.add_argument("--generate-loss", type=str, choices=("processed", "tinybert"), default=None)
@@ -129,7 +125,6 @@ def args_preprocess(args=None, namespace=None, parse_known=False):
 
 def args_embeddings(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-
     ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--embed-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
     ap.add_argument("--context-size", type=int, default=2)
@@ -137,7 +132,7 @@ def args_embeddings(args=None, namespace=None, parse_known=False):
     ap.add_argument("--vocab-size", type=int, default=1000)
     ap.add_argument("--epochs", type=int, default=10)
     ap.add_argument("--batch-size", type=int, default=32)
-    ap.add_argument("--original-data", action="store_true")
+    ap.add_argument("--only-original-data", action="store_true")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--seed", type=int, default=1337)
 
@@ -148,7 +143,6 @@ def args_embeddings(args=None, namespace=None, parse_known=False):
 
 def args_evaluate(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-
     ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--model-name", type=str, required=True)
     ap.add_argument('--cpu', action='store_true')
@@ -161,9 +155,9 @@ def args_evaluate(args=None, namespace=None, parse_known=False):
     return ap.parse_args(args=args, namespace=namespace)
 
 def args_finetune(args=None, namespace=None, parse_known=False):
-    ap = argparse.ArgumentParser()
     arch_choices = ['roberta_base', 'roberta_large']
-
+    
+    ap = argparse.ArgumentParser()
     ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--arch", choices=arch_choices, default="roberta_large")
     ap.add_argument("--batch-size", type=int, default=None)
@@ -180,9 +174,8 @@ def args_finetune(args=None, namespace=None, parse_known=False):
 
 def args_analyze(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
-
     ap.add_argument('--model-name', type=str, default=None)
-    ap.add_argument('--arch', choices=MODEL_ARCHS, required=True)
+    ap.add_argument('--arch', choices=MODEL_ARCHS + ['glue'], required=True)
     ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
@@ -201,9 +194,9 @@ def args_analyze(args=None, namespace=None, parse_known=False):
     return analyze_args, args_remain
 
 def args_experiment():
-    ap = argparse.ArgumentParser()
-
     task_choices = ("finetune", "compress", "evaluate", "analyze")
+
+    ap = argparse.ArgumentParser()
     ap.add_argument("jobs", nargs="+", choices=task_choices)
     ap.add_argument("--name", type=str, required=True)
     ap.add_argument("--overwrite", action="store_true")
@@ -246,13 +239,14 @@ def args_experiment():
     return experiment_args, task_args, actually_remain
 
 def args_search():
-    usage = """
+    """
     Search for any 
     """
-    ap = argparse.ArgumentParser()
 
     # Job to search for.
     task_choices = ("finetune", "compress", "evaluate", "analyze")
+    
+    ap = argparse.ArgumentParser()
     ap.add_argument("job", choices=task_choices)
 
     # Args for manipulating found results.
@@ -289,7 +283,6 @@ def args_search():
 
 def args_run_all(args=None):
     ap = argparse.ArgumentParser()
-
     ap.add_argument("--name", type=str, default=None)
     ap.add_argument("--model-name", type=str, default=None)
     ap.add_argument("--seed-names", type=str, nargs="+", choices=SEED_DICT.keys())
@@ -298,12 +291,11 @@ def args_run_all(args=None):
 
 def args_run_experiment():
     ap = argparse.ArgumentParser()
-
     ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--alpha", type=float, required=True)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--embedding-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
     ap.add_argument("--embedding-dim", type=int, required=True)
-    ap.add_argument("--original-data", action="store_true")
+    ap.add_argument("--only-original-data", action="store_true")
 
     return ap.parse_args()

@@ -3,21 +3,24 @@ from argparse import ArgumentError
 from analysis import parameters, pretty_print, plotting
 from compression.distillation import models as distill_models
 from common import argparsers, model_utils
-from custom import glue_bilstm
+
+def load_model(args, is_roberta_model):
+    if is_roberta_model:
+        if args.non_finetuned:
+            return model_utils.load_roberta_model(args.arch, use_cpu=True)
+        else:
+            model_path = model_utils.get_model_path(args.task, "finetuned")
+            return model_utils.load_teacher(args.task, f"{model_path}/{args.model_name}", use_cpu=True)
+    elif args.arch == 'glue':
+        # 2_200_000 vocab_size for original GloVe
+        # 312_000 for ELMO
+        return model_utils.GlueBaseline(vocab_size=312000)
+    elif args.arch in distill_models.STUDENT_MODELS.keys():
+        return distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
 
 def main(args, sacred_experiment=None):
     is_roberta_model = model_utils.is_finetuned_model(args.arch)
-    if is_roberta_model:
-        if args.non_finetuned:
-            model = model_utils.load_roberta_model(args.arch, use_cpu=True)
-        else:
-            model_path = model_utils.get_model_path(args.task, "finetuned")
-            model = model_utils.load_teacher(args.task, f"{model_path}/{args.model_name}", use_cpu=True)
-    elif args.arch == 'glue':
-        model = glue_bilstm.Model()
-    elif args.arch in distill_models.STUDENT_MODELS.keys():
-        model = distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
-
+    model = load_model(args, is_roberta_model)
     model.eval()
     if args.model_disk_size:
         pretty_print.print_model_disk_size(model)
@@ -30,8 +33,6 @@ def main(args, sacred_experiment=None):
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("model_params", total_params)
             sacred_experiment.log_scalar("model_size", total_bits/8000000)
-    if args.layer_weight_hist:
-        pass
     if args.named_params:
         pretty_print.print_named_params(model, args.arch)
     if args.weight_thresholds:

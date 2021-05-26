@@ -79,7 +79,7 @@ class Word2VecEmbedding(Embedding):
 def train_embeddings(word2vec, args):
     train_data = data_utils.load_train_data(args.task)
     loaded_data = train_data[0] if len(train_data) == 2 else train_data[0] + train_data[2]
-    if not args.original_data:
+    if not args.only_original_data:
         augment_data = data_utils.load_augment_data(args.task, "tinybert")
         augment_data = augment_data[0] if len(augment_data) == 1 else augment_data[0] + augment_data[1]
         loaded_data = loaded_data + augment_data

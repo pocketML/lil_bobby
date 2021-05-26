@@ -1,5 +1,8 @@
+import torch.nn as nn
+
 import os
 from fairseq.models.roberta import RobertaModel
+
 from common import task_utils
 from preprocessing import download
 
@@ -83,3 +86,18 @@ def load_roberta_model(arch, use_cpu=False):
 
 def is_finetuned_model(arch):
     return arch in MODEL_INFO.keys()
+
+class GlueBaseline(nn.Module):
+  def __init__(self, vocab_size=2200000):
+    super().__init__()
+
+    self.emb = nn.Embedding(vocab_size,300)
+    self.bilstm = nn.LSTM(300, 1500, 2, bidirectional=True)
+    self.cls = nn.Sequential( # their fancy MLP version
+      nn.Linear(1500, 512),
+      nn.Linear(512, 512),
+      nn.Linear(512, 2)
+    )
+
+  def forward(self, x):
+    return self.bilstm(x)

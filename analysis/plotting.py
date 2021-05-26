@@ -27,7 +27,7 @@ COLORS_Q_CBLIND_FRIENDLY = [
 ]
 
 def create_show_pie_chart(data, labels, save_pdf):
-    fig, ax = plt.subplots(figsize=(5, 4), subplot_kw=dict(aspect="equal"))
+    fig, ax = plt.subplots(figsize=(5, 3), subplot_kw=dict(aspect="equal"))
     wedges, texts = ax.pie(data, wedgeprops=dict(width=0.5), startangle=-40, colors=COLORS_Q_CBLIND_FRIENDLY)
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
     kw = dict(arrowprops=dict(arrowstyle="-"),
@@ -59,27 +59,23 @@ def weight_pie_chart(model, arch, save_pdf=False):
         return labels
 
     grouped = model_utils.group_params_by_layer(model, arch)
+    p_count = [0, 0, 0]
     if arch in model_utils.MODEL_INFO.keys(): # either roberta large or base
-        p_count = [0,0,0]
         for key in grouped:
             if 'encoder' in key:
-                p_count[0] = count_module_size(grouped[key])
+                p_count[0] += count_module_size(grouped[key])
             elif 'layer_' in key:
-                p_count[1] = count_module_size(grouped[key])
+                p_count[1] += count_module_size(grouped[key])
             elif 'head' in key:
-                p_count[2] = count_module_size(grouped[key])
-
+                p_count[2] += count_module_size(grouped[key])
+            else:
+                print(f'whelp, {key} not recognized')
         labels = get_labels(['Sentence encoder', 'Transformer layers', 'LM Head'], p_count)
-        create_show_pie_chart(p_count, labels)
-    if arch == 'glue':
-        # original ELMO embedding param count = 93 600 000
-        p_count = [93600000, 0, 0] # first entry is GloVe 42B token, 22m vocab, 300 dim embedding
-        p_count[1] = count_module_size(grouped['bilstm'])
-        p_count[2] = count_module_size(grouped['classifier'])
-        labels = get_labels(['Embedding layer', 'BiLSTM', 'Classifier'], p_count)
-        create_show_pie_chart(p_count, labels)        
-    else: # presumably we have a student model
-        if arch == 'emb-ffn':
+    else: # presumably we have a student model or the glue baseline
+        if arch == 'glue':
+            module_names = ['emb', 'bilstm', 'cls']
+            labels = ['Embedding layer', 'BiLSTM', 'Classifier']
+        elif arch == 'emb-ffn':
             module_names = ['embedding', 'classifier']
             labels = ['Embedding layer', 'Classifier']
         elif arch == 'rnn':
@@ -90,7 +86,8 @@ def weight_pie_chart(model, arch, save_pdf=False):
             labels = ['Embedding layer', 'BiLSTM', 'Classifier']
         p_count = [count_module_size(grouped[x]) for x in module_names]
         labels = get_labels(labels, p_count)
-        create_show_pie_chart(p_count, labels, save_pdf)
+
+    create_show_pie_chart(p_count, labels, save_pdf)
 
 # TODO: only works for RoBERTa models at the moment
 def weight_histogram_for_all_transformers(model, arch, num_bins=2000):

@@ -1,26 +1,12 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
-from tqdm import tqdm
 
-import random
+from tqdm import tqdm
 from glob import glob
 import gc
 
 from common.task_utils import TASK_INFO
-
-class DataSplitter(list):
-    def __init__(self, chunk_ratio=1.0, data_ratio=1.0):
-        super().__init__()
-        self.chunk_ratio = chunk_ratio
-        self.data_ratio = data_ratio
-        self.chunk_size = None
-
-    def shuffle(self):
-        random.shuffle(self)
-
-    def set_chunk_size(self):
-        self.chunk_size = int(len(self) * self.chunk_ratio)
-        self.shuffle()
+from preprocessing import data_augment
 
 # returns sentences, labels
 def load_train_data(task, ds_type='train'):
@@ -35,38 +21,13 @@ def load_train_data(task, ds_type='train'):
                 return sentences.readlines(), targets.readlines()
 
 # returns sentences, labels, logits
-def load_distillation_data(path, data_splitter=None):
-    if data_splitter is not None and data_splitter == []:
-            
-        skip_sentences = int(1 / data_splitter.data_ratio)
-
-        with open(path, encoding="utf-8") as fip:
-            index = 0
-            for line in fip:
-                line = line.strip()
-                if line != "" and index % skip_sentences == 0:
-                    data_splitter.append(index)
-                index += 1
-
-        # Repopulate data_splitter with index of all sentences
-        data_splitter.set_chunk_size()
-
+def load_distillation_data(path, bootstap_data_ratio=1.0):
     with open(path, encoding="utf-8") as fip:
+        to_keep = int(data_augment.N_SAMPLES * bootstap_data_ratio)
         lines = []
-        sentences_to_include = set()
-        if data_splitter is not None:
-            for _ in range(data_splitter.chunk_size):
-                sentences_to_include.add(data_splitter.pop())
-            if len(data_splitter) < 256:
-                data_splitter.clear()
-
-        i = 0
-        for line in fip:
-            line = line.strip()
-            if line != "" and (data_splitter is None or i in sentences_to_include):
-                line = line.strip().split("\t")
-                lines.append(line)
-            i += 1
+        for i,line in enumerate(fip):
+            if i % data_augment.N_SAMPLES < to_keep and line.strip() != "":
+                lines.append(line.strip().split("\t"))
         return [list(x) for x in list(zip(*lines))]
 
 def load_val_data(task, mnli_subtask='both'):
@@ -91,28 +52,28 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task, only_original_data=False, data_splitter=None):
+def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ratio=1.0):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
-    distillation_data = []
+    train_data = []
     if only_original_data:
         train_files = glob(f"{base_path}/train.tsv")
     else:
         train_files = glob(f"{base_path}/*.tsv")
     for filename in train_files:
-        if task in ['qqp', 'mnli'] and 'train.tsv' not in filename: # TODO: this logic should reside in augment and not here
-            loaded_data = load_distillation_data(filename, data_splitter)
+        if bootstrap_data_ratio < 1.0 and 'train.tsv' not in filename:
+            loaded_data = load_distillation_data(filename, bootstrap_data_ratio)
         else:
             loaded_data = load_distillation_data(filename)
 
-        if distillation_data == []:
-            distillation_data = loaded_data
+        if train_data == []:
+            train_data = loaded_data
         else:
-            distillation_data[0].extend(loaded_data[0])
-            distillation_data[1].extend(loaded_data[1])
-            distillation_data[2].extend(loaded_data[2])
-            if len(distillation_data) > 3:
-                distillation_data[3].extend(loaded_data[3])
-    return distillation_data
+            train_data[0].extend(loaded_data[0])
+            train_data[1].extend(loaded_data[1])
+            train_data[2].extend(loaded_data[2])
+            if len(train_data) > 3:
+                train_data[3].extend(loaded_data[3])
+    return train_data
 
 class DistillationData(Dataset):
     def __init__(self, data) -> None:
@@ -125,21 +86,9 @@ class DistillationData(Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
-class DistillationPairData(Dataset):
-    def __init__(self, data) -> None:
-        super().__init__()
-        self.data = data
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx]
-
 def get_datasets(model, sentences1, labels, sentences2=None, logits=None, loadbar=True):
-    # labels
     data = []
-    iterator = range(len(sentences1) - 1, -1, -1)
+    iterator = range(len(sentences1) - 1, -1, -1) # iterating from the back
     if loadbar:
         iterator = tqdm(range(len(sentences1) - 1, -1, -1), leave=False)
 
@@ -181,19 +130,16 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None, loadba
     if sentences2 is not None:
         sentences2.clear()
         del sentences2
-        gc.collect()
-        return DistillationPairData(data)
-    else:
-        gc.collect()
-        return DistillationData(data)
+    gc.collect()
+    return DistillationData(data)
 
-def get_dataloader_dict_val(model, validation_data, loadbar=True):
+def get_val_dataloader(model, validation_data, loadbar=True):
     if len(validation_data) > 2:
-        val_x1, val_labels, val_x2 = validation_data
-        dataset = get_datasets(model, val_x1, val_labels, sentences2=val_x2, loadbar=loadbar)
+        x1, labels, x2 = validation_data
+        dataset = get_datasets(model, x1, labels, sentences2=x2, loadbar=loadbar)
     else:
-        val_x1, val_labels = validation_data
-        dataset = get_datasets(model, val_x1, val_labels, loadbar=loadbar)
+        x, labels = validation_data
+        dataset = get_datasets(model, x, labels, loadbar=loadbar)
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],
@@ -202,13 +148,13 @@ def get_dataloader_dict_val(model, validation_data, loadbar=True):
             collate_fn=create_collate_fn(model.cfg)
         )
 
-def get_dataload_dict_train(model, distillation_data, loadbar=True):
+def get_train_dataloader(model, distillation_data, loadbar=True):
     if len(distillation_data) > 3:
-        train_x1, train_x2, train_labels, train_logits = distillation_data
-        dataset = get_datasets(model, train_x1, train_labels, sentences2=train_x2, logits=train_logits, loadbar=loadbar)
+        x1, x2, labels, logits = distillation_data
+        dataset = get_datasets(model, x1, labels, sentences2=x2, logits=logits, loadbar=loadbar)
     else:
-        train_x1, train_labels, train_logits = distillation_data
-        dataset = get_datasets(model, train_x1, train_labels, logits=train_logits, loadbar=loadbar)
+        x, labels, logits = distillation_data
+        dataset = get_datasets(model, x, labels, logits=logits, loadbar=loadbar)
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],
@@ -216,20 +162,6 @@ def get_dataload_dict_train(model, distillation_data, loadbar=True):
             drop_last=True,
             collate_fn=create_collate_fn(model.cfg)
         )
-
-def get_dataloader_dict(model, distillation_data, validation_data):
-    datasets = {
-        "train": get_dataload_dict_train(model, distillation_data),
-        "val": get_dataloader_dict_val(model, validation_data)
-    }
-
-    dataloaders = {x: DataLoader(
-            datasets[x],
-            batch_size=model.cfg['batch-size'],
-            shuffle=True,
-            drop_last=x == 'train',
-            collate_fn=create_collate_fn(model.cfg)) for x in ("train", "val")}
-    return dataloaders
 
 # pads sentences in a batch to equal length
 # code inspired by https://github.com/hpanwar08/sentence-classification-pytorch/

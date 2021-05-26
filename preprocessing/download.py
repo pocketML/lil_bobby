@@ -55,9 +55,7 @@ def download_and_extract(urls, folder):
             shutil.move(filename, f"{folder}/{filename}")
         else: # File is an archive.
             shutil.unpack_archive(filename, base_folder)
-
             os.remove(filename)
-
 
 def preprocess_glue_task(task):
     preprocess_GLUE_tasks.preprocess_glue_task(task)
@@ -75,7 +73,6 @@ def get_dataset_path(task, task_info):
     if not path_exists(folder):
         urls = task_info["download_url"]
         download_and_process_data(task, urls, folder)
-
     return folder
 
 def get_roberta_path(model_info):
@@ -83,5 +80,4 @@ def get_roberta_path(model_info):
     if not path_exists(folder):
         urls = model_info["download_url"]
         download_and_extract(urls, folder)
-
     return folder
