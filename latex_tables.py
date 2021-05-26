@@ -135,8 +135,8 @@ def group_and_format_data(results):
 
                 if key not in grouped_by_emb:
                     grouped_by_emb[key] = {
-                        data['emb-type'], data['emb-dim'],
-                        data["params"], data["size"]
+                        "emb-type": data['emb-type'], "emb-dim": data['emb-dim'],
+                        "params": data["params"], "size": data["size"]
                     }
                     grouped_by_emb[key]["acc"] = ["" for _ in range(4)]
                     grouped_by_emb[key]["std"] = ["" for _ in range(4)]
