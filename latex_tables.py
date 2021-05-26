@@ -109,7 +109,7 @@ def get_experiment_data(experiment_group):
     return data_for_experiment
 
 def group_and_format_data(results):
-    alpha_indices = {0: 1, 0.5: 2, 1: 3}
+    alpha_indices = {0.0: 1, 1.0: 1, 0.5: 2, 0.0: 3}
     emb_sort_order = [
         "hash", "bpe", "char"
     ]
@@ -184,11 +184,11 @@ def group_and_format_data(results):
                         fmt_val = ""
                         if val_1 is not None:
                             fmt_val = f"{(val_1 * 100):.1f}"
-                            if index == max_measure_index_1:
+                            if measurement == "acc" and index == max_measure_index_1:
                                 fmt_val = "\\textbf{" + fmt_val + "}"
                         if val_2 is not None:
                             fmt_val_2 = f"{(val_2 * 100):.1f}"
-                            if index == max_measure_index_2:
+                            if measurement == "acc" and index == max_measure_index_2:
                                 fmt_val_2 = "\\textbf{" + fmt_val_2 + "}"
                             fmt_val = fmt_val + f"/{fmt_val_2}"
 
