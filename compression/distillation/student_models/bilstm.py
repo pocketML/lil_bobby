@@ -6,7 +6,7 @@ from compression.distillation.student_models import base
 # mix implemention of https://arxiv.org/pdf/1903.12136.pdf
 #  but with bytepair embeddings instead of the humongously
 #  sized word2vec GoogleNews pre-trained word embeddings yay
-class TangBILSTM(base.StudentModel):
+class BiLSTM(base.StudentModel):
     def __init__(self, cfg):
         super().__init__(cfg)
 

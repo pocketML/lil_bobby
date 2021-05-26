@@ -257,10 +257,11 @@ def args_search():
 
     # Args for manipulating found results.
     ap.add_argument("--metric", type=str, choices=("acc", "params", "size"), default="acc")
-    ap.add_argument("--sort", choices=("time", "name"), default="time")
+    ap.add_argument("--sort", choices=("time", "name"), default="name")
     ap.add_argument("--tab-separate", action="store_true")
     ap.add_argument("--generate-table", action="store_true")
     ap.add_argument("--no-metrics", action="store_true")
+    ap.add_argument("--no-validate", action="store_true")
     ap.add_argument("--table-col", type=str)
     ap.add_argument("--table-row", type=str)
     ap.add_argument("--table-headers", nargs="+")
@@ -299,7 +300,7 @@ def args_run_experiment():
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
-    ap.add_argument("--alpha", type=int, required=True)
+    ap.add_argument("--alpha", type=float, required=True)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--embedding-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
     ap.add_argument("--embedding-dim", type=int, required=True)

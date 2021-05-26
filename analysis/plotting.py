@@ -85,7 +85,7 @@ def weight_pie_chart(model, arch, save_pdf=False):
         elif arch == 'rnn':
             module_names = ['embedding', 'encoder', 'classifier']
             labels = ['Embedding layer', 'RNN', 'Classifier']
-        elif arch == 'tang':
+        elif arch == 'bilstm':
             module_names = ['embedding', 'bilstm', 'classifier']
             labels = ['Embedding layer', 'BiLSTM', 'Classifier']
         p_count = [count_module_size(grouped[x]) for x in module_names]

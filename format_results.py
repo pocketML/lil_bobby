@@ -47,11 +47,87 @@ def get_experiment_date(time_str):
     second = int(dot_split[0])
     return datetime(year, month, day, hour, minute, second).timestamp()
 
+def validate_experiment_params(experiment_data, name):
+    name_split = name.split("_")
+    try:
+        # Extract experiment parameters from name.
+        arch = name_split[0]
+        if arch == "embffn":
+            arch = "emb-ffn"
+        task = name_split[1]
+        if task == "sst":
+            task = "sst-2"
+        alpha = name_split[2].replace("alpha", "")
+        if alpha == "05":
+            alpha = "0.5"
+        alpha = float(alpha)
+        try:
+            embed_dim = int(name_split[3][-3:])
+            embed_type = name_split[3][:-3]
+        except ValueError:
+            embed_dim = 25
+            embed_type = name_split[3][:-2]
+
+        # Do the validation.
+        params_to_check = [
+            ("student_arch", arch), ("task", task), ("alpha", alpha),
+            ("embedding_dim", embed_dim), ("embedding_type", embed_type)
+        ]
+        erroneous_params = []
+        for param, param_value in params_to_check:
+            if experiment_data[param] != param_value:
+                erroneous_params.append((param, experiment_data[param], param_value))
+
+        chunk_ratio = experiment_data["chunk_ratio"]
+        if chunk_ratio is not None and chunk_ratio != 1.0:
+            erroneous_params.append(('chunk_ratio', chunk_ratio, 1.0))
+
+        classifier_dim = experiment_data["cls_hidden_dim"]
+        expected_classifier_dim = None
+        encoder_dim = experiment_data["encoder_hidden_dim"]
+        expected_encoder_dim = None
+
+        if task == "sst-2":
+            data_ratio = experiment_data["data_ratio"]
+            if data_ratio is not None and data_ratio != 1.0:
+                erroneous_params.append(('data_ratio', data_ratio, 1.0))
+
+            if arch == "bilstm":
+                expected_classifier_dim = 200
+                expected_encoder_dim = 150
+            else:
+                expected_classifier_dim = 100
+                expected_encoder_dim = 100
+        else:
+            if arch == "bilstm":
+                expected_classifier_dim = 400
+                expected_encoder_dim = 300
+            else:
+                expected_classifier_dim = 200
+                expected_encoder_dim = 200
+
+        if classifier_dim is not None and expected_classifier_dim != classifier_dim:
+            erroneous_params.append(('cls_hidden_dim', classifier_dim, expected_classifier_dim))
+        if encoder_dim is not None and expected_encoder_dim != encoder_dim:
+            erroneous_params.append(('encoder_hidden_dim', encoder_dim, expected_encoder_dim))
+
+        if erroneous_params != []:
+            err_messages = []
+            for param, actual, expected in erroneous_params:
+                err_messages.append(
+                    f"'{param}' is incorrect! It is '{actual}' (expected '{expected}')"
+                )
+            raise ValueError(f"Validation of '{name}' failed: {', '.join(err_messages)}.")
+
+    except IndexError:
+        raise ValueError(f"Validation of '{name}' failed: Name is incorrectly formatted!")
+
 def experiment_contains_args(exp_path, meta_args, search_args):
     # See if args used to run experiment matches given args.
     # We search for both cmd args given to experiment as well as model cfg args used.
     values_found = {x: False for x in search_args.__dict__}
     data_found = {}
+
 
     for data_type in ("info", "config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
@@ -96,6 +172,11 @@ def experiment_contains_args(exp_path, meta_args, search_args):
         return None
 
     name = exp_path.replace("\\", "/").split("/")[-1]
+
+    if not meta_args.no_validate:
+        experiment_args = get_json_data(exp_path, "config")[meta_args.job]
+        validate_experiment_params(experiment_args, name)
+
     data_found["name"] = name
     return data_found
 

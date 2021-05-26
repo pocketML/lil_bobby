@@ -36,9 +36,32 @@ def main(args):
 
     args_list.extend(["--cls-hidden-dim", str(classifier_dim)])
 
+    # Use 25% of our augmented data when running QQP or MNLI.
     if not args.original_data and large_task:
         args_list.extend(["--data-ratio", "0.25"])
 
+    # Edit 'submit.job' to set minimum required memory.
+    lines = []
+    with open("submit.job", "r", encoding="utf-8") as fp:
+        lines = fp.readlines()
+
+    with open("submit.job", "w", encoding="utf-8") as fp:
+        for line in lines:
+            new_line = line
+            if "#SBATCH --mem-per-cpu=6000" in line:
+                if large_task:
+                    new_line = "#SBATCH --mem-per-cpu=6000\n"
+                else:
+                    new_line = "##SBATCH --mem-per-cpu=6000\n"
+            elif "#SBATCH --time=" in line:
+                if args.student_arch == "emb-ffn":
+                    new_line = "#SBATCH --time=04:00:00\n"
+                else:
+                    new_line = "#SBATCH --time=12:00:00\n"
+
+            fp.write(new_line)
+
+    # Include final static arguments.
     args_list.extend([
          "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
         "--model-size", "--model-disk-size", "--transponder"
@@ -49,8 +72,9 @@ def main(args):
     dt_now = datetime.now()
     month_names = ["may", "june", "july", "august"]
     date_fmt = f"{month_names[dt_now.month - 5]}{dt_now.day}"
+    arch_fmt = args.student_arch if args.student_arch != "emb-ffn" else "embffn"
     task_fmt = args.task.replace("sst-2", "sst")
-    name = f"{args.student_arch}_{task_fmt}_alpha{alpha_fmt}_{args.embedding_type}{args.embedding_dim}"
+    name = f"{arch_fmt}_{task_fmt}_alpha{alpha_fmt}_{args.embedding_type}{args.embedding_dim}"
     if args.original_data:
         name += "_og"
     name += f"_{date_fmt}"
