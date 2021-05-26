@@ -183,11 +183,11 @@ def group_and_format_data(results):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
                         fmt_val = ""
                         if val_1 is not None:
-                            fmt_val = f"{val_1:.1f}"
+                            fmt_val = f"{(val_1 * 100):.1f}"
                             if index == max_measure_index_1:
                                 fmt_val = "\\textbf{" + fmt_val + "}"
                         if val_2 is not None:
-                            fmt_val_2 = f"{val_2:.1f}"
+                            fmt_val_2 = f"{(val_2 * 100):.1f}"
                             if index == max_measure_index_2:
                                 fmt_val_2 = "\\textbf{" + fmt_val_2 + "}"
                             fmt_val = fmt_val + f"/{fmt_val_2}"
@@ -248,14 +248,17 @@ def print_table(grouped_data):
     for arch in grouped_data:
         line = "\\multirow{" + f"{len(grouped_data[arch])}" + "}{*}"
         line += "{" + arch_formatted[arch] + "} & "
-        for data in grouped_data[arch]:
+        for index, data in enumerate(grouped_data[arch]):
             row_data = [
                 emb_formatted[data["emb-type"]], data["emb-dim"],
                 data["params"], data["size"]
             ]
             row_data = row_data + data["measurements"]
 
-            line += " & ".join(row_data) + "\\\\ & "
+            line += " & ".join(row_data) + "\\\\"
+            if index < len(grouped_data[arch]) - 1:
+                line += " & "
+
         print(line)
         print("\\hline")
 
