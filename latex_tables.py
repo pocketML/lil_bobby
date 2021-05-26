@@ -53,9 +53,9 @@ def get_new_results():
 
 def validate_experiment(data):
     expected_params = [
-        ("vocab_size", [5000]), ("embedding_freeze", [False]),
-        ("embedding_dim", [25, 100, 300]),
-        ("embedding_type", ["hash", "bpe", "char"])
+        ("vocab_size", [5000, None]), ("embedding_freeze", [False, None]),
+        ("embedding_dim", [25, 100, 300, None]),
+        ("embedding_type", ["hash", "bpe", "char", None])
     ]
     for param, expected_values in expected_params:
         if data[param] not in expected_values:
@@ -65,7 +65,7 @@ def validate_experiment(data):
 def get_experiment_data(experiment_group):
     metrics = []
     with open(f"{experiment_group[0]}/config.json", "r") as fp:
-        config = json.load(fp)
+        config = json.load(fp)["compress"]
 
     if not validate_experiment(config):
         return None
