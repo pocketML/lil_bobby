@@ -7,7 +7,7 @@ from numpy.core.fromnumeric import std
 
 OLD_RESULT_NAMES = [
     # BPE 25
-    "tang_sst_bpe25_may14", "tang_bpe_dim25_alpha1_may9",
+    "tang_sst_bpe25_og_may14", "tang_bpe_dim25_alpha1_may9",
     "tang_sst_alpha05_bpe25_may16", "tang_sst_alpha0_bpe25_may16",
     # BPE 300
     "tang_ogdata_alpha1_may12", "tang_bpe_alpha1_may6",
