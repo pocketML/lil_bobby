@@ -11,10 +11,10 @@ def main(args):
     # Add already specified args (task, alpha, student-arch, embed-type, embed-dim) to list.
     for key in args.__dict__:
         key_fmt = "--" + key.replace("_", "-")
-        if key_fmt != "--original-data":
+        if key_fmt != "--only-original-data":
             args_list.append(key_fmt)
             args_list.append(str(args.__dict__[key]))
-        elif args.original_data:
+        elif args.only_original_data:
             args_list.append(key_fmt)
 
     # Load default config for the given task and student.
@@ -37,7 +37,7 @@ def main(args):
     args_list.extend(["--cls-hidden-dim", str(classifier_dim)])
 
     # Use 25% of our augmented data when running QQP or MNLI.
-    if not args.original_data and large_task:
+    if not args.only_original_data and large_task:
         args_list.extend(["--data-ratio", "0.25"])
 
     # Edit 'submit.job' to set minimum required memory.
@@ -75,7 +75,7 @@ def main(args):
     arch_fmt = args.student_arch if args.student_arch != "emb-ffn" else "embffn"
     task_fmt = args.task.replace("sst-2", "sst")
     name = f"{arch_fmt}_{task_fmt}_alpha{alpha_fmt}_{args.embedding_type}{args.embedding_dim}"
-    if args.original_data:
+    if args.only_original_data:
         name += "_og"
     name += f"_{date_fmt}"
     args_list.extend(["--name", name])

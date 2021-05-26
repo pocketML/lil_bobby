@@ -127,22 +127,6 @@ TASK_INFO = {
     }
 }
 
-SEED_DICT = {
-    "bennington": 3201976,
-    "hadfield": 8291959,
-    "feynman": 5111918,
-    "simone": 2211933
-    #"knuth": 1101938,
-    #"shannon": 4301916,
-    #"miyazaki": 1051941,
-    #"doom": 7131971,
-    #"lorca": 6051898,
-    #"armstrong": 8051930,
-    #"cardi": 10111992,
-    #"lovelace": 12101815,
-    #"elite": 1337
-}
-
 def get_processed_path(task):
     return f'{TASK_INFO[task]["path"]}/processed/{task}-bin/'
 

@@ -1,4 +1,4 @@
-from common import argparsers, task_utils
+from common import argparsers, seed_utils
 from os import system
 
 def main(args, args_remain):
@@ -10,14 +10,14 @@ def main(args, args_remain):
     args_str = " ".join(args_remain)
 
     if args.seed_names is None:
-        seed_names = task_utils.SEED_DICT.keys()
+        seed_names = seed_utils.SEED_DICT.keys()
     else:
         seed_names = args.seed_names
 
     for seed_name in seed_names:
         full_cmd_str = f"sbatch submit.job experiment.py {args_str}"
         if name_1 is not None:
-            full_cmd_str += f" --name {name_1}_{seed_name} --seed {task_utils.SEED_DICT[seed_name]}"
+            full_cmd_str += f" --name {name_1}_{seed_name} --seed {seed_utils.SEED_DICT[seed_name]}"
         if name_2 is not None:
             full_cmd_str += f" --model-name {name_1}_{seed_name}"
 

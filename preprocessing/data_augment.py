@@ -4,9 +4,8 @@ import os
 import re
 from glob import glob
 import numpy as np
-from common.task_utils import TASK_INFO
-from common.data_utils import load_train_data
-from common.model_utils import load_roberta_model
+
+from common import seed_utils, task_utils, data_utils, model_utils
 
 STOP_WORDS = [
     'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours',
@@ -22,6 +21,7 @@ STOP_WORDS = [
     'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't", "'s", "'re"
 ]
 
+N_SAMPLES = 20
 VOCAB_SIZE = 100_000
 
 def load_glove():
@@ -64,7 +64,7 @@ def load_glove():
     return emb_norm, vocab, ids_to_tokens
 
 def is_valid(word):
-    return True if not re.search('[^a-zA-Z]', word) else False
+    return not re.search('[^a-zA-Z]', word)
 
 class Augmenter:
     @abstractmethod
@@ -74,11 +74,11 @@ class Augmenter:
 class TinyBertAugmenter(Augmenter):
     def __init__(self):
         self.glove_normed, self.glove_vocab, self.glove_ids = load_glove()
-        self.masked_lm = load_roberta_model('roberta_large')
+        self.masked_lm = model_utils.load_roberta_model('roberta_large')
         #self.masked_lm.half()
         # Initialize augment parameters.
         self.p_threshold = 0.4 # Threshold probability.
-        self.n_samples = 20 # Number of augmented samples per examples.
+        self.n_samples = N_SAMPLES # Number of augmented samples per examples.
         self.k_candidates = 15 # Size of candidate set.
 
     def masked_lm_predict(self, tokens):
@@ -153,34 +153,19 @@ class TinyBertAugmenter(Augmenter):
 
         return sent_candidates
 
-class MaskAugmenter(Augmenter):
-    def augment(self, sentence):
-        pass
-
-class PoSAugmenter(Augmenter):
-    def __init__(self):
-        self.pos_tagger = None # Initialize PoS tagger.
-
-    def augment(self, sentence):
-        pass
-
-class NGramAugmenter(Augmenter):
-    def augment(self, sentence):
-        pass
-
 def augment(task, augment_technique, seed):
-    random.seed(seed)
+    seed_utils.set_global_seed(seed, set_cuda_deterministic=True)
+
     classes = {
-        "tinybert": TinyBertAugmenter, "mask": MaskAugmenter,
-        "pos": PoSAugmenter, "ngram": NGramAugmenter
+        "tinybert": TinyBertAugmenter
     }
 
-    augment_dir = f"{TASK_INFO[task]['path']}/augment_data"
+    augment_dir = f"{task_utils.TASK_INFO[task]['path']}/augment_data"
     os.makedirs(augment_dir, exist_ok=True)
 
     augmenter = classes[augment_technique]()
 
-    training_data = load_train_data(task)
+    training_data = data_utils.load_train_data(task)
     sentence_pairs = len(training_data) == 3
     prev_pct = 0
     print(f"Augmenting dataset: {prev_pct}% complete...", end="\r", flush=True)

@@ -1,8 +1,10 @@
 import torch
 import torch.nn.utils.prune as prune
 
-from common import model_utils
+from common import model_utils, data_utils
 from embedding.base import Embedding
+import evaluate
+from analysis import pretty_print
 
 class MagnitudePruning(prune.BasePruningMethod):
     PRUNING_TYPE = "unstructured"
@@ -104,9 +106,7 @@ def prune_globally(params, prune_cls, threshold):
         threshold=threshold
     )
 
-def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
-    #model_copy = copy.deepcopy(model)
-
+def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=False):
     params_to_prune = get_prunable_params(model)
 
     if prune_local:
@@ -117,7 +117,7 @@ def prune_model(model, prune_cls, threshold, prune_local=False, sparsify=False):
 
     for module, param_name, in params_to_prune:
         prune.remove(module, param_name)
-        if sparsify:
+        if sparsify: # converts pruned tensors to sparse tensors
             dense_tensor = getattr(module, param_name)
             sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
             setattr(module, param_name, sparse_tensor)
@@ -133,3 +133,44 @@ def params_zero(model):
         zero += (num_params - non_zero)
         total_params += num_params
     return total_params, zero
+
+def do_pruning(model, args, epoch=None):
+    threshold = args.prune_threshold
+    if epoch is not None and epoch < args.prune_warmup:
+        threshold = threshold * (epoch / args.prune_warmup)
+
+    prune_class = None
+    if args.prune_magnitude:
+        prune_class = MagnitudePruning
+    elif args.prune_movement:
+        pass
+    elif args.prune_topk:
+        prune_class = TopKPruning
+
+    model = actual_pruning(model, prune_class, threshold, args.prune_local)
+
+    params, zero = params_zero(model)
+    sparsity = (zero / params) * 100
+    print(f"Sparsity: {sparsity:.2f}%")
+
+    return model
+
+def prune_model(model, device, args):
+    dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))
+
+    print("Starting point:")
+    params, zero = params_zero(model)
+    sparsity = (zero / params) * 100
+    print(f"Sparsity before: {sparsity:.2f}%")
+    pretty_print.print_model_disk_size(model)
+    evaluate.evaluate_distilled_model(model, dl, device, args)
+    print()
+
+    print("** Pruning model... **")
+    model = do_pruning(model, args)
+    
+    print("** Pruning completed **")
+    pretty_print.print_model_disk_size(model)
+    evaluate.evaluate_distilled_model(model, dl, device, args)
+    print()
+    return model

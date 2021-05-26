@@ -142,16 +142,13 @@ def main(args, sacred_experiment=None):
         if task == 'mnli':
             for subtask in ['matched', 'mismatched']:
                 val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
-                dl = data_utils.get_dataloader_dict_val(model, val_data)
+                dl = data_utils.get_val_dataloader(model, val_data)
                 evaluate_distilled_model(model, dl, device, args, sacred_experiment, mnli_subtask=subtask)
-        elif task == 'qqp':
-            val_data = data_utils.load_val_data(task)
-            dl = data_utils.get_dataloader_dict_val(model, val_data)
-            evaluate_distilled_model(model, dl, device, args, sacred_experiment, include_f1=True)
         else:
+            include_f1 = task in ['qqp']
             val_data = data_utils.load_val_data(task)
-            dl = data_utils.get_dataloader_dict_val(model, val_data)
-            evaluate_distilled_model(model, dl, device, args, sacred_experiment)
+            dl = data_utils.get_val_dataloader(model, val_data)
+            evaluate_distilled_model(model, dl, device, args, sacred_experiment, include_f1=include_f1)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()

@@ -33,7 +33,6 @@ def count_below_threshold_in_layer(layer, threshold):
     below = np.where(abs(weights) < threshold, 1, 0)
     return below.sum(), len(weights)
 
-
 def get_model_disk_size(model):
     torch.save(model.state_dict(), "tmp.pt")
     size = os.path.getsize("tmp.pt")/1e6
