@@ -39,7 +39,6 @@ def get_new_results():
     for month_index, month in enumerate(month_names):
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
             results_for_day = glob(f"experiments/*_{month}{day}*")
-            print(f"{month}{day}: {results_for_day}")
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
@@ -52,10 +51,24 @@ def get_new_results():
                 new_results.append(grouped_results[group])
     return new_results
 
+def validate_experiment(data):
+    expected_params = [
+        ("vocab_size", [5000]), ("embedding_freeze", [False]),
+        ("embedding_dim", [25, 100, 300]),
+        ("embedding_type", ["hash", "bpe", "char"])
+    ]
+    for param, expected_values in expected_params:
+        if data[param] not in expected_values:
+            return False
+    return True
+
 def get_experiment_data(experiment_group):
     metrics = []
     with open(f"{experiment_group[0]}/config.json", "r") as fp:
         config = json.load(fp)
+
+    if not validate_experiment(config):
+        return None
 
     for experiment_path in experiment_group:
         with open(f"{experiment_path}/metrics.json", "r") as fp:
@@ -100,10 +113,11 @@ def group_and_format_data(results):
         "hash", "bpe", "char"
     ]
 
-    grouped_data = {}
+    grouped_data = {"sst": [], "qqp": [], "mnli": []}
     for result_group in results:
         data = get_experiment_data(result_group)
-        grouped_data[data["task"]] = data
+        if data is not None:
+            grouped_data[data["task"]].append(data)
 
     for task in grouped_data:
         grouped_by_arch = {
