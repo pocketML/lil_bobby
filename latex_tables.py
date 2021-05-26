@@ -229,7 +229,7 @@ def print_table(grouped_data):
 
     # Actually print the data
     for arch in grouped_data:
-        line = "\\multirow{" + len(grouped_data[arch]) + "}{*}"
+        line = "\\multirow{" + f"{len(grouped_data[arch])}" + "}{*}"
         line += "{" + arch_formatted[arch] + "} & "
         for data in grouped_data[arch]:
             row_data = [
