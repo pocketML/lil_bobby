@@ -102,7 +102,7 @@ def get_experiment_data(experiment_group):
     std_2 = None if accuracies_2 == [] else np.std(np.array(accuracies_2))
 
     data_for_experiment = {
-        "arch": config["student_arch"], "emb-type": config["embedding_type"],
+        "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
         "emb-dim": config["embedding_dim"], "alpha": config["alpha"], "og": config["original_data"],
         "params": params, "size": disk_size, "acc": (mean_1, mean_2), "std": (std_1, std_2)
     }
