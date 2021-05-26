@@ -114,7 +114,7 @@ def group_and_format_data(results):
         "hash", "bpe", "char"
     ]
 
-    grouped_data = {"sst": [], "qqp": [], "mnli": []}
+    grouped_data = {"sst-2": [], "qqp": [], "mnli": []}
     for result_group in results:
         data = get_experiment_data(result_group)
         if data is not None:
@@ -125,7 +125,7 @@ def group_and_format_data(results):
             "bilstm": [], "rnn": [], "emb-ffn": []
         }
         for data in grouped_data[task]:
-            grouped_by_arch[data["arch"]] = data
+            grouped_by_arch[data["arch"]].append(data)
         grouped_data[task] = grouped_by_arch
 
         for arch in grouped_data[task]:
