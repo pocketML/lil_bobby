@@ -3,7 +3,6 @@ import json
 from glob import glob
 
 import numpy as np
-from numpy.core.fromnumeric import std
 
 OLD_RESULT_NAMES = [
     # BPE 25
@@ -22,7 +21,7 @@ OLD_RESULT_NAMES = [
 
 def get_old_results():
     old_results = []
-    
+
     for name in OLD_RESULT_NAMES:
         path = f"experiments/{name}"
         old_results.append(
@@ -103,7 +102,7 @@ def get_experiment_data(experiment_group):
 
     data_for_experiment = {
         "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
-        "emb-dim": config["embedding_dim"], "alpha": config["alpha"], "og": config["original_data"],
+        "emb-dim": config["embedding_dim"], "alpha": config["alpha"], "og": config["only_original_data"],
         "params": params, "size": disk_size, "acc": (mean_1, mean_2), "std": (std_1, std_2)
     }
     return data_for_experiment
