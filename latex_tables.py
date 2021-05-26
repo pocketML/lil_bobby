@@ -129,19 +129,33 @@ def group_and_format_data(results):
         grouped_data[task] = grouped_by_arch
 
         for arch in grouped_data[task]:
+            embeddings = [
+                ("hash", 25), ("hash", 100), ("hash", 300),
+                ("bpe", 25), ("bpe", 100), ("bpe", 300),
+                ("char", 100)
+            ]
+            if task != "sst-2":
+                embeddings.remove(("hash", 300))
+                embeddings.remove(("bpe", 300))
+
             grouped_by_emb = {}
+
+            for emb_type, emb_dim in embeddings:
+                key = f"{emb_type}_{emb_dim}"
+                grouped_by_emb[key] = {
+                    "emb-type": emb_type, "emb-dim": emb_dim,
+                    "params": "", "size": "",
+                    "acc": [(None, None) for _ in range(4)],
+                    "std": [(None, None) for _ in range(4)]
+                }
+
             for data in grouped_data[task][arch]:
                 key = f"{data['emb-type']}_{data['emb-dim']}"
 
-                if key not in grouped_by_emb:
-                    fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1)
-                    fmt_size = f"{data['size']:.2f}"
-                    grouped_by_emb[key] = {
-                        "emb-type": data['emb-type'], "emb-dim": str(data['emb-dim']),
-                        "params": fmt_params, "size": fmt_size
-                    }
-                    grouped_by_emb[key]["acc"] = [(0, None) for _ in range(4)]
-                    grouped_by_emb[key]["std"] = [(0, None) for _ in range(4)]
+                fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1)
+                fmt_size = f"{data['size']:.2f}"
+                grouped_by_emb[key]["params"] = fmt_params
+                grouped_by_emb[key]["size"] = fmt_size
 
                 alpha_index = 0 if data["og"] else alpha_indices[data["alpha"]]
 
@@ -157,7 +171,7 @@ def group_and_format_data(results):
                     max_measure_2 = 0
                     for index in range(len(grouped_by_emb[key][measurement])):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
-                        if val_1 > max_measure_1:
+                        if val_1 is not None and val_1 > max_measure_1:
                             max_measure_1 = val_1
                             max_measure_index_1 = index
                         if val_2 is not None and val_2 > max_measure_2:
@@ -166,9 +180,11 @@ def group_and_format_data(results):
 
                     for index in range(len(grouped_by_emb[key][measurement])):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
-                        fmt_val = f"{val_1:.1f}"
-                        if index == max_measure_index_1:
-                            fmt_val = "\\textbf{" + fmt_val + "}"
+                        fmt_val = ""
+                        if val_1 is not None:
+                            fmt_val = f"{val_1:.1f}"
+                            if index == max_measure_index_1:
+                                fmt_val = "\\textbf{" + fmt_val + "}"
                         if val_2 is not None:
                             fmt_val_2 = f"{val_2:.1f}"
                             if index == max_measure_index_2:
@@ -206,7 +222,7 @@ def print_table(grouped_data):
     print("\\centering")
     print("\\begin{table*}[!htb]")
     print("\\centering")
-    print("\\setlength\\tabcolsep{4pt}")
+    print("\\setlength\\{tabcolsep}{4pt}")
     print("\\begin{footnotesize}")
     print("\\renewcommand{\\arraystretch}{1.3}")
 
@@ -238,7 +254,7 @@ def print_table(grouped_data):
             ]
             row_data = row_data + data["measurements"]
 
-            line += " & ".join(row_data)
+            line += " & ".join(row_data) + "\\"
         print(line)
         print("\\hline")
 
