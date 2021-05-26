@@ -223,7 +223,7 @@ def print_table(grouped_data):
     print("\\centering")
     print("\\begin{table*}[!htb]")
     print("\\centering")
-    print("\\setlength\\{tabcolsep}{4pt}")
+    print("\\setlength{\\tabcolsep}{4pt}")
     print("\\begin{footnotesize}")
     print("\\renewcommand{\\arraystretch}{1.3}")
 
@@ -255,7 +255,7 @@ def print_table(grouped_data):
             ]
             row_data = row_data + data["measurements"]
 
-            line += " & ".join(row_data) + "\\"
+            line += " & ".join(row_data) + "\\\\"
         print(line)
         print("\\hline")
 
