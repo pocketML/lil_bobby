@@ -140,8 +140,8 @@ def group_and_format_data(results):
                         "emb-type": data['emb-type'], "emb-dim": str(data['emb-dim']),
                         "params": fmt_params, "size": fmt_size
                     }
-                    grouped_by_emb[key]["acc"] = ["" for _ in range(4)]
-                    grouped_by_emb[key]["std"] = ["" for _ in range(4)]
+                    grouped_by_emb[key]["acc"] = [(0, None) for _ in range(4)]
+                    grouped_by_emb[key]["std"] = [(0, None) for _ in range(4)]
 
                 alpha_index = 0 if data["og"] else alpha_indices[data["alpha"]]
 
