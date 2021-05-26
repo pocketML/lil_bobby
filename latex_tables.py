@@ -229,7 +229,7 @@ def main(args):
     new_results = get_new_results()
     old_results = get_old_results()
 
-    all_results = old_results + new_results
+    all_results = new_results# + old_results
 
     grouped_data = group_and_format_data(all_results)
 
