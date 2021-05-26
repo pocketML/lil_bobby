@@ -239,6 +239,25 @@ def print_table(grouped_data):
 
             line += "& ".join(row_data)
         print(line)
+        print("\\hline")
+
+    print("\\end{tabular}")
+    print("\\renewcommand{\\arraystretch}{1}")
+    print("\\end{footnotesize}")
+
+    caption_text = (
+        "\\caption{Results for models trained on " + arch_formatted[arch] +
+        " dataset. Performances reported in \\textit{mean} and \\textit{sd} " +
+        "(standard deviation) are measured in percentage and are from four " +
+        "runs with different seeds. \\textit{E}: Embedding type. \\textit{D}: " +
+        "Dimension of embedding vectors. \\textit{P}: Parameter count for the " +
+        "entire model. \\textit{S}: Size on disk, in Megabytes. \\textit{b}: " +
+        "Bootstrapped dataset. Bold: best mean across the four training methods " +
+        "for that combination of embedding type and dimension.}"
+    )
+    print(caption_text)
+    print("\\end{table*}")
+    print("}")
 
 def main(args):
     new_results = get_new_results()
