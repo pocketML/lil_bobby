@@ -181,7 +181,7 @@ def group_and_format_data(results):
                     grouped_by_emb[key]["measurements"] = interleaved_measurements
 
             emb_group_list = list(grouped_by_emb.values())
-            emb_group_list.sort(key=lambda x: (emb_sort_order.index(x["emb-type"], x["emb-dim"])))
+            emb_group_list.sort(key=lambda x: (emb_sort_order.index(x["emb-type"]), x["emb-dim"]))
 
             grouped_data[task][arch] = emb_group_list
 
