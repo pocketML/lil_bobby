@@ -134,9 +134,11 @@ def group_and_format_data(results):
                 key = f"{data['emb-type']}_{data['emb-dim']}"
 
                 if key not in grouped_by_emb:
+                    fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1)
+                    fmt_size = f"{data['size']:.2f}"
                     grouped_by_emb[key] = {
-                        "emb-type": data['emb-type'], "emb-dim": data['emb-dim'],
-                        "params": data["params"], "size": data["size"]
+                        "emb-type": data['emb-type'], "emb-dim": str(data['emb-dim']),
+                        "params": fmt_params, "size": fmt_size
                     }
                     grouped_by_emb[key]["acc"] = ["" for _ in range(4)]
                     grouped_by_emb[key]["std"] = ["" for _ in range(4)]
@@ -177,7 +179,7 @@ def group_and_format_data(results):
                         if measurement == "std":
                             interleaved_index += 1
                         interleaved_measurements[interleaved_index] = fmt_val
-                    
+
                     grouped_by_emb[key]["measurements"] = interleaved_measurements
 
             emb_group_list = list(grouped_by_emb.values())
