@@ -3,7 +3,7 @@ from glob import glob
 from datetime import datetime
 import numpy as np
 
-from common.task_utils import SEED_DICT
+from common.seed_utils import SEED_DICT
 from common.argparsers import args_search
 
 def get_json_data(experiment_path, data_type):

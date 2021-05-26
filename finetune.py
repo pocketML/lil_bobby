@@ -2,7 +2,6 @@ from common import argparsers, task_utils, model_utils
 from preprocessing.download import get_dataset_path, get_roberta_path
 from custom import roberta_train
 
-
 def get_finetune_string(
     task_path, model_path, override_args, sacred_experiment=None):
     task = override_args.task
@@ -82,7 +81,6 @@ def get_finetune_string(
 
     return arguments
 
-
 def main(args, sacred_experiment=None):
     task = args.task
     task_info = task_utils.TASK_INFO[task]
@@ -100,7 +98,7 @@ def main(args, sacred_experiment=None):
     )
     print(finetune_args)
 
-    roberta_train.cli_main(input_args=finetune_args, sacred_experiment=sacred_experiment)
+    roberta_train.finetune(input_args=finetune_args, sacred_experiment=sacred_experiment)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_finetune()

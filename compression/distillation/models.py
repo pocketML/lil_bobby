@@ -1,20 +1,14 @@
-
 from compression.distillation.student_models.bilstm import BiLSTM
 from compression.distillation.student_models.rnn import RNN
-from compression.distillation.student_models.transformer import Transformer
-from compression.distillation.student_models.transformer2 import Transformer2
-from compression.distillation.student_models.transformer3 import Transformer3
 from compression.distillation.student_models.emb_ffn import EmbFFN
+from compression.distillation.student_models.transformer import Transformer
 from compression.distillation.student_models import base
 
 STUDENT_MODELS = {
-    'glue': None,
     'bilstm': BiLSTM,
     'rnn': RNN,
-    'transformer': Transformer,
-    'trans2': Transformer2,
-    'trans3': Transformer3,
-    'emb-ffn': EmbFFN
+    'emb-ffn': EmbFFN,
+    'transformer': Transformer
 }
 
 def load_student(task, student_type, use_gpu, model_name=None, args=None):

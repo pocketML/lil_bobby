@@ -1,8 +1,0 @@
-{
-    "num-layers": 2,
-    "encoder-hidden-dim": 1500,
-    "batch-size": 50,
-    "embedding-dim": 300,
-    "cls-hidden-dim": 512,
-    "dropout": 0.2
-}

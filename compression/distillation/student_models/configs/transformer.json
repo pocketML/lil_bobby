@@ -1,12 +1,19 @@
 {
-    "embedding-dim" : 200,
+    "embedding-dim" : 50,
     "vocab-size": 3000,
-    "dropout": 0.1,
-    "lr": 2e-05,
+    "cls-hidden-dim": 100,
+    "dropout": 0.2,
+    "lr": 5e-04,
     "weight-decay": 0.1,
-    "batch-size": 32,
-    "cls-hidden-dim": 200,
+    "batch-size": 50,
     "encoder-hidden-dim": 200,
-    "attn-heads": 4,
-    "rho": 0.95
+    "rho": 0.95,
+    "hash-ratio": 10,
+    "num-hashes": 3,
+    "embedding-type": "bpe",
+    "type": "transformer",
+    "attn-heads": 5,
+    "attn-hidden": 500,
+    "num-layers": 2,
+    "train-masking": 0.1
 }
