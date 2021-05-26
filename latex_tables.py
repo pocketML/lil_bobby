@@ -229,7 +229,8 @@ def print_table(grouped_data):
 
     # Actually print the data
     for arch in grouped_data:
-        line = "\multirow{2}{*}{" + arch_formatted[arch] + "}"
+        line = "\\multirow{" + len(grouped_data[arch]) + "}{*}"
+        line += "{" + arch_formatted[arch] + "} & "
         for data in grouped_data[arch]:
             row_data = [
                 emb_formatted[data["emb-type"]], data["emb-dim"],
@@ -237,7 +238,7 @@ def print_table(grouped_data):
             ]
             row_data = row_data + data["measurements"]
 
-            line += "& ".join(row_data)
+            line += " & ".join(row_data)
         print(line)
         print("\\hline")
 
@@ -245,6 +246,7 @@ def print_table(grouped_data):
     print("\\renewcommand{\\arraystretch}{1}")
     print("\\end{footnotesize}")
 
+    # Table caption
     caption_text = (
         "\\caption{Results for models trained on " + arch_formatted[arch] +
         " dataset. Performances reported in \\textit{mean} and \\textit{sd} " +
