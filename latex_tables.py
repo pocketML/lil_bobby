@@ -65,7 +65,7 @@ def validate_experiment(data):
 def get_experiment_data(experiment_group):
     metrics = []
     with open(f"{experiment_group[0]}/config.json", "r") as fp:
-        config = json.load(fp)["compress"]
+        config = json.load(fp)["task_args"]["compress"]
 
     if not validate_experiment(config):
         return None
