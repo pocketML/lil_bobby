@@ -46,12 +46,9 @@ def main(experiment_args, task_args):
         if experiment_args.overwrite:
             rmtree(f"{output_dir}/{run_id}")
         else:
-            previous_run = glob(f"{output_dir}/{run_id}*")
-            index = previous_run[-1].split("_")[-1]
-            try:
-                index = int(index) + 1
-            except ValueError:
-                index = 2
+            index = 2
+            while os.path.exists(f"{output_dir}/{run_id}_{index}"):
+                index += 1
             run_id = f"{run_id}_{index}"
 
             # Update model_name parameter for evaluate and analyze.
