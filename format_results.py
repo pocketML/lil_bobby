@@ -57,7 +57,10 @@ def validate_experiment_params(experiment_data, name):
         task = name_split[1]
         if task == "sst":
             task = "sst-2"
-        alpha = float(name_split[2].replace("alpha", ""))
+        alpha = name_split[2].replace("alpha", "")
+        if alpha == "05":
+            alpha = "0.5"
+        alpha = float(alpha)
         try:
             embed_dim = int(name_split[3][-3:])
             embed_type = name_split[3][:-3]
