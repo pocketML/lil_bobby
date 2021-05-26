@@ -143,7 +143,8 @@ def group_and_format_data(results):
             for emb_type, emb_dim in embeddings:
                 key = f"{emb_type}_{emb_dim}"
                 grouped_by_emb[key] = {
-                    "emb-type": emb_type, "emb-dim": emb_dim,
+                    "emb-type": str(emb_type),
+                    "emb-dim": str(emb_dim),
                     "params": "", "size": "",
                     "acc": [(None, None) for _ in range(4)],
                     "std": [(None, None) for _ in range(4)]
