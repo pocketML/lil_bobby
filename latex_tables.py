@@ -255,7 +255,7 @@ def print_table(grouped_data):
             ]
             row_data = row_data + data["measurements"]
 
-            line += " & ".join(row_data) + "\\\\"
+            line += " & ".join(row_data) + "\\\\ & "
         print(line)
         print("\\hline")
 
