@@ -206,7 +206,7 @@ def group_and_format_data(results):
 
     return grouped_data
 
-def print_table(grouped_data):
+def print_table(grouped_data, task):
     arch_formatted = {
         "bilstm": "BiLSTM",
         "rnn": "RNN",
@@ -245,10 +245,10 @@ def print_table(grouped_data):
     print("\\hhline{=#=|=|=|=#==|==|==|==}")
 
     # Actually print the data
-    for arch in grouped_data:
-        line = "\\multirow{" + f"{len(grouped_data[arch])}" + "}{*}"
+    for arch in grouped_data[task]:
+        line = "\\multirow{" + f"{len(grouped_data[task][arch])}" + "}{*}"
         line += "{" + arch_formatted[arch] + "} & "
-        for index, data in enumerate(grouped_data[arch]):
+        for index, data in enumerate(grouped_data[task][arch]):
             row_data = [
                 emb_formatted[data["emb-type"]], data["emb-dim"],
                 data["params"], data["size"]
@@ -256,7 +256,7 @@ def print_table(grouped_data):
             row_data = row_data + data["measurements"]
 
             line += " & ".join(row_data) + "\\\\"
-            if index < len(grouped_data[arch]) - 1:
+            if index < len(grouped_data[task][arch]) - 1:
                 line += " & "
 
         print(line)
@@ -268,7 +268,7 @@ def print_table(grouped_data):
 
     # Table caption
     caption_text = (
-        "\\caption{Results for models trained on " + arch_formatted[arch] +
+        "\\caption{Results for models trained on " + task.upper() +
         " dataset. Performances reported in \\textit{mean} and \\textit{sd} " +
         "(standard deviation) are measured in percentage and are from four " +
         "runs with different seeds. \\textit{E}: Embedding type. \\textit{D}: " +
@@ -289,7 +289,7 @@ def main(args):
 
     grouped_data = group_and_format_data(all_results)
 
-    print_table(grouped_data[args.task])
+    print_table(grouped_data, args.task)
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
