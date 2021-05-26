@@ -37,8 +37,8 @@ def get_new_results():
 
     new_results = []
     for month_index, month in enumerate(month_names):
-        for day in range(start_day_in_month[month_index], end_day_in_month[month_index]):
-            results_for_day = glob(f"experiments/*_{month}{day}")
+        for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
+            results_for_day = glob(f"experiments/*_{month}{day}*")
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
