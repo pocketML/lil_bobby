@@ -89,7 +89,8 @@ def get_experiment_data(experiment_group):
             if key in metrics_data:
                 accuracy_2 = metrics_data[key]["values"][0]
         accuracies_1.append(accuracy_1)
-        accuracies_2.append(accuracy_2)
+        if accuracy_2 is not None:
+            accuracies_2.append(accuracy_2)
 
     params = metrics[0]["model_params"]["values"][0]
     disk_size = metrics[0]["model_disk_size"]["values"][0]
