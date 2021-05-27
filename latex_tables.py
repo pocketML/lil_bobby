@@ -140,29 +140,35 @@ def group_and_format_data(results):
             for key in grouped_by_emb:
                 interleaved_measurements = [0] * 8
                 for measurement in ("acc", "std"):
-                    max_measure_index_1 = 0
+                    max_measure_index_1 = []
                     max_measure_1 = 0
-                    max_measure_index_2 = 0
+                    max_measure_index_2 = []
                     max_measure_2 = 0
                     for index in range(len(grouped_by_emb[key][measurement])):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
-                        if val_1 is not None and val_1 > max_measure_1:
+                        if val_1 is not None and val_1 >= max_measure_1:
+                            if val_1 > max_measure_1:
+                                max_measure_index_1 = [index]
+                            else:
+                                max_measure_index_1.append(index)
                             max_measure_1 = val_1
-                            max_measure_index_1 = index
-                        if val_2 is not None and val_2 > max_measure_2:
+                        if val_2 is not None and val_2 >= max_measure_2:
+                            if val_1 > max_measure_2:
+                                max_measure_index_2 = [index]
+                            else:
+                                max_measure_index_2.append(index)
                             max_measure_2 = val_2
-                            max_measure_index_2 = index
 
                     for index in range(len(grouped_by_emb[key][measurement])):
                         val_1, val_2 = grouped_by_emb[key][measurement][index]
                         fmt_val = ""
                         if val_1 is not None:
                             fmt_val = f"{(val_1 * 100):.1f}"
-                            if measurement == "acc" and index == max_measure_index_1:
+                            if measurement == "acc" and index in max_measure_index_1:
                                 fmt_val = "\\textbf{" + fmt_val + "}"
                         if val_2 is not None:
                             fmt_val_2 = f"{(val_2 * 100):.1f}"
-                            if measurement == "acc" and index == max_measure_index_2:
+                            if measurement == "acc" and index in max_measure_index_2:
                                 fmt_val_2 = "\\textbf{" + fmt_val_2 + "}"
                             fmt_val = fmt_val + f"/{fmt_val_2}"
 
