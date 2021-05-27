@@ -4,32 +4,7 @@ from glob import glob
 
 import numpy as np
 
-OLD_RESULT_NAMES = [
-    # BPE 25
-    "tang_sst_bpe25_og_may14", "tang_bpe_dim25_alpha1_may9",
-    "tang_sst_alpha05_bpe25_may16", "tang_sst_alpha0_bpe25_may16",
-    # BPE 300
-    "tang_ogdata_alpha1_may12", "tang_bpe_alpha1_may6",
-    "tang_sst_alpha05_bpe300_may16", "tang_sst_alpha0_bpe300_may16",
-    # HASH 25
-    "tang_sst_hash25_og_may14", "tang_sst_hash25_may14",
-    "tang_sst_alpha05_hash25_may17", "tang_sst_alpha0_hash25_may17",
-    # HASH 300
-    "tang_sst_hash300_og_may14", "tang_sst_hash300_may14",
-    "tang_sst_alpha05_hash300_may17", "tang_sst_alpha0_hash300_may17"
-]
-
-def get_old_results():
-    old_results = []
-
-    for name in OLD_RESULT_NAMES:
-        path = f"experiments/{name}"
-        old_results.append(
-            [f"{path}_bennington", f"{path}_hadfield", f"{path}_feynman", f"{path}_simone"]
-        )
-    return old_results
-
-def get_new_results():
+def get_results():
     month_names = ["may", "june", "july", "august"]
     start_day_in_month = [25, 0, 0, 0]
     end_day_in_month = [31, 30, 31, 31]
@@ -142,8 +117,8 @@ def group_and_format_data(results):
             for emb_type, emb_dim in embeddings:
                 key = f"{emb_type}_{emb_dim}"
                 grouped_by_emb[key] = {
-                    "emb-type": str(emb_type),
-                    "emb-dim": str(emb_dim),
+                    "emb-type": emb_type,
+                    "emb-dim": emb_dim,
                     "params": "", "size": "",
                     "acc": [(None, None) for _ in range(4)],
                     "std": [(None, None) for _ in range(4)]
@@ -249,7 +224,7 @@ def print_table(grouped_data, task):
         line += "{" + arch_formatted[arch] + "} & "
         for index, data in enumerate(grouped_data[task][arch]):
             row_data = [
-                emb_formatted[data["emb-type"]], data["emb-dim"],
+                emb_formatted[data["emb-type"]], str(data["emb-dim"]),
                 data["params"], data["size"]
             ]
             row_data = row_data + data["measurements"]
@@ -281,10 +256,9 @@ def print_table(grouped_data, task):
     print("}")
 
 def main(args):
-    new_results = get_new_results()
-    old_results = get_old_results()
+    new_results = get_results()
 
-    all_results = new_results# + old_results
+    all_results = new_results
 
     grouped_data = group_and_format_data(all_results)
 
