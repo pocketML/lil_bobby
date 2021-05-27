@@ -127,7 +127,7 @@ def group_and_format_data(results):
             for data in grouped_data[task][arch]:
                 key = f"{data['emb-type']}_{data['emb-dim']}"
 
-                fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1)
+                fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1, trim="k")
                 fmt_size = f"{data['size']:.2f}"
                 grouped_by_emb[key]["params"] = fmt_params
                 grouped_by_emb[key]["size"] = fmt_size
@@ -197,7 +197,8 @@ def print_table(grouped_data, task):
     print("\\centering")
     print("\\begin{table*}[!htb]")
     print("\\centering")
-    print("\\setlength{\\tabcolsep}{4pt}")
+    if task != "sst-2":
+        print("\\setlength{\\tabcolsep}{4pt}")
     print("\\begin{footnotesize}")
     print("\\renewcommand{\\arraystretch}{1.3}")
 
@@ -229,7 +230,7 @@ def print_table(grouped_data, task):
             ]
             row_data = row_data + data["measurements"]
 
-            line += " & ".join(row_data) + "\\\\"
+            line += " & ".join(row_data) + "\\\\\n"
             if index < len(grouped_data[task][arch]) - 1:
                 line += " & "
 
@@ -240,10 +241,17 @@ def print_table(grouped_data, task):
     print("\\renewcommand{\\arraystretch}{1}")
     print("\\end{footnotesize}")
 
+    task_specific_caption = ""
+    if task == "qqp":
+        task_specific_caption = "Performances written as \\textbf{accuracy/f1-score}. "
+    elif task == "mnli":
+        task_specific_caption = "Performances written as \\textbf{matched accuracy/mismatched accuracy}. "
+
     # Table caption
     caption_text = (
-        "\\caption{Results for models trained on " + task.upper() +
-        " dataset. Performances reported in \\textit{mean} and \\textit{sd} " +
+        "\\caption{Results for models trained on " + task.upper() + " dataset. " +
+        task_specific_caption +
+        "Performances reported in \\textit{mean} and \\textit{sd} " +
         "(standard deviation) are measured in percentage and are from four " +
         "runs with different seeds. \\textit{E}: Embedding type. \\textit{D}: " +
         "Dimension of embedding vectors. \\textit{P}: Parameter count for the " +
