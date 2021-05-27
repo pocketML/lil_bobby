@@ -127,7 +127,7 @@ def group_and_format_data(results):
             for data in grouped_data[task][arch]:
                 key = f"{data['emb-type']}_{data['emb-dim']}"
 
-                fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1, trim="k")
+                fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1, trim="0")
                 fmt_size = f"{data['size']:.2f}"
                 grouped_by_emb[key]["params"] = fmt_params
                 grouped_by_emb[key]["size"] = fmt_size
@@ -230,9 +230,9 @@ def print_table(grouped_data, task):
             ]
             row_data = row_data + data["measurements"]
 
-            line += " & ".join(row_data) + "\\\\\n"
+            line += " & ".join(row_data) + "\\\\"
             if index < len(grouped_data[task][arch]) - 1:
-                line += " & "
+                line += "\n & "
 
         print(line)
         print("\\hline")
@@ -241,7 +241,8 @@ def print_table(grouped_data, task):
     print("\\renewcommand{\\arraystretch}{1}")
     print("\\end{footnotesize}")
 
-    task_specific_caption = ""
+    if task == "sst-2":
+        task_specific_caption = "Performances written as \\textbf{accuracy}. "
     if task == "qqp":
         task_specific_caption = "Performances written as \\textbf{accuracy/f1-score}. "
     elif task == "mnli":
