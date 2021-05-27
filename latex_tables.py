@@ -64,7 +64,7 @@ def validate_experiment(data):
 def get_experiment_data(experiment_group):
     metrics = []
     with open(f"{experiment_group[0]}/config.json", "r") as fp:
-        config = json.load(fp)
+        config = json.load(fp)["task_args"]["compress"]
 
     if not validate_experiment(config):
         return None
@@ -293,7 +293,7 @@ def main(args):
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
 
-    PARSER.add_argument("--task", type=str, choices=("sst-2", "qqp", "mnli"))
+    PARSER.add_argument("task", type=str, choices=("sst-2", "qqp", "mnli"))
 
     ARGS = PARSER.parse_args()
 
