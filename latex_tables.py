@@ -83,7 +83,7 @@ def get_experiment_data(experiment_group):
     return data_for_experiment
 
 def group_and_format_data(results):
-    alpha_indices = {0.0: 1, 1.0: 1, 0.5: 2, 0.0: 3}
+    alpha_indices = {1.0: 1, 0.5: 2, 0.0: 3}
     emb_sort_order = [
         "hash", "bpe", "char"
     ]
