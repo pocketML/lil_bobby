@@ -84,9 +84,9 @@ def validate_experiment_params(experiment_data, name):
         expected_encoder_dim = None
 
         if task == "sst-2":
-            data_ratio = experiment_data["data_ratio"]
+            data_ratio = experiment_data["bootstrap_data_ratio"]
             if data_ratio is not None and data_ratio != 1.0:
-                erroneous_params.append(('data_ratio', data_ratio, 1.0))
+                erroneous_params.append(('bootstrap_data_ratio', data_ratio, 1.0))
 
             if arch == "bilstm":
                 expected_classifier_dim = 200
