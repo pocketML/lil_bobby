@@ -78,10 +78,6 @@ def validate_experiment_params(experiment_data, name):
             if experiment_data[param] != param_value:
                 erroneous_params.append((param, experiment_data[param], param_value))
 
-        chunk_ratio = experiment_data["chunk_ratio"]
-        if chunk_ratio is not None and chunk_ratio != 1.0:
-            erroneous_params.append(('chunk_ratio', chunk_ratio, 1.0))
-
         classifier_dim = experiment_data["cls_hidden_dim"]
         expected_classifier_dim = None
         encoder_dim = experiment_data["encoder_hidden_dim"]
