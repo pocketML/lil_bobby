@@ -168,21 +168,18 @@ def get_train_dataloader(model, distillation_data, loadbar=True):
 # TODO: remember to make this function, or a similar for sentence pairs
 def create_collate_fn(cfg):
     pad_idx = cfg['vocab-size']
-    use_hash_emb = cfg['embedding-type'] == 'hash'
-    if use_hash_emb:
-        num_hashes = cfg['num-hashes']
+    is_transformer = cfg['type'] == 'transformer'
     def collate_fn(data):
         data.sort(key=lambda x: len(x[0]), reverse=True)
         if len(data[0]) == 4: # single sentence
             lens = [length for _,length,_,_ in data]
             labels, all_logits, lengths = [], [], []
-            if use_hash_emb:
-                padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
-            else:
-                padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
+            dims = list(data[0][0].size())
+            dims[0] = max(lens) + 1 if is_transformer else max(lens)
+            padded_sents = torch.empty(len(data), *dims).long().fill_(pad_idx)
             for i, (sent, length, label, logits) in enumerate(data):
-                if use_hash_emb:
-                    padded_sents[i, :lens[i],] = sent
+                if is_transformer: # make space for the classifier token at index 0
+                    padded_sents[i, 1:lens[i] + 1] = sent
                 else:
                     padded_sents[i, :lens[i]] = sent
                 labels.append(label)
@@ -194,19 +191,15 @@ def create_collate_fn(cfg):
             lens1 = [length for _,length,_,_,_,_ in data]
             lens2 = [length for _,_,_,length,_,_ in data]
             labels, all_logits, lengths1, lengths2 = [], [], [], []
-            if use_hash_emb:
-                padded_sents1 = torch.empty(len(data), max(lens1), num_hashes).long().fill_(pad_idx)
-                padded_sents2 = torch.empty(len(data), max(lens2), num_hashes).long().fill_(pad_idx)
-            else:
-                padded_sents1 = torch.empty(len(data), max(lens1)).long().fill_(pad_idx)
-                padded_sents2 = torch.empty(len(data), max(lens2)).long().fill_(pad_idx)
+            dims1 = list(data[0][0].size())
+            dims2 = list(data[0][0].size())
+            dims1[0] = max(lens1) + 1 if is_transformer else max(lens1)
+            dims2[0] = max(lens2) + 1 if is_transformer else max(lens2)
+            padded_sents1 = torch.empty(len(data), *dims1).long().fill_(pad_idx)
+            padded_sents2 = torch.empty(len(data), *dims2).long().fill_(pad_idx)
             for i, (sent1, length1, sent2, length2, label, logits) in enumerate(data):
-                if use_hash_emb:
-                    padded_sents1[i, :lens1[i],] = sent1
-                    padded_sents2[i, :lens2[i],] = sent2
-                else:
-                    padded_sents1[i,:lens1[i]] = sent1
-                    padded_sents2[i,:lens2[i]] = sent2
+                padded_sents1[i,:lens1[i]] = sent1
+                padded_sents2[i,:lens2[i]] = sent2
                 labels.append(label)
                 all_logits.append(logits)
                 lengths1.append(length1)
