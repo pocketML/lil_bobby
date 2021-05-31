@@ -56,6 +56,10 @@ def main(args, sacred_experiment=None):
         model.to(device)
         quantize.quantize_model(model, device, args)
 
+    if should_prune or should_quantize and sacred_experiment is not None and not args.prune_aware:
+        model_name = sacred_experiment.info["name"]
+        model.save(model_name)
+
 if __name__ == "__main__":
     ARGS, REMAIN = argparsers.args_compress()
     if len(REMAIN) > 0:

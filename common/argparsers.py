@@ -286,6 +286,7 @@ def args_run_all(args=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", type=str, default=None)
     ap.add_argument("--model-name", type=str, default=None)
+    ap.add_argument("--load-trained-model", type=str, default=None)
     ap.add_argument("--seed-names", type=str, nargs="+", choices=SEED_DICT.keys())
 
     return ap.parse_known_args(args)
