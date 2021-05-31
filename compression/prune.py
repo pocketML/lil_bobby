@@ -163,8 +163,6 @@ def prune_model(model, device, args):
     params, zero = params_zero(model)
     sparsity = (zero / params) * 100
     print(f"Sparsity before: {sparsity:.2f}%")
-    print("Size before: ", end="")
-    pretty_print.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
 
