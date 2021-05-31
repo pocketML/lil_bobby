@@ -33,10 +33,11 @@ def count_below_threshold_in_layer(layer, threshold):
     below = np.where(abs(weights) < threshold, 1, 0)
     return below.sum(), len(weights)
 
-def get_model_disk_size(model):
-    torch.save(model.state_dict(), "tmp.pt")
-    size = os.path.getsize("tmp.pt")/1e6
-    os.remove('tmp.pt')
+def get_model_disk_size(model, sacred_experiment=None):
+    temp_name = "tmp.pt" if sacred_experiment is None else f"tmp_{sacred_experiment.info['name']}.pt"
+    torch.save(model.state_dict(), temp_name)
+    size = os.path.getsize(temp_name)/1e6
+    os.remove(temp_name)
     return size
 
 # returns tuple with number of params and number of bits used
