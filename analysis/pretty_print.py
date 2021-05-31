@@ -23,8 +23,8 @@ def print_named_params(model, arch):
             print(f'| --> {name}, {param.size()}, {param.dtype}')
 
 
-def print_model_disk_size(model):
-    size = parameters.get_model_disk_size(model)
+def print_model_disk_size(model, sacred_experiment=None):
+    size = parameters.get_model_disk_size(model, sacred_experiment)
     print(f"{size:.3f} MB")
 
 def print_threshold_stats(model, arch):
