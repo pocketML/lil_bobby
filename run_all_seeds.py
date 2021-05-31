@@ -19,7 +19,7 @@ def main(args, args_remain):
         if name_1 is not None:
             full_cmd_str += f" --name {name_1}_{seed_name} --seed {seed_utils.SEED_DICT[seed_name]}"
         if name_2 is not None:
-            full_cmd_str += f" --model-name {name_1}_{seed_name}"
+            full_cmd_str += f" --model-name {name_2}_{seed_name}"
 
         print(f"Running {full_cmd_str}")
         system(full_cmd_str)
