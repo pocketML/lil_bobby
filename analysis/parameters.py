@@ -50,3 +50,13 @@ def get_model_size(model):
         # components might have different dtype, so we have to check for each
         total_bits += num_weights * dtype_bits(param)
     return total_params, total_bits
+
+def get_theoretical_size(model):
+    nonzero_params = 0
+    nonzero_bits = 0
+    for _, param in model.named_parameters():
+        non_zero = torch.count_nonzero(param).item()
+        nonzero_params += non_zero
+        # components might have different dtype, so we have to check for each
+        nonzero_bits += non_zero * dtype_bits(param)
+    return nonzero_params, nonzero_bits

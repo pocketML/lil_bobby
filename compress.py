@@ -40,11 +40,12 @@ def main(args, sacred_experiment=None):
         callback_func = prune.do_pruning if should_prune and args.prune_aware else None
         distill.distill_model(task, model, device, args, callback_func, sacred_experiment)
 
-    if should_prune and not args.prune_aware:
-        # Magnitude pruning after distillation (static).
-        model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
-        model.to(device)
-        model = prune.prune_model(model, device, args)
+    if should_prune:
+        if not args.prune_aware:
+            # Magnitude pruning after distillation (static).
+            model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
+            model.to(device)
+            model = prune.prune_model(model, device, args)
 
     if should_quantize:
         use_gpu = False

@@ -8,6 +8,13 @@ def print_model_size(model):
     print(f'size in MBs: {total_bits/8000000:.3f}')
     print('-'*20)
 
+def print_theoretical_size(model):
+    total_params, total_bits = parameters.get_theoretical_size(model)
+    print(f'total num parameters: {total_params}')
+    print(f'size in bits: {total_bits}')
+    print(f'size in MBs: {total_bits/8000000:.3f}')
+    print('-'*20)
+
 def print_named_params(model, arch):
     layers = model_utils.group_params_by_layer(model, arch)
     for layer, children in layers.items():

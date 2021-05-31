@@ -178,6 +178,7 @@ def args_analyze(args=None, namespace=None, parse_known=False):
     ap.add_argument('--arch', choices=MODEL_ARCHS + ['glue'], required=True)
     ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
+    ap.add_argument('--theoretical-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
     ap.add_argument('--layer-weight-hist', type=str)
     ap.add_argument('--named-params', action='store_true')
