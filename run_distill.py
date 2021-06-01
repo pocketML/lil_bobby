@@ -38,7 +38,7 @@ def main(args):
 
     # Use 25% of our augmented data when running QQP or MNLI.
     if not args.only_original_data and large_task:
-        args_list.extend(["--data-ratio", "0.25"])
+        args_list.extend(["--bootstrap-data-ratio", "0.25"])
 
     # Edit 'submit.job' to set minimum required memory.
     lines = []
