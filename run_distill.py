@@ -45,14 +45,16 @@ def main(args):
     with open("submit.job", "r", encoding="utf-8") as fp:
         lines = fp.readlines()
 
+    mem_per_cpu = 6000
+
     with open("submit.job", "w", encoding="utf-8") as fp:
         for line in lines:
             new_line = line
-            if "#SBATCH --mem-per-cpu=6000" in line:
+            if "#SBATCH --mem-per-cpu=" in line:
                 if large_task:
-                    new_line = "#SBATCH --mem-per-cpu=6000\n"
+                    new_line = f"#SBATCH --mem-per-cpu={mem_per_cpu}\n"
                 else:
-                    new_line = "##SBATCH --mem-per-cpu=6000\n"
+                    new_line = f"##SBATCH --mem-per-cpu={mem_per_cpu}\n"
             elif "#SBATCH --time=" in line:
                 if args.student_arch == "emb-ffn":
                     new_line = "#SBATCH --time=04:00:00\n"
@@ -64,7 +66,7 @@ def main(args):
     # Include final static arguments.
     args_list.extend([
          "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
-        "--model-size", "--model-disk-size", "--transponder"
+        "--batch-size" "256", "--model-size", "--model-disk-size", "--transponder"
     ])
 
     # Create a name for the experiment that we are running.
