@@ -4,9 +4,10 @@ from common import argparsers
 from compression.distillation.student_models.base import get_default_student_config
 import run_all_seeds
 
-def main(args):
+def main(args, args_remain):
     # Create a list of arguments for use with 'run_all_seeds.py'.
     args_list = ["compress", "evaluate", "analyze", "--compression-actions", "distill"]
+    args_list.extend(args_remain)
 
     # Add already specified args (task, alpha, student-arch, embed-type, embed-dim) to list.
     for key in args.__dict__:
@@ -65,7 +66,7 @@ def main(args):
 
     # Include final static arguments.
     args_list.extend([
-         "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
+        "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
         "--batch-size", "256", "--model-size", "--model-disk-size", "--transponder"
     ])
 
@@ -87,6 +88,6 @@ def main(args):
     run_all_seeds.main(final_args, args_remain)
 
 if __name__ == "__main__":
-    ARGS = argparsers.args_run_experiment()
+    ARGS, ARGS_REMAIN = argparsers.args_run_distill()
 
-    main(ARGS)
+    main(ARGS, ARGS_REMAIN)

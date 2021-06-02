@@ -16,6 +16,7 @@ def get_results():
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
+
                 name = "_".join(split[:-1])
                 if name not in grouped_results:
                     grouped_results[name] = []
