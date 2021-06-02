@@ -4,6 +4,13 @@ from glob import glob
 
 import numpy as np
 
+def get_experiment_suffix(result_name):
+    try:
+        suffix = int(result_name.split("_")[-1])
+        return suffix
+    except ValueError:
+        return 1
+
 def get_results():
     month_names = ["may", "june", "july", "august"]
     start_day_in_month = [25, 0, 0, 0]
@@ -13,6 +20,10 @@ def get_results():
     for month_index, month in enumerate(month_names):
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
             results_for_day = glob(f"experiments/*_{month}{day}*")
+            results_for_day.sort(key=get_experiment_suffix)
+            if results_for_day > 4:
+                results_for_day = results_for_day[-4:]
+
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
