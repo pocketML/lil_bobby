@@ -22,15 +22,12 @@ def get_results():
             results_for_day = glob(f"experiments/*_{month}{day}*")
             results_for_day.sort(key=get_experiment_suffix)
 
-            if len(results_for_day) > 4:
-                results_for_day = results_for_day[-4:]
-
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
 
                 name = "_".join(split[:-1])
-                if name not in grouped_results:
+                if name not in grouped_results or len(grouped_results[name]) == 4:
                     grouped_results[name] = []
                 grouped_results[name].append(result)
 
