@@ -21,7 +21,9 @@ def get_results():
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
             results_for_day = glob(f"experiments/*_{month}{day}*")
             results_for_day.sort(key=get_experiment_suffix)
-            results_for_day.sort(key=)
+
+            if len(results_for_day) > 4:
+                results_for_day = results_for_day[-4:]
 
             grouped_results = {}
             for result in results_for_day:
@@ -49,12 +51,12 @@ def validate_experiment(data):
 
 def get_experiment_data(experiment_group):
     valid_groups = []
-    for group_index in range(0, len(experiment_group // 4), 4):
+    for group_index in range(0, len(experiment_group) // 4, 4):
         with open(f"{experiment_group[group_index]}/config.json", "r") as fp:
             config = json.load(fp)["task_args"]["compress"]
 
         if validate_experiment(config):
-            valid_groups.append(experiment_group[group_index:group_index+4])
+            valid_groups.extend(experiment_group[group_index:group_index+4])
 
     metrics = []
     if len(valid_groups) > 4:
