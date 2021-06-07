@@ -25,8 +25,12 @@ def get_results():
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
+                if "og" in result:
+                    end = -2 if len(split) == 8 else -1
+                else:
+                    end = -2 if len(split) == 7 else -1
 
-                name = "_".join(split[:-1])
+                name = "_".join(split[:end])
                 if name not in grouped_results or len(grouped_results[name]) == 4:
                     grouped_results[name] = []
                 grouped_results[name].append(result)
