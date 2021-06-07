@@ -21,6 +21,7 @@ def get_results():
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
             results_for_day = glob(f"experiments/*_{month}{day}*")
             results_for_day.sort(key=get_experiment_suffix)
+            results_for_day.sort(key=)
 
             grouped_results = {}
             for result in results_for_day:
@@ -47,14 +48,19 @@ def validate_experiment(data):
     return True
 
 def get_experiment_data(experiment_group):
+    valid_groups = []
+    for group_index in range(0, len(experiment_group // 4), 4):
+        with open(f"{experiment_group[group_index]}/config.json", "r") as fp:
+            config = json.load(fp)["task_args"]["compress"]
+
+        if validate_experiment(config):
+            valid_groups.append(experiment_group[group_index:group_index+4])
+
     metrics = []
-    with open(f"{experiment_group[0]}/config.json", "r") as fp:
-        config = json.load(fp)["task_args"]["compress"]
+    if len(valid_groups) > 4:
+        valid_groups = valid_groups[-4:]
 
-    if not validate_experiment(config):
-        return None
-
-    for experiment_path in experiment_group:
+    for experiment_path in valid_groups:
         with open(f"{experiment_path}/metrics.json", "r") as fp:
             metrics.append(json.load(fp))
 
@@ -102,8 +108,6 @@ def group_and_format_data(results):
     for result_group in results:
         data = get_experiment_data(result_group)
         if data is not None:
-            if len(grouped_data[data["task"]]) == 4:
-                grouped_data[data["task"]] = []
             grouped_data[data["task"]].append(data)
 
     for task in grouped_data:
