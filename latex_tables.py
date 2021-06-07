@@ -58,6 +58,9 @@ def get_experiment_data(experiment_group):
         if validate_experiment(config):
             valid_groups.extend(experiment_group[group_index:group_index+4])
 
+    if valid_groups == []:
+        return None
+
     metrics = []
     if len(valid_groups) > 4:
         valid_groups = valid_groups[-4:]
