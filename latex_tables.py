@@ -87,8 +87,11 @@ def get_experiment_data(experiment_group):
         if accuracy_2 is not None:
             accuracies_2.append(accuracy_2)
 
-    params = metrics[0]["model_params"]["values"][0]
-    disk_size = metrics[0]["model_disk_size"]["values"][0]
+    try:
+        params = metrics[0]["model_params"]["values"][0]
+        disk_size = metrics[0]["model_disk_size"]["values"][0]
+    except KeyError:
+        return None
 
     mean_1 = np.mean(np.array(accuracies_1))
     mean_2 = None if accuracies_2 == [] else np.mean(np.array(accuracies_2))
