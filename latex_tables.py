@@ -27,7 +27,7 @@ def get_results():
                 split = result.split("_")
 
                 name = "_".join(split[:-1])
-                if name not in grouped_results or len(grouped_results[name]) == 4:
+                if name not in grouped_results:
                     grouped_results[name] = []
                 grouped_results[name].append(result)
 
@@ -102,6 +102,8 @@ def group_and_format_data(results):
     for result_group in results:
         data = get_experiment_data(result_group)
         if data is not None:
+            if len(grouped_data[data["task"]]) == 4:
+                grouped_data[data["task"]] = []
             grouped_data[data["task"]].append(data)
 
     for task in grouped_data:
