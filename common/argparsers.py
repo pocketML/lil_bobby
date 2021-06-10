@@ -299,3 +299,9 @@ def args_run_experiment():
     ap.add_argument("--only-original-data", action="store_true")
 
     return ap.parse_args()
+
+def args_validate_augment():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task")
+
+    return ap.parse_args()
