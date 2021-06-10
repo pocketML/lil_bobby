@@ -4,6 +4,13 @@ from glob import glob
 
 import numpy as np
 
+def get_experiment_suffix(result_name):
+    try:
+        suffix = int(result_name.split("_")[-1])
+        return suffix
+    except ValueError:
+        return 1
+
 def get_results():
     month_names = ["may", "june", "july", "august"]
     start_day_in_month = [25, 0, 0, 0]
@@ -13,11 +20,18 @@ def get_results():
     for month_index, month in enumerate(month_names):
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
             results_for_day = glob(f"experiments/*_{month}{day}*")
+            results_for_day.sort(key=get_experiment_suffix)
+
             grouped_results = {}
             for result in results_for_day:
                 split = result.split("_")
-                name = "_".join(split[:-1])
-                if name not in grouped_results:
+                if "og" in result:
+                    end = -2 if len(split) == 8 else -1
+                else:
+                    end = -2 if len(split) == 7 else -1
+
+                name = "_".join(split[:end])
+                if name not in grouped_results or len(grouped_results[name]) == 4:
                     grouped_results[name] = []
                 grouped_results[name].append(result)
 
@@ -37,14 +51,22 @@ def validate_experiment(data):
     return True
 
 def get_experiment_data(experiment_group):
-    metrics = []
-    with open(f"{experiment_group[0]}/config.json", "r") as fp:
-        config = json.load(fp)["task_args"]["compress"]
+    valid_groups = []
+    for group_index in range(0, len(experiment_group) // 4, 4):
+        with open(f"{experiment_group[group_index]}/config.json", "r") as fp:
+            config = json.load(fp)["task_args"]["compress"]
 
-    if not validate_experiment(config):
+        if validate_experiment(config):
+            valid_groups.extend(experiment_group[group_index:group_index+4])
+
+    if valid_groups == []:
         return None
 
-    for experiment_path in experiment_group:
+    metrics = []
+    if len(valid_groups) > 4:
+        valid_groups = valid_groups[-4:]
+
+    for experiment_path in valid_groups:
         with open(f"{experiment_path}/metrics.json", "r") as fp:
             metrics.append(json.load(fp))
 
@@ -66,8 +88,11 @@ def get_experiment_data(experiment_group):
         if accuracy_2 is not None:
             accuracies_2.append(accuracy_2)
 
-    params = metrics[0]["model_params"]["values"][0]
-    disk_size = metrics[0]["model_disk_size"]["values"][0]
+    try:
+        params = metrics[0]["model_params"]["values"][0]
+        disk_size = metrics[0]["model_disk_size"]["values"][0]
+    except KeyError:
+        return None
 
     mean_1 = np.mean(np.array(accuracies_1))
     mean_2 = None if accuracies_2 == [] else np.mean(np.array(accuracies_2))

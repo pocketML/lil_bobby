@@ -4,9 +4,10 @@ from common import argparsers
 from compression.distillation.student_models.base import get_default_student_config
 import run_all_seeds
 
-def main(args):
+def main(args, args_remain):
     # Create a list of arguments for use with 'run_all_seeds.py'.
     args_list = ["compress", "evaluate", "analyze", "--compression-actions", "distill"]
+    args_list.extend(args_remain)
 
     # Add already specified args (task, alpha, student-arch, embed-type, embed-dim) to list.
     for key in args.__dict__:
@@ -38,21 +39,23 @@ def main(args):
 
     # Use 25% of our augmented data when running QQP or MNLI.
     if not args.only_original_data and large_task:
-        args_list.extend(["--data-ratio", "0.25"])
+        args_list.extend(["--bootstrap-data-ratio", "0.25"])
 
     # Edit 'submit.job' to set minimum required memory.
     lines = []
     with open("submit.job", "r", encoding="utf-8") as fp:
         lines = fp.readlines()
 
+    mem_per_cpu = 6000
+
     with open("submit.job", "w", encoding="utf-8") as fp:
         for line in lines:
             new_line = line
-            if "#SBATCH --mem-per-cpu=6000" in line:
+            if "#SBATCH --mem-per-cpu=" in line:
                 if large_task:
-                    new_line = "#SBATCH --mem-per-cpu=6000\n"
+                    new_line = f"#SBATCH --mem-per-cpu={mem_per_cpu}\n"
                 else:
-                    new_line = "##SBATCH --mem-per-cpu=6000\n"
+                    new_line = f"##SBATCH --mem-per-cpu={mem_per_cpu}\n"
             elif "#SBATCH --time=" in line:
                 if args.student_arch == "emb-ffn":
                     new_line = "#SBATCH --time=04:00:00\n"
@@ -63,8 +66,8 @@ def main(args):
 
     # Include final static arguments.
     args_list.extend([
-         "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
-        "--model-size", "--model-disk-size", "--transponder"
+        "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
+        "--batch-size", "256", "--model-size", "--model-disk-size", "--transponder"
     ])
 
     # Create a name for the experiment that we are running.
@@ -85,6 +88,6 @@ def main(args):
     run_all_seeds.main(final_args, args_remain)
 
 if __name__ == "__main__":
-    ARGS = argparsers.args_run_experiment()
+    ARGS, ARGS_REMAIN = argparsers.args_run_distill()
 
-    main(ARGS)
+    main(ARGS, ARGS_REMAIN)
