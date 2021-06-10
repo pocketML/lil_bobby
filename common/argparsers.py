@@ -310,3 +310,9 @@ def args_run_extra_compression():
     ap.add_argument("--load-trained-model", type=str)
 
     return ap.parse_known_args()
+
+def args_validate_augment():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task")
+
+    return ap.parse_args()
