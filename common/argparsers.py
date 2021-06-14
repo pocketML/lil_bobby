@@ -50,8 +50,9 @@ def args_quantize(args=None, namespace=None, parse_known=False):
 def args_prune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     ap.add_argument("--prune-magnitude", action="store_true")
-    ap.add_argument("--prune-topk", action="store_true")
-    ap.add_argument("--prune-movement", action="store_true")
+    group = ap.add_mutually_exclusive_group()
+    group.add_argument("--prune-topk", action="store_true")
+    group.add_argument("--prune-movement", action="store_true")
     ap.add_argument("--prune-local", action="store_true")
     ap.add_argument("--prune-aware", action="store_true")
     ap.add_argument("--prune-warmup", type=int, default=1)
@@ -178,6 +179,7 @@ def args_analyze(args=None, namespace=None, parse_known=False):
     ap.add_argument('--arch', choices=MODEL_ARCHS + ['glue'], required=True)
     ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
+    ap.add_argument('--theoretical-size', action='store_true')
     ap.add_argument('--weight-hist', action='store_true')
     ap.add_argument('--layer-weight-hist', type=str)
     ap.add_argument('--named-params', action='store_true')
@@ -285,11 +287,12 @@ def args_run_all(args=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", type=str, default=None)
     ap.add_argument("--model-name", type=str, default=None)
+    ap.add_argument("--load-trained-model", type=str, default=None)
     ap.add_argument("--seed-names", type=str, nargs="+", choices=SEED_DICT.keys())
 
     return ap.parse_known_args(args)
 
-def args_run_experiment():
+def args_run_distill(args=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--alpha", type=float, required=True)
@@ -297,5 +300,19 @@ def args_run_experiment():
     ap.add_argument("--embedding-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
     ap.add_argument("--embedding-dim", type=int, required=True)
     ap.add_argument("--only-original-data", action="store_true")
+
+    return ap.parse_known_args(args)
+
+def args_run_extra_compression():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
+    ap.add_argument("--load-trained-model", type=str)
+
+    return ap.parse_known_args()
+
+def args_validate_augment():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task")
 
     return ap.parse_args()

@@ -78,19 +78,15 @@ def validate_experiment_params(experiment_data, name):
             if experiment_data[param] != param_value:
                 erroneous_params.append((param, experiment_data[param], param_value))
 
-        chunk_ratio = experiment_data["chunk_ratio"]
-        if chunk_ratio is not None and chunk_ratio != 1.0:
-            erroneous_params.append(('chunk_ratio', chunk_ratio, 1.0))
-
         classifier_dim = experiment_data["cls_hidden_dim"]
         expected_classifier_dim = None
         encoder_dim = experiment_data["encoder_hidden_dim"]
         expected_encoder_dim = None
 
         if task == "sst-2":
-            data_ratio = experiment_data["data_ratio"]
+            data_ratio = experiment_data["bootstrap_data_ratio"]
             if data_ratio is not None and data_ratio != 1.0:
-                erroneous_params.append(('data_ratio', data_ratio, 1.0))
+                erroneous_params.append(('bootstrap_data_ratio', data_ratio, 1.0))
 
             if arch == "bilstm":
                 expected_classifier_dim = 200
@@ -127,7 +123,6 @@ def experiment_contains_args(exp_path, meta_args, search_args):
     # We search for both cmd args given to experiment as well as model cfg args used.
     values_found = {x: False for x in search_args.__dict__}
     data_found = {}
-
 
     for data_type in ("info", "config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
@@ -218,11 +213,15 @@ def find_matching_experiments(meta_args, search_args):
 
                     if "model_params" in metrics_data:
                         experiment_data["params"] = metrics_data["model_params"]["values"][0]
+                    if "nonzero_params" in metrics_data:
+                        experiment_data["nonzero_params"] = metrics_data["nonzero_params"]["values"][0]
 
                     if "model_disk_size" in metrics_data:
                         experiment_data["size"] = f"{metrics_data['model_disk_size']['values'][0]:.3f}"
                     elif "model_size" in metrics_data:
                         experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
+                    if "theoretical_size" in metrics_data:
+                        experiment_data["theoretical_size"] = f"{metrics_data['theoretical_size']['values'][0]:.3f}"
 
             data.append(experiment_data)
 
@@ -311,7 +310,14 @@ def main(meta_args, search_args):
                     else:
                         line += " "
 
-                    line += f" {data_point['params']} {data_point['size']}"
+                    line += f" {data_point['params']}"
+                    if "nonzero_params" in data_point:
+                        line += f" {data_point['nonzero_params']}"
+
+                    line += f" {data_point['size']}"
+
+                    if "theoretical_size" in data_point:
+                        line += f" {data_point['theoretical_size']}"
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
             print(line)

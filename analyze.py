@@ -23,9 +23,9 @@ def main(args, sacred_experiment=None):
     model = load_model(args, is_roberta_model)
     model.eval()
     if args.model_disk_size:
-        pretty_print.print_model_disk_size(model)
-        disk_size = parameters.get_model_disk_size(model)
+        pretty_print.print_model_disk_size(model, sacred_experiment)
         if sacred_experiment is not None:
+            disk_size = parameters.get_model_disk_size(model, sacred_experiment)
             sacred_experiment.log_scalar("model_disk_size", disk_size)
     if args.model_size:
         pretty_print.print_model_size(model)
@@ -33,6 +33,12 @@ def main(args, sacred_experiment=None):
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("model_params", total_params)
             sacred_experiment.log_scalar("model_size", total_bits/8000000)
+    if args.theoretical_size:
+        pretty_print.print_theoretical_size(model)
+        total_params, total_bits = parameters.get_theoretical_size(model)
+        if sacred_experiment is not None:
+            sacred_experiment.log_scalar("nonzero_params", total_params)
+            sacred_experiment.log_scalar("theoretical_size", total_bits/8000000)
     if args.named_params:
         pretty_print.print_named_params(model, args.arch)
     if args.weight_thresholds:
