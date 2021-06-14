@@ -4,6 +4,7 @@ import torch.nn.utils.prune as prune
 from common import model_utils, data_utils
 from embedding.base import Embedding
 import evaluate
+from analysis.parameters import get_theoretical_size
 from analysis import pretty_print
 
 class MagnitudePruning(prune.BasePruningMethod):
@@ -162,15 +163,17 @@ def prune_model(model, device, args):
     params, zero = params_zero(model)
     sparsity = (zero / params) * 100
     print(f"Sparsity before: {sparsity:.2f}%")
-    pretty_print.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
 
     print("** Pruning model... **")
     model = do_pruning(model, args)
-    
+
+    nonzero_params, nonzero_bits = get_theoretical_size(model)
+    print(f"Non-zero params: {nonzero_params}")
+    print(f"Theoretical size: {nonzero_bits/8000000:.3f} MB")
+
     print("** Pruning completed **")
-    pretty_print.print_model_disk_size(model)
     evaluate.evaluate_distilled_model(model, dl, device, args)
     print()
     return model

@@ -124,7 +124,6 @@ def experiment_contains_args(exp_path, meta_args, search_args):
     values_found = {x: False for x in search_args.__dict__}
     data_found = {}
 
-
     for data_type in ("info", "config", "model_cfg"):
         experiment_args = get_json_data(exp_path, data_type)
 
@@ -214,11 +213,15 @@ def find_matching_experiments(meta_args, search_args):
 
                     if "model_params" in metrics_data:
                         experiment_data["params"] = metrics_data["model_params"]["values"][0]
+                    if "nonzero_params" in metrics_data:
+                        experiment_data["nonzero_params"] = metrics_data["nonzero_params"]["values"][0]
 
                     if "model_disk_size" in metrics_data:
                         experiment_data["size"] = f"{metrics_data['model_disk_size']['values'][0]:.3f}"
                     elif "model_size" in metrics_data:
                         experiment_data["size"] = f"{metrics_data['model_size']['values'][0]:.3f}"
+                    if "theoretical_size" in metrics_data:
+                        experiment_data["theoretical_size"] = f"{metrics_data['theoretical_size']['values'][0]:.3f}"
 
             data.append(experiment_data)
 
@@ -307,7 +310,14 @@ def main(meta_args, search_args):
                     else:
                         line += " "
 
-                    line += f" {data_point['params']} {data_point['size']}"
+                    line += f" {data_point['params']}"
+                    if "nonzero_params" in data_point:
+                        line += f" {data_point['nonzero_params']}"
+
+                    line += f" {data_point['size']}"
+
+                    if "theoretical_size" in data_point:
+                        line += f" {data_point['theoretical_size']}"
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
             print(line)
