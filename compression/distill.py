@@ -70,7 +70,8 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
     train_data = data_utils.load_all_distillation_data(
         task, 
         only_original_data=args.only_original_data,
-        bootstrap_data_ratio=args.bootstrap_data_ratio    
+        bootstrap_data_ratio=args.bootstrap_data_ratio,
+        downsample_distill_data=args.downsample_data
     )
     print(f"*** Loaded {len(train_data[0])} training data samples ***")
 
