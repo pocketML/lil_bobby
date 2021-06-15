@@ -2,13 +2,14 @@ from compression.distillation.student_models.bilstm import BiLSTM
 from compression.distillation.student_models.rnn import RNN
 from compression.distillation.student_models.emb_ffn import EmbFFN
 from compression.distillation.student_models.transformer import Transformer
+from compression.distillation.student_models.trans2 import Transformer2
 from compression.distillation.student_models import base
 
 STUDENT_MODELS = {
     'bilstm': BiLSTM,
     'rnn': RNN,
     'emb-ffn': EmbFFN,
-    'transformer': Transformer
+    'transformer': Transformer2
 }
 
 def load_student(task, student_type, use_gpu, model_name=None, args=None):

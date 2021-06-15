@@ -107,9 +107,10 @@ class PositionalEncoding(nn.Module):
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:,0::2] = torch.sin(position * div_term)
-        pe[:,1::2] = torch.cos(position * div_term)
+        div_term_sin = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:,0::2] = torch.sin(position * div_term_sin)
+        pe[:,1::2] = torch.cos(position * div_term_cos)
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer('pe', pe)
 
@@ -125,33 +126,35 @@ class Transformer(base.StudentModel):
         self.embedding = embeddings.get_embedding(cfg, False)
         # TODO: needs to do some work to add CLS tokens to the different embeddings again
         # TODO: also add support for sentence pairs
-        #self.cls_token = self.embedding.encode('cls')
+        self.cls_token = torch.FloatTensor(self.cfg['embedding-dim'])
 
-        self.pos_enc = PositionalEncoding(cfg['embedding-dim'])
+        self.embedding_dim_sqrt = math.sqrt(cfg['embedding-dim'])
+        self.pos_enc = PositionalEncoding(cfg['embedding-dim'], max_len=cfg['max-tokens'])
         transformers = [TransformerBlock(cfg['embedding-dim'], cfg['attn-heads'], False) for _ in range(cfg['num-layers'])]
         self.encoder = nn.Sequential(*transformers)
 
         self.decoder = base.get_rnn(cfg)
-
-        inp_d = self.cfg['encoder-hidden-dim'] * 4 if self.cfg['use-sentence-pairs'] else self.cfg['encoder-hidden-dim']
-        inp_d = inp_d * 2 if self.cfg['bidirectional'] else inp_d        
+   
         self.classifier = nn.Sequential(
-            nn.Dropout(cfg['dropout']),
-            nn.Linear(inp_d, cfg['cls-hidden-dim']),
+            nn.Linear(cfg['embedding-dim'], cfg['cls-hidden-dim']),
             nn.Dropout(cfg['dropout']),
             nn.ReLU(),
             nn.Linear(cfg['cls-hidden-dim'], cfg['num-classes'])
         )
         self.init_weights(embedding_init_range=0.1, classifier_init_range=0.1)
 
+    def add_cls_(self, x):
+        x[:,0,:] = self.cls_token
+        return x
+
     def forward(self, x, _):
         x = self.embedding(x)
+        x = self.add_cls_(x) * self.embedding_dim_sqrt
         x = x.permute(1,0,2)
         x = self.pos_enc(x)
-        x = x.permute(1,0,2)
         x = self.encoder(x)
-        
-        # TODO: either take the mean, or somehow add a classifier token somewhere
+        x = x.permute(1,0,2)
+        x = x[:,0,:]
 
         x = self.classifier(x)
         return x

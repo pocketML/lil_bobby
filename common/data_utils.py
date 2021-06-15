@@ -4,8 +4,10 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from glob import glob
 import gc
+import random
 
-from common.task_utils import TASK_INFO
+from analysis import data as data_analysis
+from common.task_utils import TASK_INFO, TASK_LABEL_DICT, is_sentence_pair
 from preprocessing import data_augment
 
 # returns sentences, labels
@@ -30,6 +32,28 @@ def load_distillation_data(path, bootstap_data_ratio=1.0):
                 lines.append(line.strip().split("\t"))
         return [list(x) for x in list(zip(*lines))]
 
+def load_downsampled_distillation_data(task, path, original_label_ratios, bootstrap_data_ratio=1.0):
+    label_index = 2 if is_sentence_pair(task) else 1
+    with open(path, encoding="utf-8") as fip:
+        labels_splitted = {x: [] for x in TASK_LABEL_DICT[task].values()}
+        for line in fip:
+            if line.strip() != "":
+                line = line.strip().split("\t")
+                label_str = line[label_index]
+                label = TASK_LABEL_DICT[task][label_str]
+                labels_splitted[label].append(line)
+        total_samples = sum([len(x) for x in labels_splitted.values()])
+        lines = []
+        for label, label_lines in labels_splitted.items():
+            random.shuffle(label_lines)
+            ideal_amount = original_label_ratios[label] * total_samples * bootstrap_data_ratio
+            to_keep = int(min(ideal_amount, len(label_lines)))
+            lines.extend(label_lines[:to_keep])
+
+            print(f'label: {label}, ideal: {ideal_amount:.0f}, to_keep: {to_keep}, num_samples: {len(label_lines)}')
+        print(f'total_samples: {total_samples}, kept: {len(lines)} ({len(lines) / total_samples:.4f})')
+        return [list(x) for x in list(zip(*lines))]
+
 def load_val_data(task, mnli_subtask='both'):
     if task == 'mnli':
         if mnli_subtask == 'both':
@@ -52,13 +76,15 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ratio=1.0):
+def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ratio=1.0, downsample_distill_data=False):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     train_data = []
     if only_original_data:
         train_files = glob(f"{base_path}/train.tsv")
     else:
         train_files = glob(f"{base_path}/*.tsv")
+
+    load_downsampled_distillation_data(task, train_files[0])
     for filename in train_files:
         if bootstrap_data_ratio < 1.0 and 'train.tsv' not in filename:
             loaded_data = load_distillation_data(filename, bootstrap_data_ratio)
@@ -168,21 +194,18 @@ def get_train_dataloader(model, distillation_data, loadbar=True):
 # TODO: remember to make this function, or a similar for sentence pairs
 def create_collate_fn(cfg):
     pad_idx = cfg['vocab-size']
-    use_hash_emb = cfg['embedding-type'] == 'hash'
-    if use_hash_emb:
-        num_hashes = cfg['num-hashes']
+    is_transformer = cfg['type'] == 'transformer'
     def collate_fn(data):
         data.sort(key=lambda x: len(x[0]), reverse=True)
         if len(data[0]) == 4: # single sentence
             lens = [length for _,length,_,_ in data]
             labels, all_logits, lengths = [], [], []
-            if use_hash_emb:
-                padded_sents = torch.empty(len(data), max(lens), num_hashes).long().fill_(pad_idx)
-            else:
-                padded_sents = torch.empty(len(data), max(lens)).long().fill_(pad_idx)
+            dims = list(data[0][0].size())
+            dims[0] = max(lens) + 1 if is_transformer else max(lens)
+            padded_sents = torch.empty(len(data), *dims).long().fill_(pad_idx)
             for i, (sent, length, label, logits) in enumerate(data):
-                if use_hash_emb:
-                    padded_sents[i, :lens[i],] = sent
+                if is_transformer: # make space for the classifier token at index 0
+                    padded_sents[i, 1:lens[i] + 1] = sent
                 else:
                     padded_sents[i, :lens[i]] = sent
                 labels.append(label)
@@ -194,19 +217,15 @@ def create_collate_fn(cfg):
             lens1 = [length for _,length,_,_,_,_ in data]
             lens2 = [length for _,_,_,length,_,_ in data]
             labels, all_logits, lengths1, lengths2 = [], [], [], []
-            if use_hash_emb:
-                padded_sents1 = torch.empty(len(data), max(lens1), num_hashes).long().fill_(pad_idx)
-                padded_sents2 = torch.empty(len(data), max(lens2), num_hashes).long().fill_(pad_idx)
-            else:
-                padded_sents1 = torch.empty(len(data), max(lens1)).long().fill_(pad_idx)
-                padded_sents2 = torch.empty(len(data), max(lens2)).long().fill_(pad_idx)
+            dims1 = list(data[0][0].size())
+            dims2 = list(data[0][0].size())
+            dims1[0] = max(lens1) + 1 if is_transformer else max(lens1)
+            dims2[0] = max(lens2) + 1 if is_transformer else max(lens2)
+            padded_sents1 = torch.empty(len(data), *dims1).long().fill_(pad_idx)
+            padded_sents2 = torch.empty(len(data), *dims2).long().fill_(pad_idx)
             for i, (sent1, length1, sent2, length2, label, logits) in enumerate(data):
-                if use_hash_emb:
-                    padded_sents1[i, :lens1[i],] = sent1
-                    padded_sents2[i, :lens2[i],] = sent2
-                else:
-                    padded_sents1[i,:lens1[i]] = sent1
-                    padded_sents2[i,:lens2[i]] = sent2
+                padded_sents1[i,:lens1[i]] = sent1
+                padded_sents2[i,:lens2[i]] = sent2
                 labels.append(label)
                 all_logits.append(logits)
                 lengths1.append(length1)
