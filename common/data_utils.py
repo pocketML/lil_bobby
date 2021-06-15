@@ -4,8 +4,10 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from glob import glob
 import gc
+import random
 
-from common.task_utils import TASK_INFO
+from analysis import data as data_analysis
+from common.task_utils import TASK_INFO, TASK_LABEL_DICT, is_sentence_pair
 from preprocessing import data_augment
 
 # returns sentences, labels
@@ -30,6 +32,28 @@ def load_distillation_data(path, bootstap_data_ratio=1.0):
                 lines.append(line.strip().split("\t"))
         return [list(x) for x in list(zip(*lines))]
 
+def load_downsampled_distillation_data(task, path, original_label_ratios, bootstrap_data_ratio=1.0):
+    label_index = 2 if is_sentence_pair(task) else 1
+    with open(path, encoding="utf-8") as fip:
+        labels_splitted = {x: [] for x in TASK_LABEL_DICT[task].values()}
+        for line in fip:
+            if line.strip() != "":
+                line = line.strip().split("\t")
+                label_str = line[label_index]
+                label = TASK_LABEL_DICT[task][label_str]
+                labels_splitted[label].append(line)
+        total_samples = sum([len(x) for x in labels_splitted.values()])
+        lines = []
+        for label, label_lines in labels_splitted.items():
+            random.shuffle(label_lines)
+            ideal_amount = original_label_ratios[label] * total_samples * bootstrap_data_ratio
+            to_keep = int(min(ideal_amount, len(label_lines)))
+            lines.extend(label_lines[:to_keep])
+
+            print(f'label: {label}, ideal: {ideal_amount:.0f}, to_keep: {to_keep}, num_samples: {len(label_lines)}')
+        print(f'total_samples: {total_samples}, kept: {len(lines)} ({len(lines) / total_samples:.4f})')
+        return [list(x) for x in list(zip(*lines))]
+
 def load_val_data(task, mnli_subtask='both'):
     if task == 'mnli':
         if mnli_subtask == 'both':
@@ -52,13 +76,15 @@ def load_augment_data(task, augment_type):
         except FileNotFoundError:
             return (sentences.readlines(),)
 
-def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ratio=1.0):
+def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ratio=1.0, downsample_distill_data=False):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
     train_data = []
     if only_original_data:
         train_files = glob(f"{base_path}/train.tsv")
     else:
         train_files = glob(f"{base_path}/*.tsv")
+
+    load_downsampled_distillation_data(task, train_files[0])
     for filename in train_files:
         if bootstrap_data_ratio < 1.0 and 'train.tsv' not in filename:
             loaded_data = load_distillation_data(filename, bootstrap_data_ratio)
