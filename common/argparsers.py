@@ -29,6 +29,7 @@ def args_distill(args=None, namespace=None, parse_known=False):
     ap.add_argument("--alpha", type=float, default=0)
     ap.add_argument("--early-stopping", type=int, default=7)
     ap.add_argument("--only-original-data", action="store_true")
+    ap.add_argument("--downsample-data", action="store_true")
     ap.add_argument("--bootstrap-data-ratio", type=float, default=1.0)
 
     if parse_known:

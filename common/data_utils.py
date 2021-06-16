@@ -78,27 +78,24 @@ def load_augment_data(task, augment_type):
 
 def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ratio=1.0, downsample_distill_data=False):
     base_path = f'{TASK_INFO[task]["path"]}/distillation_data'
-    train_data = []
-    if only_original_data:
-        train_files = glob(f"{base_path}/train.tsv")
-    else:
-        train_files = glob(f"{base_path}/*.tsv")
 
-    load_downsampled_distillation_data(task, train_files[0])
-    for filename in train_files:
-        if bootstrap_data_ratio < 1.0 and 'train.tsv' not in filename:
-            loaded_data = load_distillation_data(filename, bootstrap_data_ratio)
+    train_data = load_distillation_data(f"{base_path}/train.tsv")
+    if not only_original_data:
+        augmented_path = f"{base_path}/tinybert.tsv"
+        if downsample_distill_data:
+            label_distribution = data_analysis.get_label_distribution(train_data, task)
+            augmented_data = load_downsampled_distillation_data(
+                task, augmented_path, label_distribution, bootstrap_data_ratio
+            )
         else:
-            loaded_data = load_distillation_data(filename)
+            augmented_data = load_distillation_data(augmented_path, bootstrap_data_ratio)
 
-        if train_data == []:
-            train_data = loaded_data
-        else:
-            train_data[0].extend(loaded_data[0])
-            train_data[1].extend(loaded_data[1])
-            train_data[2].extend(loaded_data[2])
-            if len(train_data) > 3:
-                train_data[3].extend(loaded_data[3])
+        train_data[0].extend(augmented_data[0])
+        train_data[1].extend(augmented_data[1])
+        train_data[2].extend(augmented_data[2])
+        if len(train_data) > 3:
+            train_data[3].extend(augmented_data[3])
+
     return train_data
 
 class DistillationData(Dataset):
