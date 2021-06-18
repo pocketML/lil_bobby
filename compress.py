@@ -57,9 +57,8 @@ def main(args, sacred_experiment=None):
         quantize.quantize_model(model, device, args, sacred_experiment)
 
     # Check if we did post-training compression and should save a compressed model.
-    any_compression = should_prune or should_quantize
     pt_pruning = should_prune and args.prune_aware
-    if any_compression and pt_pruning and sacred_experiment is not None:
+    if (should_quantize or pt_pruning) and sacred_experiment is not None:
         model_name = sacred_experiment.info["name"]
         model.save(model_name)
 
