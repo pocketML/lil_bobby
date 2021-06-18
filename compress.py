@@ -45,7 +45,7 @@ def main(args, sacred_experiment=None):
             # Magnitude pruning after distillation (static).
             model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
             model.to(device)
-            model = prune.prune_model(model, device, args)
+            model = prune.prune_model(model, device, args, sacred_experiment)
 
     if should_quantize:
         use_gpu = False
@@ -54,7 +54,7 @@ def main(args, sacred_experiment=None):
             model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
         model.cfg['use-gpu'] = False
         model.to(device)
-        quantize.quantize_model(model, device, args)
+        quantize.quantize_model(model, device, args, sacred_experiment)
 
     if (should_prune or should_quantize) and sacred_experiment is not None and not args.prune_aware:
         model_name = sacred_experiment.info["name"]

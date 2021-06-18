@@ -156,10 +156,11 @@ def do_pruning(model, args, epoch=None):
 
     return model
 
-def prune_model(model, device, args):
+def prune_model(model, device, args, sacred_experiment=None):
     dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))
 
     print("Starting point:")
+    pretty_print.print_model_disk_size(model, sacred_experiment)
     params, zero = params_zero(model)
     sparsity = (zero / params) * 100
     print(f"Sparsity before: {sparsity:.2f}%")
@@ -172,6 +173,7 @@ def prune_model(model, device, args):
     nonzero_params, nonzero_bits = get_theoretical_size(model)
     print(f"Non-zero params: {nonzero_params}")
     print(f"Theoretical size: {nonzero_bits/8000000:.3f} MB")
+    pretty_print.print_model_disk_size(model, sacred_experiment)
 
     print("** Pruning completed **")
     evaluate.evaluate_distilled_model(model, dl, device, args)
