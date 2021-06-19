@@ -13,8 +13,9 @@ from compression import prune
 
 warnings.simplefilter("ignore", UserWarning)
 
-def main(args, sacred_experiment=None):
+def main(args, **kwargs):
     print("Sit back, tighten your seat belt, and prepare for the ride of your life")
+    sacred_experiment = kwargs.get("sacred_experiment")
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
     use_gpu = not args.cpu
     task = args.task
@@ -61,6 +62,7 @@ def main(args, sacred_experiment=None):
     if (should_quantize or pt_pruning) and sacred_experiment is not None:
         model_name = sacred_experiment.info["name"]
         model.save(model_name)
+    return model
 
 if __name__ == "__main__":
     ARGS, REMAIN = argparsers.args_compress()
