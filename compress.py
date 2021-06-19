@@ -54,10 +54,10 @@ def main(args, sacred_experiment=None):
             model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
         model.cfg['use-gpu'] = False
         model.to(device)
-        quantize.quantize_model(model, device, args, sacred_experiment)
+        model = quantize.quantize_model(model, device, args, sacred_experiment)
 
     # Check if we did post-training compression and should save a compressed model.
-    pt_pruning = should_prune and args.prune_aware
+    pt_pruning = should_prune and not args.prune_aware
     if (should_quantize or pt_pruning) and sacred_experiment is not None:
         model_name = sacred_experiment.info["name"]
         model.save(model_name)
