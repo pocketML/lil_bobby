@@ -4,7 +4,7 @@ from os import system
 def main(args, args_remain):
     name_1 = args.name
     name_2 = args.model_name
-    name_3 = args.load_trained_model
+    name_3 = args.load_trained_model if args.load_trained_model != "None" else None
     if name_1 is None and name_2 is None:
         print("Both --name or --model-name can't be None.")
         return
