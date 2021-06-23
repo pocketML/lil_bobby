@@ -96,6 +96,11 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
         val_acc = train_loop(model, criterion, optim, dataloaders, device, args)
 
+        if callback is not None:
+            model = callback(model, args, epoch)
+            # We always save a checkpoint if we do pruning during training.
+            save_checkpoint(model, args.student_arch, sacred_experiment)
+
         if val_acc > best_val_acc:
             print(f'Saving new best model')
             best_val_acc = val_acc
@@ -108,7 +113,5 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
             if sacred_experiment is not None:
                 sacred_experiment.log_scalar("validation.acc", val_acc)
 
-            if callback is not None:
-                model = callback(model, args, epoch)
             if no_improvement == args.early_stopping:
                 break
