@@ -158,7 +158,7 @@ def main(args):
     # 7. Profit!
     all_exists = True
     for arch in MODEL_NAMES:
-        if not os.path.exists(f"misc/wrong_answers_{arch}.txt"):
+        if not os.path.exists(f"misc/wrong_answers_{args.task}_{arch}.txt"):
             all_exists = False
             break
 
