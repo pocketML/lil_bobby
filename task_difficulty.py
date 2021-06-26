@@ -1,4 +1,3 @@
-import itertools
 import os
 
 import torch
@@ -85,7 +84,7 @@ def calculate_wrong_predictions(args):
     print("Writing data to disk.")
 
     for arch, wrong_predict_indices in zip(MODEL_NAMES, indices_for_models):
-        with open(f"misc/wrong_answers_{arch}.txt", "w", encoding="utf-8") as fp:
+        with open(f"misc/wrong_answers_{args.task}_{arch}.txt", "w", encoding="utf-8") as fp:
             for index in wrong_predict_indices:
                 fp.write(str(index) + "\n")
 
@@ -110,42 +109,77 @@ def load_data(model, task, is_roberta_model):
 
     return data_utils.get_val_dataloader(model, val_data, shuffle=False)
 
-def analyze_answers(sentences, labels):
+def analyze_sentence_lengths(wrong_sentences, all_sentences):
+    avg_lengths = {}
+    
+    for arch in wrong_sentences:
+        wrong_set = set(x[0] for x in wrong_sentences[arch])
+        sum_len_wrong = 0
+        sum_len_correct = 0
+        for sentence in all_sentences:
+            if sentence not in wrong_set:
+                sum_len_correct += len(sentence)
+            else:
+                sum_len_wrong += len(sentence)
+        avg_lengths[arch] = (
+            sum_len_correct / (len(all_sentences) - len(wrong_set)),
+            sum_len_wrong / len(wrong_set)
+        )
+    return avg_lengths
+
+def analyze_rare_words(task, wrong_sentences, all_sentences):
+    counts = {}
+    for sentence in all_sentences:
+        for word in sentence:
+            counts[word] = counts.get(word, 0) + 1
+
+    sum_occurence_correct = 0
+    sum_occurence_wrong = 0
+
+
+def analyze_answers(task, sentences, labels):
     indices_for_models = []
     for arch in MODEL_NAMES:
-        with open(f"misc/wrong_answers_{arch}.txt", "r", encoding="utf-8") as fp:
+        with open(f"misc/wrong_answers_{task}_{arch}.txt", "r", encoding="utf-8") as fp:
             indices_for_models.append([int(x.strip()) for x in fp])
 
     indices_for_models.sort(key=lambda x: len(x), reverse=True)
 
-    sentences_for_models = []
+    sentences_for_models = {}
 
-    for model_indices in indices_for_models:
+    for arch, model_indices in zip(MODEL_NAMES, indices_for_models):
         model_sentences = []
         for index in model_indices:
-            model_sentences.append((sentences[index].strip(), labels[index].strip()))
-        sentences_for_models.append(model_sentences)
+            model_sentences.append((sentences[index], labels[index]))
+        sentences_for_models[arch] = model_sentences
 
-    shared_wrong_answers = []
-    for count in range(1, len(sentences_for_models)):
-        common_wrong = set(sentences_for_models[0])
-        for model_sentences in sentences_for_models[:-count]:
-            common_wrong = set.intersection(common_wrong, set(model_sentences))
-        shared_wrong_answers.append(common_wrong)
+    sentence_lengths = analyze_sentence_lengths(sentences_for_models, sentences)
+    
+    for arch in sentence_lengths:
+        print(f"---===--- {arch} ---===---")
+        print(f"Avg. len. correct sents: {sentence_lengths[arch][0]}")
+        print(f"Avg. len. wrong sents:   {sentence_lengths[arch][1]}")
 
-    print("=== Sentences every model got wrong ====")
-    for sentence, label in shared_wrong_answers[0]:
-        print(f"{sentence} ({label})")
+    # shared_wrong_answers = []
+    # for count in range(1, len(sentences_for_models)):
+    #     common_wrong = set(sentences_for_models[0])
+    #     for model_sentences in sentences_for_models[:-count]:
+    #         common_wrong = set.intersection(common_wrong, set(model_sentences))
+    #     shared_wrong_answers.append(common_wrong)
 
-    print()
+    # print("=== Sentences every model got wrong ====")
+    # for sentence, label in shared_wrong_answers[0]:
+    #     print(f"{sentence} ({label})")
 
-    print("=== Sentences student models got wrong ====")
-    for sentence, label in shared_wrong_answers[1]:
-        print(f"{sentence} ({label})")
+    # print()
 
-    print(f"Shared across all: {len(shared_wrong_answers[0])}")
-    print(f"Shared across students: {len(shared_wrong_answers[1])}")
-    print(f"Shared across FFN + RNN: {len(shared_wrong_answers[2])}")
+    # print("=== Sentences student models got wrong ====")
+    # for sentence, label in shared_wrong_answers[1]:
+    #     print(f"{sentence} ({label})")
+
+    # print(f"Shared across all: {len(shared_wrong_answers[0])}")
+    # print(f"Shared across students: {len(shared_wrong_answers[1])}")
+    # print(f"Shared across FFN + RNN: {len(shared_wrong_answers[2])}")
 
 def main(args):
     # Idea:
@@ -154,6 +188,9 @@ def main(args):
     # 3. For every model, run through every data point, add all wrong predictions to a list.
     # 4. See which questions all the 'wrong lists' have in common. 
     # 5. What are characteristics of these questions? Why are they hard?
+    # 5. Look at lengths of sentences they get wrong vs. right.
+    # 5. Look at whether there are rare/out of vocab words in sentences they get wrong.
+    # 5. Look at whether specific words decrease accuracy in a meaningful way.
     # 6. ???
     # 7. Profit!
     all_exists = True
@@ -166,10 +203,10 @@ def main(args):
         calculate_wrong_predictions(args)
 
     sentences, labels = data_utils.load_train_data(args.task, ds_type="dev")
-    sentences.reverse()
-    labels.reverse()
+    sentences = list(reversed([x.strip() for x in sentences]))
+    labels = list(reversed([x.strip() for x in labels]))
 
-    analyze_answers(sentences, labels)
+    analyze_answers(args.task, sentences, labels)
 
 if __name__ == "__main__":
     ARGS = argparsers.args_task_difficulty()

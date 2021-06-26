@@ -47,7 +47,7 @@ def main(args):
     model.eval()
 
     while True:
-        sentence_data = input("> ")
+        sentence_data = input(">")
         if sentence_data in ("quit", "q", "exit"):
             break
 
