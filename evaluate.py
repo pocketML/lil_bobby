@@ -90,6 +90,15 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
 
     if include_f1:
         f1_score = tp / (tp + 0.5 * (fp + fn))
+        tn = num_examples - tp - fp - fn
+        print(f'tp: {tp} ({(tp / num_examples) * 100:.2f}%)')
+        print(f'fp: {fp} ({(fp / num_examples)* 100:.2f}%)')
+        print(f'tn: {tn} ({(tn / num_examples) * 100:.2f}%)')
+        print(f'fn: {fn} ({(fn / num_examples)*100:.2f}%)')
+        print(f'Recall (Acc when label is 1): {(tp / (tp + fn))*100:.2f}%')
+        print(f'Precision (Acc when predicting 1): {(tp / (tp + fp)) * 100:.2f}%')
+        print(f'Acc when label is 0: {(tn / (tn + fp))*100:.2f}%')
+        print(f'Acc when predicting 0: {(tn / (tn + fn))*100:.2f}%')
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("test.accuracy", accuracy)
             sacred_experiment.log_scalar("test.f1", f1_score)

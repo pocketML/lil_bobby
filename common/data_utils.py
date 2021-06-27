@@ -90,6 +90,8 @@ def load_all_distillation_data(task, only_original_data=False, bootstrap_data_ra
         else:
             augmented_data = load_distillation_data(augmented_path, bootstrap_data_ratio)
 
+        print(data_analysis.get_label_distribution(augmented_data, task))
+
         train_data[0].extend(augmented_data[0])
         train_data[1].extend(augmented_data[1])
         train_data[2].extend(augmented_data[2])
