@@ -321,6 +321,7 @@ def args_validate_augment():
 def args_task_difficulty():
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--model-names", nargs="+")
     ap.add_argument('--cpu', action='store_true')
     ap.add_argument("--batch-size", type=int, default=64)
 
