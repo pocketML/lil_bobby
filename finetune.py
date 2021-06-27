@@ -81,7 +81,8 @@ def get_finetune_string(
 
     return arguments
 
-def main(args, sacred_experiment=None):
+def main(args, **kwargs):
+    sacred_experiment = kwargs.get("sacred_experiment")
     task = args.task
     task_info = task_utils.TASK_INFO[task]
     task_path = get_dataset_path(task, task_info)

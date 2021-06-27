@@ -4,8 +4,10 @@ from analysis import parameters, pretty_print, plotting
 from compression.distillation import models as distill_models
 from common import argparsers, model_utils
 
-def load_model(args, is_roberta_model):
-    if is_roberta_model:
+def load_model(args, is_roberta_model, kw_model=None):
+    if kw_model is not None:
+        return kw_model
+    elif is_roberta_model:
         if args.non_finetuned:
             return model_utils.load_roberta_model(args.arch, use_cpu=True)
         else:
@@ -18,9 +20,10 @@ def load_model(args, is_roberta_model):
     elif args.arch in distill_models.STUDENT_MODELS.keys():
         return distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
 
-def main(args, sacred_experiment=None):
+def main(args, **kwargs):
+    sacred_experiment = kwargs.get("sacred_experiment")
     is_roberta_model = model_utils.is_finetuned_model(args.arch)
-    model = load_model(args, is_roberta_model)
+    model = load_model(args, is_roberta_model, kwargs.get("model"))
     model.eval()
     if args.model_disk_size:
         pretty_print.print_model_disk_size(model, sacred_experiment)
@@ -47,6 +50,7 @@ def main(args, sacred_experiment=None):
         plotting.weight_histogram_for_all_transformers(model, args.arch)
     if args.pie_chart:
         plotting.weight_pie_chart(model, args.arch, args.save_pdf)
+    return model
 
 if __name__ == "__main__":
     ARGS, REMAIN = argparsers.args_analyze()

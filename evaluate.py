@@ -104,10 +104,14 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
             sacred_experiment.log_scalar("test.accuracy", accuracy)
         print(f'|--> eval val accuracy: {accuracy:.4f}')
 
-def main(args, sacred_experiment=None):
+def main(args, **kwargs):
+    sacred_experiment = kwargs.get("sacred_experiment")
     task = args.task
-    val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv' 
+    val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv'
     is_finetuned_model = model_utils.is_finetuned_model(args.arch)
+    if "model" in kwargs:
+        setattr(args, "cpu", True)
+
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
     if is_finetuned_model:
@@ -138,7 +142,9 @@ def main(args, sacred_experiment=None):
         else:
             raise Exception(f'task {task} not currently supported')
     else: # we have a student model
-        model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
+        model = kwargs.get("model")
+        if model is None:
+            model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
         if task == 'mnli':
             for subtask in ['matched', 'mismatched']:
                 val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
@@ -149,6 +155,7 @@ def main(args, sacred_experiment=None):
             val_data = data_utils.load_val_data(task)
             dl = data_utils.get_val_dataloader(model, val_data)
             evaluate_distilled_model(model, dl, device, args, sacred_experiment, include_f1=include_f1)
+    return model
 
 if __name__ == "__main__":
     ARGS = argparsers.args_evaluate()

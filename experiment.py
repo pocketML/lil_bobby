@@ -19,8 +19,11 @@ TASK_FUNCS = {
 }
 
 def run_experiment(task_args, _run):
+    augmented_model = None
     for task in task_args:
-        TASK_FUNCS[task](task_args[task], sacred_experiment=_run)
+        augmented_model = TASK_FUNCS[task](
+            task_args[task], sacred_experiment=_run, model=augmented_model
+        )
 
 def main(experiment_args, task_args):
     SETTINGS["CAPTURE_MODE"] = "no"

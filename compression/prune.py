@@ -44,7 +44,7 @@ class TopKPruning(prune.BasePruningMethod):
         _, idx = torch.abs(inputs.flatten()).sort(descending=False)
         j = int(self.threshold * inputs.numel())
 
-        # flat_out and mask access the same memory.
+        # flattened and mask access the same memory.
         flattened = mask.flatten()
         flattened[idx[:j]] = 0
         return mask
@@ -86,12 +86,12 @@ def get_prunable_params(model):
 
         for container in containers:
             params = container.named_parameters() if is_sequential or is_embedding else grouped_params[name]
-            for param_name, _ in params:
+            for param_name, param_values in params:
                 if "weight" in param_name:
                     name_fmt = param_name
                     if not is_sequential and not is_embedding:
                         name_fmt = ".".join(param_name.split(".")[1:])
-                    parameters_to_prune.append((container, name_fmt))
+                    parameters_to_prune.append((container, name_fmt, param_values))
 
     return parameters_to_prune
 
@@ -116,7 +116,7 @@ def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=Fals
     else:
         prune_globally(params_to_prune, prune_cls, threshold)
 
-    for module, param_name, in params_to_prune:
+    for module, param_name, _ in params_to_prune:
         prune.remove(module, param_name)
         if sparsify: # converts pruned tensors to sparse tensors
             dense_tensor = getattr(module, param_name)
@@ -156,10 +156,11 @@ def do_pruning(model, args, epoch=None):
 
     return model
 
-def prune_model(model, device, args):
+def prune_model(model, device, args, sacred_experiment=None):
     dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))
 
     print("Starting point:")
+    pretty_print.print_model_disk_size(model, sacred_experiment)
     params, zero = params_zero(model)
     sparsity = (zero / params) * 100
     print(f"Sparsity before: {sparsity:.2f}%")
@@ -172,6 +173,7 @@ def prune_model(model, device, args):
     nonzero_params, nonzero_bits = get_theoretical_size(model)
     print(f"Non-zero params: {nonzero_params}")
     print(f"Theoretical size: {nonzero_bits/8000000:.3f} MB")
+    pretty_print.print_model_disk_size(model, sacred_experiment)
 
     print("** Pruning completed **")
     evaluate.evaluate_distilled_model(model, dl, device, args)
