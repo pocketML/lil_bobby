@@ -22,12 +22,7 @@ def get_wrong_predictions_roberta(model, val_data, task, device):
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
     wrong_predictions = []
     index = 0
-    for sent, target in zip(*val_data):
-        if task_utils.is_sentence_pair(task):
-            x = sent[0].to(device), sent[1].to(device)
-        else:
-            x = sent.to(device)
-        target = target.to(device)
+    for x, target in zip(*val_data):
         preds = model.predict('sentence_classification_head', x).argmax().item()
         pred_label = label_fn(preds)
         target_label = label_fn(target.item())
