@@ -109,8 +109,6 @@ def main(args, **kwargs):
     task = args.task
     val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv'
     is_finetuned_model = model_utils.is_finetuned_model(args.arch)
-    if "model" in kwargs:
-        setattr(args, "cpu", True)
 
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
@@ -143,8 +141,17 @@ def main(args, **kwargs):
             raise Exception(f'task {task} not currently supported')
     else: # we have a student model
         model = kwargs.get("model")
+
+        if model is not None:
+            # Check if model was quantized. Evaluate on CPU if that is the case.
+            for module in model._modules:
+                if "quant" in str(model._modules[module]).lower():
+                    setattr(args, "cpu", True)
+                    break
+
         if model is None:
             model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)
+    
         if task == 'mnli':
             for subtask in ['matched', 'mismatched']:
                 val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
