@@ -5,12 +5,14 @@ import torch
 from common import data_utils, model_utils, task_utils, argparsers
 from compression.distillation import models as distill_models
 
-MODEL_NAMES = {
-    "emb-ffn": "embffn_sst_alpha0_hash100_may18_hadfield",
-    "rnn": "test_rrn_bigger",
-    "bilstm": "tang_best",
-    "large": "finetuned_sst-2_feynman"
-}
+MODEL_ARCHS = [
+    "emb-ffn", "rnn", "bilstm", "large"
+]
+
+# "emb-ffn": "embffn_sst_alpha0_hash100_may18_hadfield",
+# "rnn": "test_rrn_bigger",
+# "bilstm": "tang_best",
+# "large": "finetuned_sst-2_feynman"
 
 def get_wrong_predictions_roberta(model, val_data, task, device):
     """
@@ -61,20 +63,30 @@ def get_wrong_predictions_distilled(model, val_data, task, device):
     return wrong_predictions
 
 def calculate_wrong_predictions(args):
+    model_names = {}
+    for arch, model_name in zip(MODEL_ARCHS, args.model_names):
+        model_names[arch] = model_name
+
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
     indices_for_models = []
 
-    for arch in MODEL_NAMES:
+    print("Calculating and saving wrong predictions on validation data...")
+
+    for arch in model_names:
         is_roberta_model = model_utils.is_finetuned_model(arch)
-        model_name = MODEL_NAMES[arch]
-        print(arch, model_name)
-        if is_roberta_model:
-            model_path = model_utils.get_model_path(args.task, "finetuned")
-            model = model_utils.load_teacher(args.task, f"{model_path}/{model_name}", use_cpu=args.cpu)
-        else:
-            model = distill_models.load_student(args.task, arch, not args.cpu, model_name=model_name)
-            model.cfg["batch-size"] = args.batch_size
+        model_name = model_names[arch]
+        print(f"Arch: {arch} | Model: {model_name}")
+        try:
+            if is_roberta_model:
+                model_path = model_utils.get_model_path(args.task, "finetuned")
+                model = model_utils.load_teacher(args.task, f"{model_path}/{model_name}", use_cpu=args.cpu)
+            else:
+                model = distill_models.load_student(args.task, arch, not args.cpu, model_name=model_name)
+                model.cfg["batch-size"] = args.batch_size
+        except FileNotFoundError:
+            print(f"Error: arch {arch} with name {model_names[arch]} does not exist.")
+            print(f"Please input model-names in this order: {MODEL_ARCHS}.")
 
         data = load_data(model, args.task, is_roberta_model)
 
@@ -91,7 +103,7 @@ def calculate_wrong_predictions(args):
 
     print("Writing data to disk.")
 
-    for arch, wrong_predict_indices in zip(MODEL_NAMES, indices_for_models):
+    for arch, wrong_predict_indices in zip(model_names, indices_for_models):
         with open(f"misc/wrong_answers_{args.task}_{arch}.txt", "w", encoding="utf-8") as fp:
             for index in wrong_predict_indices:
                 fp.write(str(index) + "\n")
@@ -224,7 +236,7 @@ def analyze_rare_words(task, wrong_sentences, all_val_sentences):
 def analyze_answers(task, sentences, labels):
     indices_for_models = []
     # For each model, load indexes of the sentences that the model classified incorrectly.
-    for arch in MODEL_NAMES:
+    for arch in MODEL_ARCHS:
         with open(f"misc/wrong_answers_{task}_{arch}.txt", "r", encoding="utf-8") as fp:
             indices_for_models.append([int(x.strip()) for x in fp])
 
@@ -233,7 +245,7 @@ def analyze_answers(task, sentences, labels):
     sentences_for_models = {}
 
     # Load validation sentences and labels for the sentences that each model got wrong.
-    for arch, model_indices in zip(MODEL_NAMES, indices_for_models):
+    for arch, model_indices in zip(MODEL_ARCHS, indices_for_models):
         model_sentences = []
         for index in model_indices:
             sents = sentences[0][index]
@@ -281,13 +293,19 @@ def analyze_answers(task, sentences, labels):
 
 def main(args):
     all_exists = True
-    for arch in MODEL_NAMES:
+    for arch in MODEL_ARCHS:
         if not os.path.exists(f"misc/wrong_answers_{args.task}_{arch}.txt"):
             all_exists = False
             break
 
     if not all_exists:
+        if len(args.model_names) != 4:
+            print(f"Error: please provide 4 trained model names in the order: {MODEL_ARCHS}")
+            exit(0)
+
         calculate_wrong_predictions(args)
+    else:
+        print("*** Loading pre-computed wrong answers ***")
 
     val_data = data_utils.load_train_data(args.task, ds_type="dev")
     if task_utils.is_sentence_pair(args.task):
