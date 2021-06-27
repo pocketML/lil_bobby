@@ -5,23 +5,24 @@ import torch
 from common import data_utils, model_utils, task_utils, argparsers
 from compression.distillation import models as distill_models
 
-MODEL_NAMES = {
-    "emb-ffn": "embffn_sst_alpha0_hash100_may18_hadfield",
-    "rnn": "test_rrn_bigger",
-    "bilstm": "tang_best",
-    "large": "finetuned_sst-2_feynman"
-}
+MODEL_ARCHS = [
+    "emb-ffn", "rnn", "bilstm", "large"
+]
 
-def get_wrong_predictions_roberta(model, val_data, task, device):
+# "emb-ffn": "embffn_sst_alpha0_hash100_may18_hadfield",
+# "rnn": "test_rrn_bigger",
+# "bilstm": "tang_best",
+# "large": "finetuned_sst-2_feynman"
+
+def get_wrong_predictions_roberta(model, val_data):
+    """
+    Return all indices of sentences in the validation dataset
+    that a finetuned roberta model predicted wrongly.
+    """
     label_fn = lambda label: model.task.label_dictionary.string([label + model.task.label_dictionary.nspecial])
     wrong_predictions = []
     index = 0
-    for sent, target in zip(*val_data):
-        if task_utils.is_sentence_pair(task):
-            x = sent[0].to(device), sent[1].to(device)
-        else:
-            x = sent.to(device)
-        target = target.to(device)
+    for x, target in zip(*val_data):
         preds = model.predict('sentence_classification_head', x).argmax().item()
         pred_label = label_fn(preds)
         target_label = label_fn(target.item())
@@ -33,6 +34,10 @@ def get_wrong_predictions_roberta(model, val_data, task, device):
     return wrong_predictions
 
 def get_wrong_predictions_distilled(model, val_data, task, device):
+    """
+    Return all indices of sentences in the validation dataset
+    that a distilled model predicted wrongly.
+    """
     wrong_predictions = []
     batch_offset = 0
     for x, lens, target_labels, _ in val_data:
@@ -48,25 +53,35 @@ def get_wrong_predictions_distilled(model, val_data, task, device):
         wrong_predicts = indices[pred_labels != target_labels].tolist()
         wrong_predictions.extend(wrong_predicts)
 
-        batch_offset += x.shape[0]
+        batch_offset += target_labels.shape[0]
 
     return wrong_predictions
 
 def calculate_wrong_predictions(args):
+    model_names = {}
+    for arch, model_name in zip(MODEL_ARCHS, args.model_names):
+        model_names[arch] = model_name
+
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
     indices_for_models = []
 
-    for arch in MODEL_NAMES:
+    print("Calculating and saving wrong predictions on validation data...")
+
+    for arch in model_names:
         is_roberta_model = model_utils.is_finetuned_model(arch)
-        model_name = MODEL_NAMES[arch]
-        print(arch, model_name)
-        if is_roberta_model:
-            model_path = model_utils.get_model_path(args.task, "finetuned")
-            model = model_utils.load_teacher(args.task, f"{model_path}/{model_name}", use_cpu=args.cpu)
-        else:
-            model = distill_models.load_student(args.task, arch, not args.cpu, model_name=model_name)
-            model.cfg["batch-size"] = args.batch_size
+        model_name = model_names[arch]
+        print(f"Arch: {arch} | Model: {model_name}")
+        try:
+            if is_roberta_model:
+                model_path = model_utils.get_model_path(args.task, "finetuned")
+                model = model_utils.load_teacher(args.task, f"{model_path}/{model_name}", use_cpu=args.cpu)
+            else:
+                model = distill_models.load_student(args.task, arch, not args.cpu, model_name=model_name)
+                model.cfg["batch-size"] = args.batch_size
+        except FileNotFoundError:
+            print(f"Error: arch {arch} with name {model_names[arch]} does not exist.")
+            print(f"Please input model-names in this order: {MODEL_ARCHS}.")
 
         data = load_data(model, args.task, is_roberta_model)
 
@@ -74,7 +89,7 @@ def calculate_wrong_predictions(args):
         model.eval()
 
         if is_roberta_model:
-            wrong_predict_indices = get_wrong_predictions_roberta(model, data, args.task, device)
+            wrong_predict_indices = get_wrong_predictions_roberta(model, data)
         else:
             wrong_predict_indices = get_wrong_predictions_distilled(model, data, args.task, device)
         print(f"Number of wrong answers: {len(wrong_predict_indices)}")
@@ -83,7 +98,7 @@ def calculate_wrong_predictions(args):
 
     print("Writing data to disk.")
 
-    for arch, wrong_predict_indices in zip(MODEL_NAMES, indices_for_models):
+    for arch, wrong_predict_indices in zip(model_names, indices_for_models):
         with open(f"misc/wrong_answers_{args.task}_{arch}.txt", "w", encoding="utf-8") as fp:
             for index in wrong_predict_indices:
                 fp.write(str(index) + "\n")
@@ -99,7 +114,7 @@ def load_data(model, task, is_roberta_model):
                 x = x_1, x_2
             else:
                 x, target = train_example
-            encoded = model.encode(x)
+            encoded = model.encode(*x)
 
             label = torch.LongTensor([task_utils.TASK_LABEL_DICT[task][target.strip()]])
 
@@ -109,37 +124,170 @@ def load_data(model, task, is_roberta_model):
 
     return data_utils.get_val_dataloader(model, val_data, shuffle=False)
 
-def analyze_sentence_lengths(wrong_sentences, all_sentences):
+def analyze_sentence_lengths(task, wrong_sentences, all_sentences):
+    """
+    Return the average length of sentences that each model
+    classified correctly and incorrectly, respectively.
+    """
     avg_lengths = {}
-    
+
+    total_sentences = sum(len(sent_list) for sent_list in all_sentences)
+
     for arch in wrong_sentences:
-        wrong_set = set(x[0] for x in wrong_sentences[arch])
+        wrong_set = set()
+        # Create a set of sentences that a model got wrong.
+        for sent_data in wrong_sentences[arch]:
+            if task_utils.is_sentence_pair(task):
+                wrong_set.update(sent_data[0])
+                wrong_set.update(sent_data[1])
+            else:
+                wrong_set.update(sent_data)
+
         sum_len_wrong = 0
         sum_len_correct = 0
-        for sentence in all_sentences:
-            if sentence not in wrong_set:
-                sum_len_correct += len(sentence)
-            else:
-                sum_len_wrong += len(sentence)
+
+        # Go through all sentences in the validation dataset.
+        # Sum lengths of sentences that were correctly and incorrectly classified.
+        for sent_list in all_sentences:
+            for sentence in sent_list:
+                if sentence in wrong_set:
+                    sum_len_wrong += len(sentence)
+                else:
+                    sum_len_correct += len(sentence)
+
+        # Calculate total amount of correct/incorrect sentences.
+        total_sentences_right = total_sentences - len(wrong_set)
+        total_sentences_wrong = len(wrong_set)
+        if task_utils.is_sentence_pair(task):
+            total_sentences_right *= 2
+            total_sentences_wrong *= 2
+
         avg_lengths[arch] = (
-            sum_len_correct / (len(all_sentences) - len(wrong_set)),
-            sum_len_wrong / len(wrong_set)
+            sum_len_correct / total_sentences_right,
+            sum_len_wrong / total_sentences_wrong
         )
     return avg_lengths
 
-def analyze_rare_words(task, wrong_sentences, all_sentences):
+def analyze_rare_words(task, wrong_sentences, all_val_sentences):
+    """
+    Return the average occurence of words in the training set
+    in validation sentences that each model classified
+    correctly and incorrectly, respectively.
+    """
     counts = {}
-    for sentence in all_sentences:
-        for word in sentence:
-            counts[word] = counts.get(word, 0) + 1
+    folder = f'{task_utils.TASK_INFO[task]["path"]}/processed/'
+    files = ['train.raw.input0']
+    if task_utils.is_sentence_pair(task):
+        files.append('train.raw.input1')
 
-    sum_occurence_correct = 0
-    sum_occurence_wrong = 0
+    # Count how often every word in the training set occured.
+    for train_file in files:
+        with open(folder + train_file, encoding='utf-8') as fp:
+            for sentence in fp:
+                for word in sentence.split(" "):
+                    counts[word] = counts.get(word, 0) + 1
 
+    word_occurences = {}
+
+    for arch in wrong_sentences:
+        wrong_set = set()
+        # Create a set of sentences that a model got wrong.
+        for sent_data, _ in wrong_sentences[arch]:
+            if task_utils.is_sentence_pair(task):
+                wrong_set.add(sent_data[0])
+                wrong_set.add(sent_data[1])
+            else:
+                wrong_set.add(sent_data)
+
+        words_in_correct_sent = set()
+        words_in_wrong_sent = set()
+
+        # Create a set consisting of all words in sentences that
+        # were correctly/incorrectly classified.
+        for sent_list in all_val_sentences:
+            for sentence in sent_list:
+                for word in sentence.split(" "):
+                    if sentence in wrong_set:
+                        words_in_wrong_sent.add(word)
+                    else:
+                        words_in_correct_sent.add(word)
+
+        sum_occurence_correct = 0
+        sum_occurence_wrong = 0
+
+        # Sum up how often each word in correct/incorrect sentences
+        # occured in the training set.
+        for word in words_in_correct_sent:
+            sum_occurence_correct += counts.get(word, 0)
+        for word in words_in_wrong_sent:
+            sum_occurence_wrong += counts.get(word, 0)
+
+        word_occurences[arch] = (
+            sum_occurence_correct / len(words_in_correct_sent),
+            sum_occurence_wrong / len(words_in_wrong_sent)
+        )
+    return word_occurences
+
+def analyze_out_of_vocab(task, wrong_sentences, all_val_sentences):
+    """
+    Return the percentage of words in the validation set 
+    that are not in the training set for sentences that
+    each model classified correctly and incorrectly, respectively.
+    """
+    train_words = set()
+    folder = f'{task_utils.TASK_INFO[task]["path"]}/processed/'
+    files = ['train.raw.input0']
+    if task_utils.is_sentence_pair(task):
+        files.append('train.raw.input1')
+
+    # Count how often every word in the training set occured.
+    for train_file in files:
+        with open(folder + train_file, encoding='utf-8') as fp:
+            for sentence in fp:
+                for word in sentence.split(" "):
+                    train_words.add(word)
+
+    avg_occurences = {}
+
+    for arch in wrong_sentences:
+        wrong_set = set()
+        # Create a set of sentences that a model got wrong.
+        for sent_data, _ in wrong_sentences[arch]:
+            if task_utils.is_sentence_pair(task):
+                wrong_set.add(sent_data[0])
+                wrong_set.add(sent_data[1])
+            else:
+                wrong_set.add(sent_data)
+
+        words_in_correct_sent = set()
+        words_in_wrong_sent = set()
+        out_of_vocab_correct_sent = set()
+        out_of_vocab_wrong_sent = set()
+
+        # Create a set consisting of all words in sentences that
+        # were correctly/incorrectly classified.
+        for sent_list in all_val_sentences:
+            for sentence in sent_list:
+                for word in sentence.split(" "):
+                    if sentence in wrong_set:
+                        words_in_wrong_sent.add(word)
+                        if word not in train_words:
+                            out_of_vocab_wrong_sent.add(word)
+                    else:
+                        words_in_correct_sent.add(word)
+                        if word not in train_words:
+                            out_of_vocab_correct_sent.add(word)
+
+        avg_occurences[arch] = (
+            len(out_of_vocab_correct_sent) / len(words_in_correct_sent),
+            len(out_of_vocab_wrong_sent) / len(words_in_wrong_sent)
+        )
+    return avg_occurences
 
 def analyze_answers(task, sentences, labels):
     indices_for_models = []
-    for arch in MODEL_NAMES:
+    # For each model, load indexes of the sentences that the model classified incorrectly.
+    for arch in MODEL_ARCHS:
         with open(f"misc/wrong_answers_{task}_{arch}.txt", "r", encoding="utf-8") as fp:
             indices_for_models.append([int(x.strip()) for x in fp])
 
@@ -147,18 +295,38 @@ def analyze_answers(task, sentences, labels):
 
     sentences_for_models = {}
 
-    for arch, model_indices in zip(MODEL_NAMES, indices_for_models):
+    # Load validation sentences and labels for the sentences that each model got wrong.
+    for arch, model_indices in zip(MODEL_ARCHS, indices_for_models):
         model_sentences = []
         for index in model_indices:
-            model_sentences.append((sentences[index], labels[index]))
+            sents = sentences[0][index]
+            if len(sentences) == 2:
+                sent_2 = sentences[1][index]
+                sents = (sents, sent_2)
+
+            model_sentences.append((sents, labels[index]))
         sentences_for_models[arch] = model_sentences
 
-    sentence_lengths = analyze_sentence_lengths(sentences_for_models, sentences)
-    
+    sentence_lengths = analyze_sentence_lengths(task, sentences_for_models, sentences)
+
     for arch in sentence_lengths:
         print(f"---===--- {arch} ---===---")
         print(f"Avg. len. correct sents: {sentence_lengths[arch][0]}")
         print(f"Avg. len. wrong sents:   {sentence_lengths[arch][1]}")
+
+    rare_words = analyze_rare_words(task, sentences_for_models, sentences)
+
+    for arch in rare_words:
+        print(f"---===--- {arch} ---===---")
+        print(f"Occurence of words correct sents: {rare_words[arch][0]}")
+        print(f"Occurence of words wrong sents:   {rare_words[arch][1]}")
+
+    out_of_vocab = analyze_out_of_vocab(task, sentences_for_models, sentences)
+
+    for arch in out_of_vocab:
+        print(f"---===--- {arch} ---===---")
+        print(f"Out-of-vocab ratio correct sents: {out_of_vocab[arch][0]}")
+        print(f"Out-of-vocab ratio wrong sents:   {out_of_vocab[arch][1]}")
 
     # shared_wrong_answers = []
     # for count in range(1, len(sentences_for_models)):
@@ -182,28 +350,29 @@ def analyze_answers(task, sentences, labels):
     # print(f"Shared across FFN + RNN: {len(shared_wrong_answers[2])}")
 
 def main(args):
-    # Idea:
-    # 1. Load all data for a task.
-    # 2. Load every trained model (even finetuned). Start with worst model (FFN).
-    # 3. For every model, run through every data point, add all wrong predictions to a list.
-    # 4. See which questions all the 'wrong lists' have in common. 
-    # 5. What are characteristics of these questions? Why are they hard?
-    # 5. Look at lengths of sentences they get wrong vs. right.
-    # 5. Look at whether there are rare/out of vocab words in sentences they get wrong.
-    # 5. Look at whether specific words decrease accuracy in a meaningful way.
-    # 6. ???
-    # 7. Profit!
     all_exists = True
-    for arch in MODEL_NAMES:
+    for arch in MODEL_ARCHS:
         if not os.path.exists(f"misc/wrong_answers_{args.task}_{arch}.txt"):
             all_exists = False
             break
 
     if not all_exists:
-        calculate_wrong_predictions(args)
+        if args.model_names is None or len(args.model_names) != 4:
+            print(f"Error: please provide 4 trained model names in the order: {MODEL_ARCHS}")
+            exit(0)
 
-    sentences, labels = data_utils.load_train_data(args.task, ds_type="dev")
-    sentences = list(reversed([x.strip() for x in sentences]))
+        calculate_wrong_predictions(args)
+    else:
+        print("*** Loading pre-computed wrong answers ***")
+
+    val_data = data_utils.load_train_data(args.task, ds_type="dev")
+    if task_utils.is_sentence_pair(args.task):
+        sents_1, labels, sents_2 = val_data
+        sentences = [sents_1, sents_2]
+    else:
+        sents_1, labels = val_data
+        sentences = [sents_1]
+    sentences = [list(reversed([x.strip() for x in sents])) for sents in sentences]
     labels = list(reversed([x.strip() for x in labels]))
 
     analyze_answers(args.task, sentences, labels)

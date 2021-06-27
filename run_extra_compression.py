@@ -7,7 +7,7 @@ def main(args, args_remain):
     do_pruning = "--prune-magnitude" in args_remain or "--prune-topk" in args_remain
     do_quant = (
         "--ptq-embedding" in args_remain or "--dq-encoder" in args_remain or
-        "--dq-classifier" in args_remain or "ptq-classifier" in args_remain
+        "--dq-classifier" in args_remain or "--ptq-classifier" in args_remain
     )
 
     # Create a list of arguments for use with 'run_all_seeds.py'.
