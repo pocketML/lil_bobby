@@ -14,7 +14,7 @@ MODEL_ARCHS = [
 # "bilstm": "tang_best",
 # "large": "finetuned_sst-2_feynman"
 
-def get_wrong_predictions_roberta(model, val_data, task, device):
+def get_wrong_predictions_roberta(model, val_data):
     """
     Return all indices of sentences in the validation dataset
     that a finetuned roberta model predicted wrongly.
@@ -150,10 +150,10 @@ def analyze_sentence_lengths(task, wrong_sentences, all_sentences):
         # Sum lengths of sentences that were correctly and incorrectly classified.
         for sent_list in all_sentences:
             for sentence in sent_list:
-                if sentence not in wrong_set:
-                    sum_len_correct += len(sentence)
-                else:
+                if sentence in wrong_set:
                     sum_len_wrong += len(sentence)
+                else:
+                    sum_len_correct += len(sentence)
 
         # Calculate total amount of correct/incorrect sentences.
         total_sentences_right = total_sentences - len(wrong_set)
@@ -184,20 +184,20 @@ def analyze_rare_words(task, wrong_sentences, all_val_sentences):
     for train_file in files:
         with open(folder + train_file, encoding='utf-8') as fp:
             for sentence in fp:
-                for word in sentence:
+                for word in sentence.split(" "):
                     counts[word] = counts.get(word, 0) + 1
 
-    avg_occurences = {}
+    word_occurences = {}
 
     for arch in wrong_sentences:
         wrong_set = set()
         # Create a set of sentences that a model got wrong.
-        for sent_data in wrong_sentences[arch]:
+        for sent_data, _ in wrong_sentences[arch]:
             if task_utils.is_sentence_pair(task):
-                wrong_set.update(sent_data[0])
-                wrong_set.update(sent_data[1])
+                wrong_set.add(sent_data[0])
+                wrong_set.add(sent_data[1])
             else:
-                wrong_set.update(sent_data)
+                wrong_set.add(sent_data)
 
         words_in_correct_sent = set()
         words_in_wrong_sent = set()
@@ -208,9 +208,9 @@ def analyze_rare_words(task, wrong_sentences, all_val_sentences):
             for sentence in sent_list:
                 for word in sentence.split(" "):
                     if sentence in wrong_set:
-                        words_in_correct_sent.add(word)
-                    else:
                         words_in_wrong_sent.add(word)
+                    else:
+                        words_in_correct_sent.add(word)
 
         sum_occurence_correct = 0
         sum_occurence_wrong = 0
@@ -222,9 +222,65 @@ def analyze_rare_words(task, wrong_sentences, all_val_sentences):
         for word in words_in_wrong_sent:
             sum_occurence_wrong += counts.get(word, 0)
 
-        avg_occurences[arch] = (
+        word_occurences[arch] = (
             sum_occurence_correct / len(words_in_correct_sent),
             sum_occurence_wrong / len(words_in_wrong_sent)
+        )
+    return word_occurences
+
+def analyze_out_of_vocab(task, wrong_sentences, all_val_sentences):
+    """
+    Return the percentage of words in the validation set 
+    that are not in the training set for sentences that
+    each model classified correctly and incorrectly, respectively.
+    """
+    train_words = set()
+    folder = f'{task_utils.TASK_INFO[task]["path"]}/processed/'
+    files = ['train.raw.input0']
+    if task_utils.is_sentence_pair(task):
+        files.append('train.raw.input1')
+
+    # Count how often every word in the training set occured.
+    for train_file in files:
+        with open(folder + train_file, encoding='utf-8') as fp:
+            for sentence in fp:
+                for word in sentence.split(" "):
+                    train_words.add(word)
+
+    avg_occurences = {}
+
+    for arch in wrong_sentences:
+        wrong_set = set()
+        # Create a set of sentences that a model got wrong.
+        for sent_data, _ in wrong_sentences[arch]:
+            if task_utils.is_sentence_pair(task):
+                wrong_set.add(sent_data[0])
+                wrong_set.add(sent_data[1])
+            else:
+                wrong_set.add(sent_data)
+
+        words_in_correct_sent = set()
+        words_in_wrong_sent = set()
+        out_of_vocab_correct_sent = set()
+        out_of_vocab_wrong_sent = set()
+
+        # Create a set consisting of all words in sentences that
+        # were correctly/incorrectly classified.
+        for sent_list in all_val_sentences:
+            for sentence in sent_list:
+                for word in sentence.split(" "):
+                    if sentence in wrong_set:
+                        words_in_wrong_sent.add(word)
+                        if word not in train_words:
+                            out_of_vocab_wrong_sent.add(word)
+                    else:
+                        words_in_correct_sent.add(word)
+                        if word not in train_words:
+                            out_of_vocab_correct_sent.add(word)
+
+        avg_occurences[arch] = (
+            len(out_of_vocab_correct_sent) / len(words_in_correct_sent),
+            len(out_of_vocab_wrong_sent) / len(words_in_wrong_sent)
         )
     return avg_occurences
 
@@ -262,8 +318,15 @@ def analyze_answers(task, sentences, labels):
 
     for arch in rare_words:
         print(f"---===--- {arch} ---===---")
-        print(f"Avg. occurence of words correct sents: {rare_words[arch][0]}")
-        print(f"Avg. occurence of words wrong sents:   {rare_words[arch][1]}")
+        print(f"Occurence of words correct sents: {rare_words[arch][0]}")
+        print(f"Occurence of words wrong sents:   {rare_words[arch][1]}")
+
+    out_of_vocab = analyze_out_of_vocab(task, sentences_for_models, sentences)
+
+    for arch in out_of_vocab:
+        print(f"---===--- {arch} ---===---")
+        print(f"Out-of-vocab ratio correct sents: {out_of_vocab[arch][0]}")
+        print(f"Out-of-vocab ratio wrong sents:   {out_of_vocab[arch][1]}")
 
     # shared_wrong_answers = []
     # for count in range(1, len(sentences_for_models)):
