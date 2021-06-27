@@ -89,7 +89,7 @@ def calculate_wrong_predictions(args):
         model.eval()
 
         if is_roberta_model:
-            wrong_predict_indices = get_wrong_predictions_roberta(model, data, args.task, device)
+            wrong_predict_indices = get_wrong_predictions_roberta(model, data)
         else:
             wrong_predict_indices = get_wrong_predictions_distilled(model, data, args.task, device)
         print(f"Number of wrong answers: {len(wrong_predict_indices)}")
