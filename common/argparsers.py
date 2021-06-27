@@ -317,3 +317,20 @@ def args_validate_augment():
     ap.add_argument("--task")
 
     return ap.parse_args()
+
+def args_task_difficulty():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
+    ap.add_argument('--cpu', action='store_true')
+    ap.add_argument("--batch-size", type=int, default=64)
+
+    return ap.parse_args()
+
+def args_interactive():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--model-name", type=str, required=True)
+    ap.add_argument("--arch", choices=MODEL_ARCHS, required=True)
+    ap.add_argument("--cpu", action="store_true")
+
+    return ap.parse_args()

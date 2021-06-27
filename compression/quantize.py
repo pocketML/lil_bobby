@@ -43,13 +43,13 @@ def quantize_classifier(model, args, dl, device, type='static', inplace=False):
         )
     return model
 
-def quantize_model(model, device, args):
+def quantize_model(model, device, args, sacred_experiment=None):
     dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))
     backend = 'fbgemm'
     torch.backends.quantized.engine = backend
     print("Starting point:")
     evaluate.evaluate_distilled_model(model, dl, device, args, None)
-    pretty_print.print_model_disk_size(model)
+    pretty_print.print_model_disk_size(model, sacred_experiment)
     print()
 
     if args.ptq_embedding:
@@ -66,7 +66,7 @@ def quantize_model(model, device, args):
         model = quantize_classifier(model, args, dl, device, type='static')
 
     print('** Quantization completed **')
-    pretty_print.print_model_disk_size(model)
+    pretty_print.print_model_disk_size(model, sacred_experiment)
     evaluate.evaluate_distilled_model(model, dl, device, args, None)
     print()
     return model

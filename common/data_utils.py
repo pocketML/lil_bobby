@@ -158,7 +158,7 @@ def get_datasets(model, sentences1, labels, sentences2=None, logits=None, loadba
     gc.collect()
     return DistillationData(data)
 
-def get_val_dataloader(model, validation_data, loadbar=True):
+def get_val_dataloader(model, validation_data, loadbar=True, shuffle=True):
     if len(validation_data) > 2:
         x1, labels, x2 = validation_data
         dataset = get_datasets(model, x1, labels, sentences2=x2, loadbar=loadbar)
@@ -168,12 +168,12 @@ def get_val_dataloader(model, validation_data, loadbar=True):
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],
-            shuffle=True,
+            shuffle=shuffle,
             drop_last=False,
             collate_fn=create_collate_fn(model.cfg)
         )
 
-def get_train_dataloader(model, distillation_data, loadbar=True):
+def get_train_dataloader(model, distillation_data, loadbar=True, shuffle=True):
     if len(distillation_data) > 3:
         x1, x2, labels, logits = distillation_data
         dataset = get_datasets(model, x1, labels, sentences2=x2, logits=logits, loadbar=loadbar)
@@ -183,7 +183,7 @@ def get_train_dataloader(model, distillation_data, loadbar=True):
     return DataLoader(
             dataset,
             batch_size=model.cfg['batch-size'],
-            shuffle=True,
+            shuffle=shuffle,
             drop_last=True,
             collate_fn=create_collate_fn(model.cfg)
         )

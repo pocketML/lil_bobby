@@ -50,7 +50,7 @@ def main(args, args_remain):
         run_distill.main(args_distill, args_remain)
         return
     else:
-        args_list.extend(["--model-size", "--model-disk-size", "--transponder"])
+        args_list.extend(["--model-size", "--model-disk-size"])
 
     if args.load_trained_model is None:
         print("Error: --load-trained-model can't be None when compressing pre-trained model.")
