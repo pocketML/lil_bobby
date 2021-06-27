@@ -119,7 +119,7 @@ def load_data(model, task, is_roberta_model):
                 x = x_1, x_2
             else:
                 x, target = train_example
-            encoded = model.encode(x)
+            encoded = model.encode(*x)
 
             label = torch.LongTensor([task_utils.TASK_LABEL_DICT[task][target.strip()]])
 
