@@ -58,7 +58,7 @@ def get_wrong_predictions_distilled(model, val_data, task, device):
         wrong_predicts = indices[pred_labels != target_labels].tolist()
         wrong_predictions.extend(wrong_predicts)
 
-        batch_offset += x.shape[0]
+        batch_offset += target_labels.shape[0]
 
     return wrong_predictions
 
@@ -299,7 +299,7 @@ def main(args):
             break
 
     if not all_exists:
-        if len(args.model_names) != 4:
+        if args.model_names is None or len(args.model_names) != 4:
             print(f"Error: please provide 4 trained model names in the order: {MODEL_ARCHS}")
             exit(0)
 
