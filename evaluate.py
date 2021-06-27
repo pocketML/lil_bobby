@@ -53,20 +53,21 @@ def evaluate_accuracy(model, task, val_data_path, include_f1=False):
     else:
         return accuracy
 
-def update_f1_counts_distilled(pred_labels, target_labels, tp, fp, fn):
+def update_f1_counts_distilled(pred_labels, target_labels, tp, fp, fn, tn):
     pred_ones = pred_labels == 1
     target_ones = target_labels == 1
     pred_zeros = pred_labels == 0
     target_zeros = target_labels == 0
-    tp += torch.count_nonzero(torch.logical_and(pred_ones, target_ones))
-    fp += torch.count_nonzero(torch.logical_and(pred_ones, target_zeros))
-    fn += torch.count_nonzero(torch.logical_and(pred_zeros, target_ones))
-    return tp.item(), fp.item(), fn.item()
+    tp += torch.count_nonzero(torch.logical_and(pred_ones, target_ones)).item()
+    fp += torch.count_nonzero(torch.logical_and(pred_ones, target_zeros)).item()
+    fn += torch.count_nonzero(torch.logical_and(pred_zeros, target_ones)).item()
+    tn += torch.count_nonzero(torch.logical_and(pred_zeros, target_zeros)).item()
+    return tp, fp, fn, tn
 
 def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, include_f1=False, mnli_subtask=None):
     model.to(device)
     model.eval()
-    running_corrects, num_examples, tp, fp, fn = 0, 0, 0, 0, 0
+    running_corrects, num_examples, tp, fp, fn, tn = 0, 0, 0, 0, 0, 0
     iterator = tqdm(dl, leave=False) if args.loadbar else dl
 
     for x1, lens, target_labels, _ in iterator:
@@ -84,11 +85,13 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
         running_corrects += torch.sum(preds == target_labels.data).item()
         num_examples += examples
         if include_f1:
-            tp, fp, fn = update_f1_counts_distilled(preds, target_labels, tp, fp, fn)
+            tp, fp, fn, tn = update_f1_counts_distilled(preds, target_labels, tp, fp, fn, tn)
 
     accuracy = 0 if num_examples == 0 else running_corrects / num_examples
 
     if include_f1:
+        print(f'tp: {tp}, fp: {fp}, fn: {fn}, tn: {tn}, combined: {tp + fp + fn + tn}')
+        print(f'num_examples: {num_examples}')
         f1_score = tp / (tp + 0.5 * (fp + fn))
         tn = num_examples - tp - fp - fn
         print(f'tp: {tp} ({(tp / num_examples) * 100:.2f}%)')
