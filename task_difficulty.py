@@ -331,7 +331,7 @@ def main(args):
     else:
         print("*** Loading pre-computed predictions ***")
 
-    val_data = data_utils.load_train_data(args.task, ds_type="dev")
+    val_data = data_utils.load_val_data(args.task)
     if task_utils.is_sentence_pair(args.task):
         sents_1, _, sents_2 = val_data
         sentences = [sents_1, sents_2]
