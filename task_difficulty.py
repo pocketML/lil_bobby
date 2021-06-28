@@ -140,7 +140,7 @@ def load_predicted_sentences(task, val_sents):
             for index in range(len(val_sents[0])):
                 sents = (val_sents[0][index],)
                 if task_utils.is_sentence_pair(task):
-                    sent_2 = sents[1][index]
+                    sent_2 = val_sents[1][index]
                     sents = (sents, sent_2)
 
                 list_to_add = wrong if index in wrong_indices_set else correct
@@ -219,39 +219,36 @@ def analyze_rare_words(model_sentences, word_counts):
 
     for arch in model_sentences:
         correct_sents, wrong_sents = model_sentences[arch]
-    
-        words_in_correct_sent = set()
-        words_in_wrong_sent = set()
-
-        # Create a set consisting of all words in sentences
-        # that were correctly/incorrectly classified.
-        for correct_sent_sample in correct_sents:
-            for sentence in correct_sent_sample: # Loop if sentence pair.
-                for word in sentence.split(" "):
-                    words_in_correct_sent.add(word)
-
-        for wrong_sent_sample in wrong_sents:
-            for sentence in wrong_sent_sample: # Loop if sentence pair.
-                for word in sentence.split(" "):
-                    words_in_wrong_sent.add(word)
 
         sum_occurence_correct = 0
         sum_occurence_wrong = 0
 
         # Sum up how often each word in correct/incorrect sentences
         # occured in the training set.
-        for word in words_in_correct_sent:
-            sum_occurence_correct += word_counts.get(word, 0)
-        for word in words_in_wrong_sent:
-            sum_occurence_wrong += word_counts.get(word, 0)
+        for is_correct_sents in (True, False):
+            sentences = correct_sents if is_correct_sents else wrong_sents
+            for data_sample in sentences:
+                sentence_word_counts = 0
+                total_words_in_sentence = 0
+
+                for sentence in data_sample: # Loop if sentence pair.
+                    words = sentence.split(" ")
+                    total_words_in_sentence += len(words)
+                    for word in words:
+                        sentence_word_counts += word_counts.get(word, 0)
+
+                if is_correct_sents:
+                    sum_occurence_correct += (sentence_word_counts / total_words_in_sentence)
+                else:
+                    sum_occurence_wrong += (sentence_word_counts / total_words_in_sentence)
 
         train_word_occurences[arch] = (
-            sum_occurence_correct / len(words_in_correct_sent),
-            sum_occurence_wrong / len(words_in_wrong_sent)
+            sum_occurence_correct / len(correct_sents),
+            sum_occurence_wrong / len(wrong_sents)
         )
     return train_word_occurences
 
-def analyze_missing_words(model_sentences, word_counts):
+def analyze_unseen_words(model_sentences, word_counts):
     """
     Return the percentage of words in the validation set 
     that are not in the training set for sentences that
@@ -262,30 +259,32 @@ def analyze_missing_words(model_sentences, word_counts):
     for arch in model_sentences:
         correct_sents, wrong_sents = model_sentences[arch]
 
-        words_in_correct_sent = set()
-        words_in_wrong_sent = set()
-        out_of_vocab_correct_sent = set()
-        out_of_vocab_wrong_sent = set()
+        sum_unseen_correct = 0
+        sum_unseen_wrong = 0
 
-        # Create a set consisting of all words in sentences that
-        # were correctly/incorrectly classified.
-        for correct_sent_sample in correct_sents:
-            for sentence in correct_sent_sample: # Loop if sentence pair.
-                for word in sentence.split(" "):
-                    words_in_correct_sent.add(word)
-                    if word not in word_counts:
-                        out_of_vocab_correct_sent.add(word)
+        # Sum up how often a word in correct/incorrect sentences
+        # are unseen (missing from training data).
+        for is_correct_sents in (True, False):
+            sentences = correct_sents if is_correct_sents else wrong_sents
+            for data_sample in sentences:
+                missing_words_count = 0
+                total_words_in_sentence = 0
 
-        for wrong_sent_sample in wrong_sents:
-            for sentence in wrong_sent_sample: # Loop if sentence pair.
-                for word in sentence.split(" "):
-                    words_in_wrong_sent.add(word)
-                    if word not in word_counts:
-                        out_of_vocab_wrong_sent.add(word)
+                for sentence in data_sample: # Loop if sentence pair.
+                    words = sentence.split(" ")
+                    total_words_in_sentence += len(words)
+                    for word in words:
+                        if word not in word_counts:
+                            missing_words_count += 1
+
+                if is_correct_sents:
+                    sum_unseen_correct += (missing_words_count / total_words_in_sentence)
+                else:
+                    sum_unseen_wrong += (missing_words_count / total_words_in_sentence)
 
         avg_occurences[arch] = (
-            len(out_of_vocab_correct_sent) / len(words_in_correct_sent),
-            len(out_of_vocab_wrong_sent) / len(words_in_wrong_sent)
+            sum_unseen_correct / len(correct_sents),
+            sum_unseen_wrong / len(wrong_sents)
         )
     return avg_occurences
 
@@ -308,7 +307,7 @@ def analyze_answers(task, val_sentences):
         print(f"Occurence of words correct sents: {rare_words[arch][0]}")
         print(f"Occurence of words wrong sents:   {rare_words[arch][1]}")
 
-    out_of_vocab = analyze_missing_words(sentences_for_models, word_occurences)
+    out_of_vocab = analyze_unseen_words(sentences_for_models, word_occurences)
 
     for arch in out_of_vocab:
         print(f"---===--- {arch} ---===---")
