@@ -138,10 +138,11 @@ def load_predicted_sentences(task, val_sents):
         with open(f"misc/wrong_answers_{task}_{arch}.txt", "r", encoding="utf-8") as fp:
             wrong_indices_set = set(int(x.strip()) for x in fp)
             for index in range(len(val_sents[0])):
-                sents = (val_sents[0][index],)
+                sent_1 = val_sents[0][index]
+                sents = (sent_1,)
                 if task_utils.is_sentence_pair(task):
                     sent_2 = val_sents[1][index]
-                    sents = (sents, sent_2)
+                    sents = (sent_1, sent_2)
 
                 list_to_add = wrong if index in wrong_indices_set else correct
                 list_to_add.append(sents)
