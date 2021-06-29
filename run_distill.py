@@ -66,8 +66,9 @@ def main(args, args_remain):
 
     # Include final static arguments.
     args_list.extend([
-        "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
-        "--batch-size", "256", "--model-size", "--model-disk-size", "--transponder"
+        "--embedding-freeze", "False", "--epochs", "50",
+        "--batch-size", "256", "--model-size", "--model-disk-size",
+        "--transponder"
     ])
 
     # Create a name for the experiment that we are running.
