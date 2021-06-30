@@ -1,9 +1,7 @@
 import torch
-import matplotlib.pyplot as plt
 from functools import reduce
 from common import model_utils
 import os
-import numpy as np
 
 def dtype_bits(param):
     dt = param.dtype
@@ -48,9 +46,12 @@ def get_model_parameters_safe(model):
     parameters = model.parameters()
 
     if model_utils.is_quantized_model(model):
-        parameters = [
-            torch.dequantize(model.embedding.embedding.weight())
-        ]
+        parameters = []
+        if model.cfg["embedding-type"] == "hash":
+            parameters.append(model.embedding.scalars.weight)
+            parameters.append(torch.dequantize(model.embedding.vectors.weight()))
+        else:
+            parameters.append(torch.dequantize(model.embedding.embedding.weight()))
 
         if hasattr(model.classifier, "module"): # Post-training quant
             module_iter = model.classifier.module
