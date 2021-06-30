@@ -308,6 +308,7 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
 
     PARSER.add_argument("task", type=str, choices=("sst-2", "qqp", "mnli"))
+    PARSER.add_argument("table", type=str, choices=("distill", "extra"))
 
     ARGS = PARSER.parse_args()
 

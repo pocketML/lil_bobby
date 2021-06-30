@@ -110,8 +110,6 @@ def main(args, **kwargs):
     val_data_path = task_utils.TASK_INFO[task]["path"] + '/dev.tsv'
     is_finetuned_model = model_utils.is_finetuned_model(args.arch)
 
-    device = torch.device('cpu') if args.cpu else torch.device('cuda')
-
     if is_finetuned_model:
         model_path = model_utils.get_model_path(args.task, "finetuned")
         model = model_utils.load_teacher(
@@ -144,10 +142,10 @@ def main(args, **kwargs):
 
         if model is not None:
             # Check if model was quantized. Evaluate on CPU if that is the case.
-            for module in model._modules:
-                if "quant" in str(model._modules[module]).lower():
-                    setattr(args, "cpu", True)
-                    break
+            if model_utils.is_quantized_model(model):
+                setattr(args, "cpu", True)
+
+        device = torch.device('cpu') if args.cpu else torch.device('cuda')
 
         if model is None:
             model = distill_models.load_student(args.task, args.arch, use_gpu=not args.cpu, model_name=args.model_name)

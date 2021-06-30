@@ -87,6 +87,12 @@ def load_roberta_model(arch, use_cpu=False):
 def is_finetuned_model(arch):
     return arch in MODEL_INFO.keys()
 
+def is_quantized_model(model):
+    for module in model._modules:
+        if "quant" in str(model._modules[module]).lower():
+            return True
+    return False
+
 class GlueBaseline(nn.Module):
   def __init__(self, vocab_size=2200000):
     super().__init__()
