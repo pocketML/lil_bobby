@@ -34,6 +34,7 @@ def main(args, args_remain):
     classifier_dim = task_cfg["cls-hidden-dim"]
     if large_task: # Double classifier dim on QQP and MNLI tasks.
         classifier_dim = classifier_dim * 2
+        args_list.extend(["--batch-size", "256"])
 
     args_list.extend(["--cls-hidden-dim", str(classifier_dim)])
 
@@ -66,8 +67,8 @@ def main(args, args_remain):
 
     # Include final static arguments.
     args_list.extend([
-        "--embedding-freeze", "False", "--vocab-size", "5000", "--epochs", "50",
-        "--batch-size", "256", "--model-size", "--model-disk-size", "--transponder"
+        "--embedding-freeze", "False", "--epochs", "50",
+        "--model-size", "--model-disk-size", "--transponder"
     ])
 
     # Create a name for the experiment that we are running.

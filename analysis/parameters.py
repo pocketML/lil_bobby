@@ -1,9 +1,8 @@
 import torch
-import matplotlib.pyplot as plt
 from functools import reduce
 from common import model_utils
+import shutil
 import os
-import numpy as np
 
 def dtype_bits(param):
     dt = param.dtype
@@ -40,11 +39,46 @@ def get_model_disk_size(model, sacred_experiment=None):
     os.remove(temp_name)
     return size
 
+def get_model_parameters_safe(model):
+    """
+    Method for getting parameters from a model that also
+    takes into account if the model is quantized.
+    """
+    parameters = model.parameters()
+
+    if model_utils.is_quantized_model(model):
+        parameters = []
+        if model.cfg["embedding-type"] == "hash":
+            parameters.append(model.embedding.scalars.weight)
+            parameters.append(torch.dequantize(model.embedding.vectors.weight()))
+        else:
+            parameters.append(torch.dequantize(model.embedding.embedding.weight()))
+
+        if hasattr(model.classifier, "module"): # Post-training quant
+            module_iter = model.classifier.module
+        else: # Dynamic quant
+            module_iter = model.classifier
+        for module in module_iter:
+            if "quant" in str(type(module)).lower():
+                parameters.append(torch.dequantize(module.weight()))
+
+        if model.cfg["type"] == "lstm":
+            bilstm_weights = model.bilstm.get_weight()
+            for key in bilstm_weights:
+                parameters.append(torch.dequantize(bilstm_weights[key]))
+            bilstm_biases = model.bilstm.get_bias()
+            for key in bilstm_biases:
+               parameters.append(bilstm_biases[key])
+        elif model.cfg["type"] == "rnn":
+            parameters.extend(model.encoder.parameters())
+    return parameters
+
 # returns tuple with number of params and number of bits used
 def get_model_size(model):
     total_params = 0
     total_bits = 0
-    for _, param in model.named_parameters():
+
+    for param in get_model_parameters_safe(model):
         size = list(param.size())
         num_weights = reduce(lambda acc, x: acc * x, size, 1)
         total_params += num_weights
@@ -52,12 +86,31 @@ def get_model_size(model):
         total_bits += num_weights * dtype_bits(param)
     return total_params, total_bits
 
-def get_theoretical_size(model):
+def get_theoretical_size(model, sacred_experiment=None):
     nonzero_params = 0
-    nonzero_bits = 0
-    for _, param in model.named_parameters():
+
+    for param in get_model_parameters_safe(model):
         non_zero = torch.count_nonzero(param).item()
         nonzero_params += non_zero
-        # components might have different dtype, so we have to check for each
-        nonzero_bits += non_zero * dtype_bits(param)
-    return nonzero_params, nonzero_bits
+
+    # Save model to temporary file.
+    temp_name = "tmp.pt" if sacred_experiment is None else f"tmp_{sacred_experiment.info['name']}.pt"
+    torch.save(model.state_dict(), temp_name)
+
+    # Copy model to temporary folder.
+    temp_folder = "compressed" if sacred_experiment is None else f"compressed_{sacred_experiment.info['name']}"
+    os.mkdir(temp_folder)
+    shutil.copy(temp_name, temp_folder)
+
+    # Create zip archive of temporary folder.
+    archive = shutil.make_archive(temp_folder, "zip", temp_folder)
+
+    # Get size of zip archive.
+    size = os.path.getsize(archive)/1e6
+
+    # Remove temporary file, folder, and archive.
+    shutil.rmtree(temp_folder)
+    os.remove(archive)
+    os.remove(temp_name)
+
+    return nonzero_params, size
