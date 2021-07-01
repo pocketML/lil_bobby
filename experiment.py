@@ -1,7 +1,6 @@
 import os
 from sys import stdout
 from shutil import rmtree
-from glob import glob
 from sacred import Experiment, SETTINGS
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment

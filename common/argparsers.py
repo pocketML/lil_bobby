@@ -214,7 +214,10 @@ def args_experiment():
     if "evaluate" in experiment_args.jobs or "analyze" in experiment_args.jobs:
         if "--model-name" not in args_remain: # We are missing --model-name (copy --name).
             args_remain.extend(["--model-name", experiment_args.name])
-        if ("--arch" in args_remain) ^ ("--student-arch" in args_remain):
+
+        if "compress" in experiment_args.jobs and (
+            ("--arch" in args_remain) ^ ("--student-arch" in args_remain)
+        ):
             # We are missing either --arch or --student-arch.
             if "--arch" in args_remain: # Copy --arch value to --student-arch.
                 key = "--student-arch"

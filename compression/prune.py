@@ -172,7 +172,7 @@ def prune_model(model, device, args, sacred_experiment=None):
 
     nonzero_params, nonzero_bits = get_theoretical_size(model)
     print(f"Non-zero params: {nonzero_params}")
-    print(f"Theoretical size: {nonzero_bits/8000000:.3f} MB")
+    print(f"Theoretical size: {nonzero_bits:.3f} MB")
     pretty_print.print_model_disk_size(model, sacred_experiment)
 
     print("** Pruning completed **")
