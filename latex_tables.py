@@ -39,7 +39,10 @@ def get_results():
                 new_results.append(grouped_results[group])
     return new_results
 
-def validate_experiment(data):
+def validate_experiment(data, table):
+    if data["compression_actions"] != table:
+        return False
+
     expected_params = [
         ("vocab_size", [5000, None]), ("embedding_freeze", [False, None]),
         ("embedding_dim", [25, 100, 300, None]),
@@ -50,13 +53,13 @@ def validate_experiment(data):
             return False
     return True
 
-def get_experiment_data(experiment_group):
+def get_experiment_data(experiment_group, table):
     valid_groups = []
     for group_index in range(0, len(experiment_group) // 4, 4):
         with open(f"{experiment_group[group_index]}/config.json", "r") as fp:
             config = json.load(fp)["task_args"]["compress"]
 
-        if validate_experiment(config):
+        if validate_experiment(config, table):
             valid_groups.extend(experiment_group[group_index:group_index+4])
 
     if valid_groups == []:
@@ -107,7 +110,7 @@ def get_experiment_data(experiment_group):
     }
     return data_for_experiment
 
-def group_and_format_data(results):
+def group_and_format_data(results, table):
     alpha_indices = {1.0: 1, 0.5: 2, 0.0: 3}
     emb_sort_order = [
         "hash", "bpe", "char"
@@ -115,7 +118,7 @@ def group_and_format_data(results):
 
     grouped_data = {"sst-2": [], "qqp": [], "mnli": []}
     for result_group in results:
-        data = get_experiment_data(result_group)
+        data = get_experiment_data(result_group, table)
         if data is not None:
             grouped_data[data["task"]].append(data)
 
@@ -211,7 +214,24 @@ def group_and_format_data(results):
 
     return grouped_data
 
+def print_prune_table(grouped_data, task):
+    """
+    Columns:
+        Alpha, Embedding Type, Embedding Dim, Vocab Size,
+        Non-Zero Parameters, Size, Theoretical Size, Accuracy
+    Rows:
+        The different models (described in Docs), pruned in some way.
+    """
+
 def print_table(grouped_data, task):
+    """
+    Columns:
+        Embedding Type, Embedding Dim, Parameters, Size,
+        No Distill, No Distill + b, Alpha 0.5, Alpha 0
+    Rows:
+        The different combinations of distilled models with
+        different embeddings/architectures
+    """
     arch_formatted = {
         "bilstm": "BiLSTM",
         "rnn": "RNN",
@@ -296,11 +316,9 @@ def print_table(grouped_data, task):
     print("}")
 
 def main(args):
-    new_results = get_results()
+    all_results = get_results()
 
-    all_results = new_results
-
-    grouped_data = group_and_format_data(all_results)
+    grouped_data = group_and_format_data(all_results, args.table)
 
     print_table(grouped_data, args.task)
 
@@ -308,7 +326,7 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
 
     PARSER.add_argument("task", type=str, choices=("sst-2", "qqp", "mnli"))
-    PARSER.add_argument("table", type=str, choices=("distill", "extra"))
+    PARSER.add_argument("table", type=str, choices=("distill", "prune", "quantize", "final"))
 
     ARGS = PARSER.parse_args()
 
