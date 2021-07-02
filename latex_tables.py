@@ -214,11 +214,32 @@ def group_and_format_data(results, table):
 
     return grouped_data
 
+def group_and_format_data_prune(results, table):
+    alpha_indices = {1.0: 1, 0.5: 2, 0.0: 3}
+    emb_sort_order = [
+        "hash", "bpe", "char"
+    ]
+
+    filtered_data = []
+    for result_group in results:
+        data = get_experiment_data(result_group, table)
+        if data is not None:
+            filtered_data.append(data)
+
+    grouped_by_arch = {
+        "bilstm": [], "rnn": [], "emb-ffn": []
+    }
+    for data in filtered_data:
+        grouped_by_arch[data["arch"]].append(data)
+
+    print(grouped_by_arch)
+
 def print_prune_table(grouped_data, task):
     """
     Columns:
-        Alpha, Embedding Type, Embedding Dim, Vocab Size,
-        Non-Zero Parameters, Size, Theoretical Size, Accuracy
+        Model Name (explained in text after), SST-2 Acc, QQP Acc, MNLI Acc,
+        Size on Disk (before/after pruning (zipped after)),
+        Compression Ratio (before/after)
     Rows:
         The different models (described in Docs), pruned in some way.
     """
