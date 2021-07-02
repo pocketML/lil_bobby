@@ -8,8 +8,8 @@ def print_model_size(model):
     print(f'size in MBs: {total_bits/8000000:.3f}')
     print('-'*20)
 
-def print_theoretical_size(model):
-    non_zero, total_bits = parameters.get_theoretical_size(model)
+def print_theoretical_size(model, sacred_experiment=None):
+    non_zero, total_bits = parameters.get_theoretical_size(model, sacred_experiment)
     print(f'total non-zero parameters: {non_zero}')
     print(f'zipped size in MBs: {total_bits:.3f}')
     print('-'*20)
