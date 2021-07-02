@@ -28,6 +28,7 @@ def main(args, **kwargs):
 
     if "distill" in args.compression_actions:
         model = models.load_student(task, student_type, use_gpu=use_gpu, args=args)
+        print(list(x[0] for x in model.named_parameters()))
         if sacred_experiment is not None:
             temp_name = f"temp_{sacred_experiment.info['name']}.json"
             args.load_trained_model = sacred_experiment.info['name']
@@ -39,13 +40,16 @@ def main(args, **kwargs):
             args.load_trained_model = args.student_arch
 
         callback_func = prune.do_pruning if should_prune and args.prune_aware else None
-        distill.distill_model(task, model, device, args, callback_func, sacred_experiment)
+        model = distill.distill_model(task, model, device, args, callback_func, sacred_experiment)
 
-    if should_prune and not args.prune_aware:
-        # Post-training pruning (static).
-        model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
-        model.to(device)
-        model = prune.prune_model(model, device, args, sacred_experiment)
+    if should_prune:
+        if not args.prune_aware:
+            # Post-training pruning (static).
+            model = models.load_student(task, student_type, use_gpu=use_gpu, model_name=args.load_trained_model)
+            model.to(device)
+            model = prune.prune_model(model, device, args, sacred_experiment)
+
+        prune.finalize_pruning(model)
 
     if should_quantize:
         # Post-training quantization.

@@ -61,7 +61,6 @@ def train_loop(model, criterion, optim, dl, device, args):
 
     return val_accuracy
 
-
 def distill_model(task, model, device, args, callback, sacred_experiment):
     model.to(device)
     val_data = data_utils.load_val_data(task)
@@ -115,3 +114,4 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
             if no_improvement == args.early_stopping:
                 break
+    return model

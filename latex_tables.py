@@ -4,6 +4,19 @@ from glob import glob
 
 import numpy as np
 
+# Which models to save further compression results for.
+# Student Arch, Embedding Type, Embedding Dim, Alpha Value
+FURTHER_COMPRESSION_MODELS = set([
+    ("bilstm", "hash", 100, 0),
+    ("bilstm", "bpe", 100, 0.5),
+    ("bilstm", "bpe", 25, 0),
+    ("rnn", "hash", 100, 0),
+    ("rnn", "bpe", 100, 0),
+    ("rnn", "char", 100, 0),
+    ("embffn", "hash", 25, 0),
+    ("embffn", "bpe", 100, 0.5)
+])
+
 def get_experiment_suffix(result_name):
     try:
         suffix = int(result_name.split("_")[-1])
@@ -11,7 +24,10 @@ def get_experiment_suffix(result_name):
     except ValueError:
         return 1
 
-def get_results():
+def get_extra_compression_results():
+    
+
+def get_distillation_results():
     month_names = ["may", "june", "july", "august"]
     start_day_in_month = [25, 0, 0, 0]
     end_day_in_month = [31, 30, 31, 31]
@@ -38,6 +54,9 @@ def get_results():
             for group in grouped_results:
                 new_results.append(grouped_results[group])
     return new_results
+
+def used_for_further_compression(data):
+
 
 def validate_experiment(data, table):
     if data["compression_actions"] != table:
@@ -232,6 +251,28 @@ def group_and_format_data_prune(results, table):
     for data in filtered_data:
         grouped_by_arch[data["arch"]].append(data)
 
+    for arch in grouped_by_arch:
+        embeddings = [
+            ("hash", 100), ("hash", 300),
+            ("bpe", 25), ("bpe", 100), ("bpe", 300),
+            ("char", 100)
+        ]
+        if task != "sst-2":
+            embeddings.remove(("hash", 300))
+            embeddings.remove(("bpe", 300))
+
+        grouped_by_emb = {}
+
+        for emb_type, emb_dim in embeddings:
+            key = f"{emb_type}_{emb_dim}"
+            grouped_by_emb[key] = {
+                "emb-type": emb_type,
+                "emb-dim": emb_dim,
+                "params": "", "size": "",
+                "acc": [(None, None) for _ in range(4)],
+                "std": [(None, None) for _ in range(4)]
+            }
+
     print(grouped_by_arch)
 
 def print_prune_table(grouped_data, task):
@@ -337,7 +378,7 @@ def print_table(grouped_data, task):
     print("}")
 
 def main(args):
-    all_results = get_results()
+    all_results = get_distillation_results()
 
     grouped_data = group_and_format_data(all_results, args.table)
 

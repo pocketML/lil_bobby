@@ -107,7 +107,7 @@ def prune_globally(params, prune_cls, threshold):
         threshold=threshold
     )
 
-def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=False):
+def actual_pruning(model, prune_cls, threshold, prune_local=False):
     params_to_prune = get_prunable_params(model)
 
     if prune_local:
@@ -115,13 +115,6 @@ def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=Fals
             prune_locally(module, name, values, prune_cls, threshold)
     else:
         prune_globally(params_to_prune, prune_cls, threshold)
-
-    for module, param_name, _ in params_to_prune:
-        prune.remove(module, param_name)
-        if sparsify: # converts pruned tensors to sparse tensors
-            dense_tensor = getattr(module, param_name)
-            sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
-            setattr(module, param_name, sparse_tensor)
 
     return model
 
@@ -156,6 +149,15 @@ def do_pruning(model, args, epoch=None):
 
     return model
 
+def finalize_pruning(model, sparsify=False):
+    params_to_prune = get_prunable_params(model)
+    for module, param_name, _ in params_to_prune:
+        prune.remove(module, param_name)
+        if sparsify: # converts pruned tensors to sparse tensors
+            dense_tensor = getattr(module, param_name)
+            sparse_tensor = torch.nn.Parameter(to_sparse(dense_tensor))
+            setattr(module, param_name, sparse_tensor)
+
 def prune_model(model, device, args, sacred_experiment=None):
     dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))
 
@@ -169,6 +171,7 @@ def prune_model(model, device, args, sacred_experiment=None):
 
     print("** Pruning model... **")
     model = do_pruning(model, args)
+    finalize_pruning(model)
 
     nonzero_params, nonzero_bits = get_theoretical_size(model, sacred_experiment)
     print(f"Non-zero params: {nonzero_params}")
