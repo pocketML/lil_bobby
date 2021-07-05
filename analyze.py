@@ -37,11 +37,11 @@ def main(args, **kwargs):
             sacred_experiment.log_scalar("model_params", total_params)
             sacred_experiment.log_scalar("model_size", total_bits/8000000)
     if args.theoretical_size:
-        pretty_print.print_theoretical_size(model)
-        total_params, total_bits = parameters.get_theoretical_size(model)
+        pretty_print.print_theoretical_size(model, sacred_experiment)
+        total_params, total_bits = parameters.get_theoretical_size(model, sacred_experiment)
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("nonzero_params", total_params)
-            sacred_experiment.log_scalar("theoretical_size", total_bits/8000000)
+            sacred_experiment.log_scalar("theoretical_size", total_bits)
     if args.named_params:
         pretty_print.print_named_params(model, args.arch)
     if args.weight_thresholds:

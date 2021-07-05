@@ -1,8 +1,53 @@
 import argparse
+import compression
 import json
 from glob import glob
 
 import numpy as np
+
+# Which models to save further compression results for.
+EXTRA_COMPRESSION_MODELS = [
+    [ # BiLSTM
+        "bilstm_sst_alpha0_hash100_may25",
+        "bilstm_qqp_alpha0_hash100_june1",
+        "bilstm_mnli_alpha0_hash100_june9"
+    ],
+    [
+        "bilstm_sst_alpha05_bpe100_may25",
+        "bilstm_qqp_alpha05_bpe100_june9",
+        "bilstm_mnli_alpha05_bpe100_june9"
+    ],
+    [
+        "bilstm_sst_alpha0_bpe25_may27",
+        "bilstm_qqp_alpha0_bpe25_june2",
+        "bilstm_mnli_alpha0_bpe25_june9"
+    ],
+    [ # RNN
+        "rnn_sst_alpha0_hash100_may27",
+        "rnn_qqp_alpha0_hash100_june6",
+        "rnn_mnli_alpha0_hash100_june9"
+    ],
+    [
+        "rnn_sst_alpha0_bpe100_may27",
+        "rnn_qqp_alpha0_bpe100_june6",
+        "rnn_mnli_alpha0_bpe100_june9"
+    ],
+    [
+        "rnn_sst_alpha0_char100_may28",
+        "rnn_qqp_alpha0_char100_june8",
+        "rnn_mnli_alpha0_char100_june10"
+    ],
+    [ # FFN
+        "embffn_sst_alpha0_hash25_may28",
+        "embffn_qqp_alpha0_hash25_june7",
+        "embffn_mnli_alpha0_hash25_june10"
+    ],
+    [
+        "embffn_sst_alpha1_bpe100_may29",
+        "embffn_qqp_alpha1_bpe100_june7",
+        "embffn_mnli_alpha1_bpe100_june10"
+    ]
+]
 
 def get_experiment_suffix(result_name):
     try:
@@ -11,7 +56,41 @@ def get_experiment_suffix(result_name):
     except ValueError:
         return 1
 
-def get_results():
+def group_results_by_model(results_for_day):
+    grouped_results = {}
+    for result in results_for_day:
+        split = result.split("_")
+        if "og" in result:
+            end = -2 if len(split) == 8 else -1
+        else:
+            end = -2 if len(split) == 7 else -1
+
+        name = "_".join(split[:end])
+        if name not in grouped_results or len(grouped_results[name]) == 4:
+            grouped_results[name] = []
+        grouped_results[name].append(result)
+    return grouped_results
+
+def get_extra_compression_results(table):
+    compress_method = table
+    if table == "final":
+        compress_method = "prune_quant"
+    elif table == "quantize":
+        compress_method = "quant"
+
+    models = []
+    for model_group in EXTRA_COMPRESSION_MODELS:
+        model_groups = []
+        for task_specific_model in model_group:
+            results = glob(f"experiments/{task_specific_model}_{compress_method}_*")
+            results.sort(key=get_experiment_suffix)
+
+            grouped_results = group_results_by_model(results)
+            model_groups.append(grouped_results)
+        models.append(model_groups)
+    return models
+
+def get_distillation_results():
     month_names = ["may", "june", "july", "august"]
     start_day_in_month = [25, 0, 0, 0]
     end_day_in_month = [31, 30, 31, 31]
@@ -22,18 +101,7 @@ def get_results():
             results_for_day = glob(f"experiments/*_{month}{day}*")
             results_for_day.sort(key=get_experiment_suffix)
 
-            grouped_results = {}
-            for result in results_for_day:
-                split = result.split("_")
-                if "og" in result:
-                    end = -2 if len(split) == 8 else -1
-                else:
-                    end = -2 if len(split) == 7 else -1
-
-                name = "_".join(split[:end])
-                if name not in grouped_results or len(grouped_results[name]) == 4:
-                    grouped_results[name] = []
-                grouped_results[name].append(result)
+            grouped_results = group_results_by_model(results_for_day)
 
             for group in grouped_results:
                 new_results.append(grouped_results[group])
@@ -44,10 +112,13 @@ def validate_experiment(data, table):
         return False
 
     expected_params = [
-        ("vocab_size", [5000, None]), ("embedding_freeze", [False, None]),
+        ("embedding_freeze", [False, None]),
         ("embedding_dim", [25, 100, 300, None]),
         ("embedding_type", ["hash", "bpe", "char", None])
     ]
+    if table == "distill":
+        expected_params.append(("vocab_size", [5000, None]))
+
     for param, expected_values in expected_params:
         if data[param] not in expected_values:
             return False
@@ -94,6 +165,7 @@ def get_experiment_data(experiment_group, table):
     try:
         params = metrics[0]["model_params"]["values"][0]
         disk_size = metrics[0]["model_disk_size"]["values"][0]
+        theoretical_size = metrics[0]["theoretical_size"]["values"][0]
     except KeyError:
         return None
 
@@ -106,11 +178,12 @@ def get_experiment_data(experiment_group, table):
     data_for_experiment = {
         "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
         "emb-dim": config["embedding_dim"], "alpha": config["alpha"], "og": config["only_original_data"],
-        "params": params, "size": disk_size, "acc": (mean_1, mean_2), "std": (std_1, std_2)
+        "params": params, "size": disk_size, "theoretical_size": theoretical_size,
+        "acc": (mean_1, mean_2), "std": (std_1, std_2)
     }
     return data_for_experiment
 
-def group_and_format_data(results, table):
+def group_and_format_distill_data(results, table):
     alpha_indices = {1.0: 1, 0.5: 2, 0.0: 3}
     emb_sort_order = [
         "hash", "bpe", "char"
@@ -214,16 +287,53 @@ def group_and_format_data(results, table):
 
     return grouped_data
 
+def group_and_format_extra_compression_data(results, table):
+    all_model_data = []
+    model_ids = ["a", "b", "c"]
+    times_seen_arch = {"bilstm": 0, "rnn": 0, "embffn": 0}
+    for model_group in results:
+        model_data = []
+        disk_sizes = []
+        theoretical_sizes = []
+
+        tasks = ["sst-2", "qqp", "mnli"]
+        for task, result_group in zip(tasks, model_group):
+            data = get_experiment_data(result_group, table)
+            if task == "sst-2": # Only add arch once.
+                model_id_index = times_seen_arch[data["arch"]]
+                times_seen_arch[data["arch"]] += 1
+                model_id = model_ids[model_id_index]
+                model_data.append(f"{data['arch']}_{model_id}")
+            acc_1, acc_2 = data["acc"]
+            acc_str = str(acc_1)
+            if acc_2 is not None:
+                acc_str += f" / {acc_2}"
+
+            model_data.append(acc_str)
+
+            if task in ("sst-2", "qqp"):
+                disk_sizes.append(f"{data['size']:.2f}")
+                if table in ("prune", "final"):
+                    theoretical_sizes.append(f"{data['theoretical_size']:.2f}")
+        
+        data_for_model = model_data + disk_sizes
+        if table in ("prune", "final"):
+            data_for_model.extend(theoretical_sizes)
+
+        all_model_data.extend(data_for_model)
+    return all_model_data
+
 def print_prune_table(grouped_data, task):
     """
     Columns:
-        Alpha, Embedding Type, Embedding Dim, Vocab Size,
-        Non-Zero Parameters, Size, Theoretical Size, Accuracy
+        Model Name (explained in text after), SST-2 Acc, QQP Acc, MNLI Acc,
+        Size on Disk (before/after pruning (zipped after)),
+        Compression Ratio (before/after)
     Rows:
         The different models (described in Docs), pruned in some way.
     """
 
-def print_table(grouped_data, task):
+def print_distill_table(grouped_data, task):
     """
     Columns:
         Embedding Type, Embedding Dim, Parameters, Size,
@@ -315,12 +425,18 @@ def print_table(grouped_data, task):
     print("\\end{table*}")
     print("}")
 
+def print_extra_compression_table(grouped_data):
+    print(grouped_data[0])
+
 def main(args):
-    all_results = get_results()
-
-    grouped_data = group_and_format_data(all_results, args.table)
-
-    print_table(grouped_data, args.task)
+    if args.table == "distill":
+        all_results = get_distillation_results()
+        grouped_data = group_and_format_distill_data(all_results, args.table)
+        print_distill_table(grouped_data, args.task)
+    else:
+        all_results = get_extra_compression_results(args.table)
+        grouped_data = group_and_format_extra_compression_data(all_results, args.table)
+        print_extra_compression_table(grouped_data)
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
