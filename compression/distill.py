@@ -4,6 +4,7 @@ import torch.nn as nn
 from tqdm import tqdm
 
 from common import task_utils, data_utils, transponder
+from analysis.parameters import get_model_sparsity
 
 def save_checkpoint(model, student_arch, sacred_experiment=None):
     model_name = (
@@ -61,6 +62,14 @@ def train_loop(model, criterion, optim, dl, device, args):
 
     return val_accuracy
 
+def pruning_performance(acc, sparsity, alpha=0.9):
+    """
+    Returns a measure of how well a model is performing
+    based on a linear combination of its validation accuracy and sparsity.
+    'alpha' decides how each parameter is weighed.
+    """
+    return acc * alpha + sparsity * (1 - alpha)
+
 def distill_model(task, model, device, args, callback, sacred_experiment):
     model.to(device)
     val_data = data_utils.load_val_data(task)
@@ -89,7 +98,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
     )
     optim = model.get_optimizer()
 
-    best_val_acc, no_improvement = 0, 0,
+    best_performance, no_improvement = 0, 0,
     for epoch in range(1, args.epochs + 1):
         print(f'* Epoch {epoch}')
 
@@ -97,12 +106,18 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
         if callback is not None:
             model = callback(model, args, epoch)
-            # We always save a checkpoint if we do pruning during training.
-            save_checkpoint(model, args.student_arch, sacred_experiment)
 
-        if val_acc > best_val_acc:
+            params, zero = get_model_sparsity(model)
+            sparsity = zero / params
+            # When pruning, best performing model is a combination of sparsity and performance.
+            model_performance = pruning_performance(val_acc, sparsity)
+        else:
+            # When just distilling, best performing model is simply measured by accuracy.
+            model_performance = val_acc
+
+        if model_performance > best_performance:
             print(f'Saving new best model')
-            best_val_acc = val_acc
+            best_performance = model_performance
             save_checkpoint(model, args.student_arch, sacred_experiment)
             no_improvement = 0
         else:

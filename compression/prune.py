@@ -4,7 +4,7 @@ import torch.nn.utils.prune as prune
 from common import model_utils, data_utils
 from embedding.base import Embedding
 import evaluate
-from analysis.parameters import get_theoretical_size
+from analysis.parameters import get_theoretical_size, get_model_sparsity
 from analysis import pretty_print
 
 class MagnitudePruning(prune.BasePruningMethod):
@@ -125,16 +125,6 @@ def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=Fals
 
     return model
 
-def params_zero(model):
-    zero = 0
-    total_params = 0
-    for _, param in model.named_parameters():
-        non_zero = torch.count_nonzero(param).item()
-        num_params = param.size().numel()
-        zero += (num_params - non_zero)
-        total_params += num_params
-    return total_params, zero
-
 def do_pruning(model, args, epoch=None):
     threshold = args.prune_threshold
     if epoch is not None and epoch < args.prune_warmup:
@@ -150,7 +140,7 @@ def do_pruning(model, args, epoch=None):
 
     model = actual_pruning(model, prune_class, threshold, args.prune_local)
 
-    params, zero = params_zero(model)
+    params, zero = get_model_sparsity(model)
     sparsity = (zero / params) * 100
     print(f"Sparsity: {sparsity:.2f}%")
 
@@ -161,7 +151,7 @@ def prune_model(model, device, args, sacred_experiment=None):
 
     print("Starting point:")
     pretty_print.print_model_disk_size(model, sacred_experiment)
-    params, zero = params_zero(model)
+    params, zero = get_model_sparsity(model)
     sparsity = (zero / params) * 100
     print(f"Sparsity before: {sparsity:.2f}%")
     evaluate.evaluate_distilled_model(model, dl, device, args)

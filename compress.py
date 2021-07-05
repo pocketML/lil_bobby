@@ -28,7 +28,6 @@ def main(args, **kwargs):
 
     if "distill" in args.compression_actions:
         model = models.load_student(task, student_type, use_gpu=use_gpu, args=args)
-        print(list(x[0] for x in model.named_parameters()))
         if sacred_experiment is not None:
             temp_name = f"temp_{sacred_experiment.info['name']}.json"
             args.load_trained_model = sacred_experiment.info['name']

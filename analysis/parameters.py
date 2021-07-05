@@ -32,6 +32,16 @@ def count_below_threshold_in_layer(layer, threshold):
     below = np.where(abs(weights) < threshold, 1, 0)
     return below.sum(), len(weights)
 
+def get_model_sparsity(model):
+    zero = 0
+    total_params = 0
+    for _, param in model.named_parameters():
+        non_zero = torch.count_nonzero(param).item()
+        num_params = param.size().numel()
+        zero += (num_params - non_zero)
+        total_params += num_params
+    return total_params, zero
+
 def get_model_disk_size(model, sacred_experiment=None):
     temp_name = "tmp.pt" if sacred_experiment is None else f"tmp_{sacred_experiment.info['name']}.pt"
     torch.save(model.state_dict(), temp_name)
