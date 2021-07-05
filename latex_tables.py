@@ -1,4 +1,5 @@
 import argparse
+import compression
 import json
 from glob import glob
 
@@ -71,7 +72,12 @@ def group_results_by_model(results_for_day):
     return grouped_results
 
 def get_extra_compression_results(table):
-    compress_method = table if table != "final" else "prune_quant"
+    compress_method = table
+    if table == "final":
+        compress_method = "prune_quant"
+    elif table == "quantize":
+        compress_method = "quant"
+
     models = []
     for model_group in EXTRA_COMPRESSION_MODELS:
         model_groups = []
