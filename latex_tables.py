@@ -14,7 +14,7 @@ EXTRA_COMPRESSION_MODELS = [
     ],
     [
         "bilstm_sst_alpha05_bpe100_may25",
-        "bilstm_qqp_alpha05_bpe100_june9",
+        "bilstm_qqp_alpha05_bpe100_june1",
         "bilstm_mnli_alpha05_bpe100_june9"
     ],
     [
@@ -84,9 +84,7 @@ def get_extra_compression_results(table):
         for task_specific_model in model_group:
             results = glob(f"experiments/{task_specific_model}_{compress_method}_*")
             results.sort(key=get_experiment_suffix)
-
-            grouped_results = group_results_by_model(results)
-            model_groups.append(grouped_results)
+            model_groups.append(results[-4:])
         models.append(model_groups)
     return models
 
@@ -108,8 +106,10 @@ def get_distillation_results():
     return new_results
 
 def validate_experiment(data, table):
-    if data["compression_actions"] != table:
-        return False
+    compress_actions = ["prune", "quantize"] if table == "final" else [table]
+    for comp_action in compress_actions:
+        if comp_action not in data["compression_actions"]:
+            return False
 
     expected_params = [
         ("embedding_freeze", [False, None]),
@@ -177,7 +177,7 @@ def get_experiment_data(experiment_group, table):
 
     data_for_experiment = {
         "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
-        "emb-dim": config["embedding_dim"], "alpha": config["alpha"], "og": config["only_original_data"],
+        "emb-dim": config["embedding_dim"], "alpha": config.get("alpha"), "og": config["only_original_data"],
         "params": params, "size": disk_size, "theoretical_size": theoretical_size,
         "acc": (mean_1, mean_2), "std": (std_1, std_2)
     }
@@ -292,7 +292,7 @@ def group_and_format_extra_compression_data(results, table):
     model_ids = ["a", "b", "c"]
     times_seen_arch = {"bilstm": 0, "rnn": 0, "embffn": 0}
     for model_group in results:
-        model_data = []
+        acc_data = []
         disk_sizes = []
         theoretical_sizes = []
 
@@ -303,24 +303,24 @@ def group_and_format_extra_compression_data(results, table):
                 model_id_index = times_seen_arch[data["arch"]]
                 times_seen_arch[data["arch"]] += 1
                 model_id = model_ids[model_id_index]
-                model_data.append(f"{data['arch']}_{model_id}")
+                acc_data.append(f"{data['arch']}_{model_id}")
             acc_1, acc_2 = data["acc"]
             acc_str = str(acc_1)
             if acc_2 is not None:
                 acc_str += f" / {acc_2}"
 
-            model_data.append(acc_str)
+            acc_data.append(acc_str)
 
             if task in ("sst-2", "qqp"):
                 disk_sizes.append(f"{data['size']:.2f}")
                 if table in ("prune", "final"):
                     theoretical_sizes.append(f"{data['theoretical_size']:.2f}")
         
-        data_for_model = model_data + disk_sizes
+        data_for_model = acc_data + disk_sizes
         if table in ("prune", "final"):
             data_for_model.extend(theoretical_sizes)
 
-        all_model_data.extend(data_for_model)
+        all_model_data.append(data_for_model)
     return all_model_data
 
 def print_prune_table(grouped_data, task):
