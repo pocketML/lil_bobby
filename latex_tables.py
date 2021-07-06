@@ -49,6 +49,17 @@ EXTRA_COMPRESSION_MODELS = [
     ]
 ]
 
+ARCH_FORMATTED = {
+    "bilstm": "BiLSTM",
+    "rnn": "RNN",
+    "emb-ffn": "FFN"
+}
+EMB_FORMATTED = {
+    "hash": "Hash",
+    "bpe": "BPE",
+    "char": "Char"
+}
+
 def get_experiment_suffix(result_name):
     try:
         suffix = int(result_name.split("_")[-1])
@@ -289,7 +300,7 @@ def group_and_format_distill_data(results, table):
 
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
-    model_ids = ["a", "b", "c"]
+    model_ids = ["A", "B", "C"]
     times_seen_arch = {"bilstm": 0, "rnn": 0, "embffn": 0}
     for model_group in results:
         acc_data = []
@@ -303,11 +314,12 @@ def group_and_format_extra_compression_data(results, table):
                 model_id_index = times_seen_arch[data["arch"]]
                 times_seen_arch[data["arch"]] += 1
                 model_id = model_ids[model_id_index]
-                acc_data.append(f"{data['arch']}_{model_id}")
+                arch_fmt = ARCH_FORMATTED[data["arch"]]
+                acc_data.append(f"{arch_fmt} {model_id}")
             acc_1, acc_2 = data["acc"]
-            acc_str = str(acc_1)
+            acc_str = f"{(acc_1 * 100):.2f}"
             if acc_2 is not None:
-                acc_str += f" / {acc_2}"
+                acc_str += f" / {(acc_2 * 100):.2f}"
 
             acc_data.append(acc_str)
 
@@ -353,7 +365,7 @@ def print_quantize_table(grouped_data):
 
     # Actually print the data
     for model_data in grouped_data:
-        print(" & ".join(model_data)) + "\\\\"
+        print(" & ".join(model_data) + "\\\\")
 
     print("\\hline")
     print("\\end{tabular}")
@@ -370,17 +382,6 @@ def print_distill_table(grouped_data, task):
         The different combinations of distilled models with
         different embeddings/architectures
     """
-    arch_formatted = {
-        "bilstm": "BiLSTM",
-        "rnn": "RNN",
-        "emb-ffn": "FFN"
-    }
-    emb_formatted = {
-        "hash": "Hash",
-        "bpe": "BPE",
-        "char": "Char"
-    }
-
     # Format and size things.
     print("{")
     print("\\centering")
@@ -411,10 +412,10 @@ def print_distill_table(grouped_data, task):
     # Actually print the data
     for arch in grouped_data[task]:
         line = "\\multirow{" + f"{len(grouped_data[task][arch])}" + "}{*}"
-        line += "{" + arch_formatted[arch] + "} & "
+        line += "{" + ARCH_FORMATTED[arch] + "} & "
         for index, data in enumerate(grouped_data[task][arch]):
             row_data = [
-                emb_formatted[data["emb-type"]], str(data["emb-dim"]),
+                EMB_FORMATTED[data["emb-type"]], str(data["emb-dim"]),
                 data["params"], data["size"]
             ]
             row_data = row_data + data["measurements"]
@@ -453,8 +454,11 @@ def print_distill_table(grouped_data, task):
     print("\\end{table*}")
     print("}")
 
-def print_extra_compression_table(grouped_data):
-    print(grouped_data[0])
+def print_extra_compression_table(grouped_data, table):
+    if table == "quantize":
+        print_quantize_table(grouped_data)
+    elif table == "prune":
+        print_prune_table(grouped_data)
 
 def main(args):
     if args.table == "distill":
@@ -464,7 +468,7 @@ def main(args):
     else:
         all_results = get_extra_compression_results(args.table)
         grouped_data = group_and_format_extra_compression_data(all_results, args.table)
-        print_extra_compression_table(grouped_data)
+        print_extra_compression_table(grouped_data, args.table)
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
