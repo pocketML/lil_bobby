@@ -315,7 +315,7 @@ def group_and_format_extra_compression_data(results, table):
                 disk_sizes.append(f"{data['size']:.2f}")
                 if table in ("prune", "final"):
                     theoretical_sizes.append(f"{data['theoretical_size']:.2f}")
-        
+
         data_for_model = acc_data + disk_sizes
         if table in ("prune", "final"):
             data_for_model.extend(theoretical_sizes)
@@ -323,7 +323,7 @@ def group_and_format_extra_compression_data(results, table):
         all_model_data.append(data_for_model)
     return all_model_data
 
-def print_prune_table(grouped_data, task):
+def print_prune_table(grouped_data):
     """
     Columns:
         Model Name (explained in text after), SST-2 Acc, QQP Acc, MNLI Acc,
@@ -332,6 +332,34 @@ def print_prune_table(grouped_data, task):
     Rows:
         The different models (described in Docs), pruned in some way.
     """
+
+def print_quantize_table(grouped_data):
+    print("{")
+    print("\\centering")
+    print("\\begin{table*}[!htb]")
+    print("\\centering")
+
+    # Start of table
+    print("\\begin{tabular}{c||c|c|c|c|c|c}")
+    print("\\hline")
+
+    # Print headers
+    header_line = (
+        "& SST-2 & QQP & MNLI & Size (Single Sent.) & Size "
+        "(Sent. Pair) & Compr. Ratios\\\\"
+    )
+    print(header_line)
+    print("\\hhline{=|=|=|=|=|=|=}")
+
+    # Actually print the data
+    for model_data in grouped_data:
+        print(" & ".join(model_data)) + "\\\\"
+
+    print("\\hline")
+    print("\\end{tabular}")
+    print("\\caption{Caption goes here}")
+    print("\\end{table*}")
+    print("}")
 
 def print_distill_table(grouped_data, task):
     """
