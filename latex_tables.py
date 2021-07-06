@@ -177,7 +177,7 @@ def get_experiment_data(experiment_group, table):
 
     data_for_experiment = {
         "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
-        "emb-dim": config["embedding_dim"], "alpha": config.get("alpha"), "og": config["only_original_data"],
+        "emb-dim": config["embedding_dim"], "alpha": config.get("alpha"), "og": config.get("only_original_data"),
         "params": params, "size": disk_size, "theoretical_size": theoretical_size,
         "acc": (mean_1, mean_2), "std": (std_1, std_2)
     }

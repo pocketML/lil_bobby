@@ -308,13 +308,13 @@ def args_run_distill(args=None):
 
     return ap.parse_known_args(args)
 
-def args_run_extra_compression():
+def args_run_extra_compression(args=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", type=str, choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
     ap.add_argument("--load-trained-model", type=str)
 
-    return ap.parse_known_args()
+    return ap.parse_known_args(args)
 
 def args_validate_augment():
     ap = argparse.ArgumentParser()

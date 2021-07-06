@@ -1,7 +1,8 @@
 import argparse
-import os
 
 from latex_tables import EXTRA_COMPRESSION_MODELS
+import run_extra_compression
+from common import argparsers
 
 ap = argparse.ArgumentParser()
 
@@ -28,4 +29,12 @@ command = (
     f"--ptq-embedding --dq-encoder --dq-classifier --load-trained-model {model_name}"
 )
 
-os.system(command)
+args_list = [
+    "--task", args.task, "--student-arch", args.arch,
+    "--ptq-embedding", "--dq-encoder", "--dq-classifier",
+    "--load-trained-model", model_name
+]
+
+args, args_remain = argparsers.args_run_extra_compression(args_list)
+
+run_extra_compression.main(args, args_remain)
