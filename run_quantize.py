@@ -1,6 +1,6 @@
 import argparse
 
-from latex_tables import EXTRA_COMPRESSION_MODELS
+from misc.load_results import EXTRA_COMPRESSION_MODELS
 import run_extra_compression
 from common import argparsers
 

@@ -1,5 +1,4 @@
 import os
-import threading
 from sys import stdout
 from shutil import rmtree
 from sacred import Experiment, SETTINGS
@@ -19,12 +18,8 @@ TASK_FUNCS = {
 }
 
 def run_experiment(task_args, _run):
-    print(f"Experiment running in:")
-    print(f"Thread: {threading.current_thread().native_id}")"
-    print(f"Process: {os.getpid()}")
     augmented_model = None
     for task in task_args:
-        print(f"Running {task}")
         augmented_model = TASK_FUNCS[task](
             task_args[task], sacred_experiment=_run, model=augmented_model
         )
