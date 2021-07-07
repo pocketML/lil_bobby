@@ -124,3 +124,14 @@ def get_theoretical_size(model, sacred_experiment=None):
     os.remove(temp_name)
 
     return nonzero_params, size
+
+def write_params_to_file(model, name, sacred_experiment=None):
+    filename = (
+        f"{name}_{model.cfg['arch'].out}" if sacred_experiment is None
+        else f"{name}__{sacred_experiment.info['name']}.out"
+    )
+    with open(filename, "w", encoding="utf-8") as fp:
+        for param_name, param_val in model.named_parameters():
+            fp.write(f"===== {param_name} =====\n")
+            fp.write(str(param_val) + "\n")
+            fp.write("\n")

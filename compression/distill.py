@@ -129,4 +129,5 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
             if no_improvement == args.early_stopping:
                 break
+
     return model

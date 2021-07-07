@@ -1,5 +1,4 @@
 import argparse
-import compression
 import json
 from glob import glob
 
@@ -357,8 +356,8 @@ def print_quantize_table(grouped_data):
 
     # Print headers
     header_line = (
-        "& SST-2 & QQP & MNLI & Size (Single Sent.) & Size "
-        "(Sent. Pair) & Compr. Ratios\\\\"
+        "& SST-2 & QQP & MNLI & Size (SS) & Size "
+        "(SP) & Compr. Ratios\\\\"
     )
     print(header_line)
     print("\\hhline{=|=|=|=|=|=|=}")
@@ -370,6 +369,7 @@ def print_quantize_table(grouped_data):
     print("\\hline")
     print("\\end{tabular}")
     print("\\caption{Caption goes here}")
+    print("\\label{tab:quantization_results}")
     print("\\end{table*}")
     print("}")
 
@@ -451,6 +451,8 @@ def print_distill_table(grouped_data, task):
         "for that combination of embedding type and dimension.}"
     )
     print(caption_text)
+    short_task = "sst" if task == "sst-2" else task
+    print("\\label{tab:distillation_results_" + short_task + "}")
     print("\\end{table*}")
     print("}")
 
