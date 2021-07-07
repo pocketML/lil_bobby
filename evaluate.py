@@ -1,6 +1,5 @@
 from common import argparsers, task_utils, model_utils, data_utils
 from compression.distillation import models as distill_models
-from analysis.parameters import write_params_to_file
 from tqdm import tqdm
 import torch
 
@@ -70,7 +69,6 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
     model.eval()
     running_corrects, num_examples, tp, fp, fn, tn = 0, 0, 0, 0, 0, 0
     iterator = tqdm(dl, leave=False) if args.loadbar else dl
-    write_params_to_file(model, "params_3", sacred_experiment)
 
     for x1, lens, target_labels, _ in iterator:
         if task_utils.is_sentence_pair(model.cfg['task']):

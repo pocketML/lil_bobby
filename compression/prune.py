@@ -35,8 +35,10 @@ class TopKPruning(prune.BasePruningMethod):
 
         if self.module_to_prune is not None:
             if isinstance(self.module_to_prune, torch.nn.LSTM):
-                self.threshold *= 0.25
+                self.threshold *= 1.5
             elif isinstance(self.module_to_prune, torch.nn.Embedding):
+                self.threshold *= 1.5
+            elif isinstance(self.module_to_prune, torch.nn.Linear):
                 self.threshold *= 0.5
 
     def compute_mask(self, inputs, default_mask):
@@ -87,7 +89,7 @@ def get_prunable_params(model):
         for container in containers:
             params = container.named_parameters() if is_sequential or is_embedding else grouped_params[name]
             for param_name, param_values in params:
-                if "weight" in param_name:
+                if "weight" in param_name or "bias" in param_name:
                     name_fmt = param_name
                     if not is_sequential and not is_embedding:
                         name_fmt = ".".join(param_name.split(".")[1:])

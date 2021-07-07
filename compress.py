@@ -9,7 +9,6 @@ from common import argparsers, seed_utils
 from compression.distillation import models
 from compression import quantize, distill, prune
 from compression import prune
-from analysis.parameters import write_params_to_file
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -28,7 +27,6 @@ def main(args, **kwargs):
 
     if "distill" in args.compression_actions:
         model = models.load_student(task, student_type, use_gpu=use_gpu, args=args)
-        write_params_to_file(model, "params_1", sacred_experiment)
         if sacred_experiment is not None:
             temp_name = f"temp_{sacred_experiment.info['name']}.json"
             args.load_trained_model = sacred_experiment.info['name']
@@ -63,7 +61,7 @@ def main(args, **kwargs):
     if (should_quantize or pt_pruning) and sacred_experiment is not None:
         model_name = sacred_experiment.info["name"]
         model.save(model_name)
-    write_params_to_file(model, "params_2", sacred_experiment)
+
     return model
 
 if __name__ == "__main__":
