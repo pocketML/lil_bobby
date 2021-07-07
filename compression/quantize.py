@@ -21,9 +21,9 @@ def quantize_encoder(model, inplace=False):
     if not inplace:
         model = copy.deepcopy(model)
     if model.cfg['type'] == 'lstm':
-        model.bilstm = quant.quantize_dynamic(
-        model.bilstm, qconfig_spec={nn.LSTM}, dtype=torch.qint8
-    )
+        model = quant.quantize_dynamic(
+            model, qconfig_spec={nn.LSTM}, dtype=torch.qint8
+        )
     elif model.cfg['type'] == 'rnn':
         model.encoder = QuantizableRNN(model.encoder, model.cfg)
         model.encoder = quant.quantize_dynamic(
