@@ -7,7 +7,7 @@ rename.py
 models/*
 data/*
 experiments/*
-misc/*
+misc/*.txt
 
 # SLURM bash file
 submit.job
