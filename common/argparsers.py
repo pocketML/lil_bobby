@@ -39,10 +39,12 @@ def args_distill(args=None, namespace=None, parse_known=False):
 def args_quantize(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ptq-embedding", action="store_true")
-    ap.add_argument("--dq-encoder", action="store_true")
-    group = ap.add_mutually_exclusive_group()
-    group.add_argument("--dq-classifier", action="store_true")
-    group.add_argument("--ptq-classifier", action="store_true")
+    group1 = ap.add_mutually_exclusive_group()
+    group1.add_argument("--dq-encoder", action="store_true")
+    group1.add_argument("--ptq-encoder", action="store_true")
+    group2 = ap.add_mutually_exclusive_group()
+    group2.add_argument("--dq-classifier", action="store_true")
+    group2.add_argument("--ptq-classifier", action="store_true")
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)

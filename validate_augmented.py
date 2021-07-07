@@ -17,8 +17,14 @@ def main(args):
     words_augment = data_analysis.get_word_distribution(augment_data, args.task)
     words_og = data_analysis.get_word_distribution(og_data, args.task)
 
-    print(f"Word distribution (original): {words_og[:25]}")
-    print(f"Word distribution (augment): {words_augment[:25]}")
+    total_count_og = sum([x[1] for x in words_og])
+    total_count_aug = sum([x[1] for x in words_augment])
+
+    og_print = [(x[0], f'{(x[1] / total_count_og)*100:.6f}%') for x in words_og[:25]]
+    aug_print = [(x[0], f'{(x[1] / total_count_aug)*100:.6f}%') for x in words_augment[:25]]
+
+    print(f"Word distribution (original): {og_print}")
+    print(f"Word distribution (augment): {aug_print}")
 
 if __name__ == "__main__":
     ARGS = argparsers.args_validate_augment()
