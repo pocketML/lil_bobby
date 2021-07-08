@@ -1,5 +1,6 @@
 import argparse
 import json
+from datetime import datetime
 
 def main(args):
     metrics_path = f"experiments/{args.name}/metrics.json"
@@ -14,7 +15,13 @@ def main(args):
             if key is not None:
                 value = getattr(args, key)
                 print(f"Setting {key} to {value}")
-                metrics_data[key] = value
+                time_now = datetime.now()
+                metrics_entry = {
+                    "steps": [0],
+                    "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
+                    "values": [value]
+                }
+                metrics_data[key] = metrics_entry
 
     with open(metrics_path, "w", encoding="utf-8") as fp:
         json.dump(metrics_data, fp, indent=2)
