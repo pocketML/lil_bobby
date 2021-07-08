@@ -6,8 +6,9 @@ def main(args):
     with open(metrics_path) as fp:
         metrics_data = json.load(fp)
         keys = [
-            args.params, args.nonzero_params, args.model_disk_size,
-            args.theoretical_size, args.eval_acc
+            "params", "nonzero_params",
+            "model_disk_size",
+            "theoretical_size", "eval_acc"
         ]
         for key in keys:
             if key is not None:
@@ -22,11 +23,11 @@ if __name__ == "__main__":
     AP = argparse.ArgumentParser()
 
     AP.add_argument("--name", type=str, required=True)
-    AP.add_argument("--params")
-    AP.add_argument("--nonzero-params")
-    AP.add_argument("--model-disk-size")
-    AP.add_argument("--theoretical-size")
-    AP.add_argument("--eval-acc")
+    AP.add_argument("--params", type=int)
+    AP.add_argument("--nonzero-params", type=int)
+    AP.add_argument("--model-disk-size", type=float)
+    AP.add_argument("--theoretical-size", type=float)
+    AP.add_argument("--eval-acc", type=float)
 
     ARGS = AP.parse_args()
 
