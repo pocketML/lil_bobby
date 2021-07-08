@@ -1,3 +1,4 @@
+from copy import deepcopy
 import torch
 import torch.nn.utils.prune as prune
 
@@ -128,6 +129,8 @@ def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=Fals
     return model
 
 def do_pruning(model, args, epoch=None):
+    pruned_model = deepcopy(model)
+
     threshold = args.prune_threshold
     if epoch is not None and epoch < args.prune_warmup:
         threshold = threshold * (epoch / args.prune_warmup)
@@ -140,13 +143,13 @@ def do_pruning(model, args, epoch=None):
     elif args.prune_topk:
         prune_class = TopKPruning
 
-    model = actual_pruning(model, prune_class, threshold, args.prune_local)
+    pruned_model = actual_pruning(pruned_model, prune_class, threshold, args.prune_local)
 
-    params, zero = get_model_sparsity(model)
+    params, zero = get_model_sparsity(pruned_model)
     sparsity = (zero / params) * 100
     print(f"Sparsity: {sparsity:.2f}%")
 
-    return model
+    return pruned_model
 
 def prune_model(model, device, args, sacred_experiment=None):
     dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))

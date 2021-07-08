@@ -7,12 +7,12 @@ from common import argparsers
 ap = argparse.ArgumentParser()
 
 ap.add_argument("--task", choices=("sst-2", "qqp", "mnli"))
-ap.add_argument("--arch", choices=("bilstm", "rnn", "embffn"))
+ap.add_argument("--arch", choices=("bilstm", "rnn", "emb-ffn"))
 ap.add_argument("--id", choices=("a", "b", "c"))
 
 args = ap.parse_args()
 
-arch_map = {"bilstm": 0, "rnn": 3, "embffn": 6}
+arch_map = {"bilstm": 0, "rnn": 3, "emb-ffn": 6}
 id_map = {"a": 0, "b": 1, "c": 2}
 task_map = {"sst-2": 0, "qqp": 1, "mnli": 2}
 

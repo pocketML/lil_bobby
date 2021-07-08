@@ -14,6 +14,8 @@ EMB_FORMATTED = {
     "char": "Char"
 }
 
+SIZE_ROBERTA = 1426.02 # MB
+
 def group_and_format_distill_data(results, table):
     alpha_indices = {1.0: 1, 0.5: 2, 0.0: 3}
     emb_sort_order = [
@@ -121,7 +123,7 @@ def group_and_format_distill_data(results, table):
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
     model_ids = ["A", "B", "C"]
-    times_seen_arch = {"bilstm": 0, "rnn": 0, "embffn": 0}
+    times_seen_arch = {"bilstm": 0, "rnn": 0, "emb-ffn": 0}
     for model_group in results:
         acc_data = []
         sizes = []
@@ -175,7 +177,7 @@ def print_extra_compression_table(grouped_data):
 
     print("\\hline")
     print("\\end{tabular}")
-    print("\\caption{Caption goes here}")
+    print("\\caption{Caption goes here\\\\SS = Single Sentence\\\\SP = Sentence Pair}")
     print("\\label{tab:quantization_results}")
     print("\\end{table*}")
     print("}")
