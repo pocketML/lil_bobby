@@ -144,28 +144,32 @@ def get_experiment_data(experiment_group, table):
 
     accuracies_1 = []
     accuracies_2 = []
-
-    for metrics_data in metrics:
-        accuracy_1 = None
-        accuracy_2 = None
-        for key in ("test.accuracy", "test.matched.accuracy"):
-            if key in metrics_data:
-                accuracy_1 = metrics_data[key]["values"][0]
-        if accuracy_1 is None and "validation.acc" in metrics_data:
-            accuracy_1 = max(metrics_data["validation.acc"]["values"])
-        for key in ("test.f1", "test.mismatched.accuracy"):
-            if key in metrics_data:
-                accuracy_2 = metrics_data[key]["values"][0]
-        accuracies_1.append(accuracy_1)
-        if accuracy_2 is not None:
-            accuracies_2.append(accuracy_2)
-
+    sizes = []
+    theoretical_sizes = []
     try:
+        for metrics_data in metrics:
+            accuracy_1 = None
+            accuracy_2 = None
+            for key in ("test.accuracy", "test.matched.accuracy"):
+                if key in metrics_data:
+                    accuracy_1 = metrics_data[key]["values"][0]
+            if accuracy_1 is None and "validation.acc" in metrics_data:
+                accuracy_1 = max(metrics_data["validation.acc"]["values"])
+            for key in ("test.f1", "test.mismatched.accuracy"):
+                if key in metrics_data:
+                    accuracy_2 = metrics_data[key]["values"][0]
+            accuracies_1.append(accuracy_1)
+            if accuracy_2 is not None:
+                accuracies_2.append(accuracy_2)
+
+            sizes.append(metrics_data["model_disk_size"]["values"][0])
+            theoretical_sizes.append(metrics_data["theoretical_size"]["values"][0])
         params = metrics[0]["model_params"]["values"][0]
-        disk_size = metrics[0]["model_disk_size"]["values"][0]
-        theoretical_size = metrics[0]["theoretical_size"]["values"][0]
     except KeyError:
         return None
+
+    mean_size = np.mean(np.array(sizes))
+    mean_theoretical = np.mean(np.array(theoretical_sizes))
 
     mean_1 = np.mean(np.array(accuracies_1))
     mean_2 = None if accuracies_2 == [] else np.mean(np.array(accuracies_2))
@@ -176,7 +180,7 @@ def get_experiment_data(experiment_group, table):
     data_for_experiment = {
         "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
         "emb-dim": config["embedding_dim"], "alpha": config.get("alpha"), "og": config.get("only_original_data"),
-        "params": params, "size": disk_size, "theoretical_size": theoretical_size,
+        "params": params, "size": mean_size, "theoretical_size": mean_theoretical,
         "acc": (mean_1, mean_2), "std": (std_1, std_2)
     }
     return data_for_experiment

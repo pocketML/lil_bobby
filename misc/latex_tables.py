@@ -177,7 +177,7 @@ def print_extra_compression_table(grouped_data):
 
     print("\\hline")
     print("\\end{tabular}")
-    print("\\caption{Caption goes here\\\\SS = Single Sentence\\\\SP = Sentence Pair}")
+    print("\\caption{Caption goes here\\\\SS: Single Sentence\\\\SP: Sentence Pair}")
     print("\\label{tab:quantization_results}")
     print("\\end{table*}")
     print("}")
