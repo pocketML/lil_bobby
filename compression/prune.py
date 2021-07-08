@@ -36,11 +36,11 @@ class TopKPruning(prune.BasePruningMethod):
 
         if self.module_to_prune is not None:
             if isinstance(self.module_to_prune, torch.nn.LSTM):
-                self.threshold *= 1.5
+                self.threshold *= 1.0
             elif isinstance(self.module_to_prune, torch.nn.Embedding):
-                self.threshold *= 1.5
+                self.threshold *= 0.8
             elif isinstance(self.module_to_prune, torch.nn.Linear):
-                self.threshold *= 0.5
+                self.threshold *= 0.25
 
     def compute_mask(self, inputs, default_mask):
         mask = default_mask.clone()
