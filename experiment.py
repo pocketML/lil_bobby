@@ -18,6 +18,12 @@ TASK_FUNCS = {
 }
 
 def run_experiment(task_args, _run):
+    metrics_filename = f"experiments/{_run.info['name']}/metrics.json"
+    if not os.path.exists(metrics_filename):
+        # Sometimes metrics.json is not created by Sacred... So we do it ourselves.
+        with open(metrics_filename, "w", encoding="utf-8") as fp:
+            fp.write("{}")
+
     augmented_model = None
     for task in task_args:
         augmented_model = TASK_FUNCS[task](
