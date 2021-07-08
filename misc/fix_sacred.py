@@ -11,11 +11,12 @@ def main(args):
         ]
         for key in keys:
             if key is not None:
-                print(f"Setting {key} to {metrics_data[key]}")
-                metrics_data[key] == getattr(args, key)
+                value = getattr(args, key)
+                print(f"Setting {key} to {value}")
+                metrics_data[key] = value
 
     with open(metrics_path, "w", encoding="utf-8") as fp:
-        json.dump(metrics_data, fp)
+        json.dump(metrics_data, fp, indent=2)
 
 if __name__ == "__main__":
     AP = argparse.ArgumentParser()
