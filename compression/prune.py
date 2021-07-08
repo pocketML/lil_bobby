@@ -83,7 +83,7 @@ def get_prunable_params(model):
             if module.embedding is not None:
                 containers = [module.embedding]
             else:
-                containers = [module.vectors, module.scalars]
+                continue
         else:
             containers = [module]
 
