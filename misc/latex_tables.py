@@ -127,6 +127,7 @@ def group_and_format_extra_compression_data(results, table):
     for model_group in results:
         acc_data = []
         sizes = []
+        compr_ratio = "-"
 
         tasks = ["sst-2", "qqp", "mnli"]
         for task, result_group in zip(tasks, model_group):
@@ -146,7 +147,12 @@ def group_and_format_extra_compression_data(results, table):
 
             if task in ("sst-2", "qqp"):
                 size_value = data['size'] if table == "quantize" else data['theoretical_size']
+                if compr_ratio != "":
+                    compr_ratio += " / "
+                compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
                 sizes.append(f"{size_value:.2f}")
+
+        sizes.append(compr_ratio)
 
         data_for_model = acc_data + sizes
 
@@ -188,7 +194,7 @@ def print_extra_compression_table(grouped_data, table):
 
     caption = (
         f"Results for {task_name} of selected models. {task_desc}.\\\\\n" +
-        "Compression Ratio is compared to the disk size of RoBERTa Large teacher model finetuned to the individual tasks.\\\\\n" +
+        "Compression Ratio is compared to the disk size of teacher model RoBERTa Large.\\\\\n" +
         "SS: Single Sentence. SP: Sentence Pair."
     )
     print("\\caption{" + caption + "}")
