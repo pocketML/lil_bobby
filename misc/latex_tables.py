@@ -137,7 +137,7 @@ def group_and_format_extra_compression_data(results, table):
                 times_seen_arch[data["arch"]] += 1
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[data["arch"]]
-                acc_data.append(f"{arch_fmt}_{model_id}")
+                acc_data.append(f"${arch_fmt}_{model_id}$")
             acc_1, acc_2 = data["acc"]
             acc_str = f"{(acc_1 * 100):.2f}"
             if acc_2 is not None:
@@ -178,12 +178,11 @@ def print_extra_compression_table(grouped_data, table):
     print("\\hhline{=|=|=|=|=|=|=}")
 
     roberta_data = [
-        "0.9653", "0.9035 / 0.90055", "0.9220 / 0.8963", "1426.02", "1426.02", "1x / 1x"
+        "RoBERTa Large", "96.53", "90.35 / 90.06", "92.20 / 89.63", "1426.02", "1426.02", "1x / 1x"
     ]
 
     # Actually print the data
-    for model_data in roberta_data:
-        print(" & ".join(model_data) + "\\\\")
+    print(" & ".join(roberta_data) + "\\\\")
 
     print("\\hline")
 

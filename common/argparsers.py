@@ -306,6 +306,7 @@ def args_run_distill(args=None):
     ap.add_argument("--embedding-type", type=str, choices=EMBEDDING_ZOO.keys(), required=True)
     ap.add_argument("--embedding-dim", type=int, required=True)
     ap.add_argument("--vocab-size", type=int, default=5000)
+    ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--only-original-data", action="store_true")
 
     return ap.parse_known_args(args)
