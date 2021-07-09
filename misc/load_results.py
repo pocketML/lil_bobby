@@ -80,7 +80,7 @@ def get_extra_compression_results(table):
     for model_group in EXTRA_COMPRESSION_MODELS:
         model_groups = []
         for task_specific_model in model_group:
-            file_suffix = f"{compress_method}_*" if table != "prune" else "*"
+            file_suffix = f"{compress_method}_*" if table != "prune" else "july"
             results = glob(f"../experiments/{task_specific_model}_{file_suffix}")
             results.sort(key=get_experiment_suffix)
             model_groups.append(results[-4:])

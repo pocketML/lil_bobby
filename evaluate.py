@@ -140,7 +140,7 @@ def main(args, **kwargs):
                 accuracy = evaluate_accuracy(model, task, val_data_path)
                 print(f'| Accuracy: {accuracy:.4f}')
                 if sacred_experiment is not None:
-                    sacred_experiment.log_scalar(f"test.accuracy.{subtask}", accuracy)
+                    sacred_experiment.log_scalar(f"test.{subtask}.accuracy", accuracy)
         elif task in ['qqp']:
             accuracy, f1 = evaluate_accuracy(model, task, val_data_path, include_f1=True)
             print(f'| Accuracy: {accuracy:.4f}, f1: {f1:.4f}')
