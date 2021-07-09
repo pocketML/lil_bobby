@@ -127,7 +127,7 @@ def group_and_format_extra_compression_data(results, table):
     for model_group in results:
         acc_data = []
         sizes = []
-        compr_ratio = "-"
+        compr_ratio = ""
 
         tasks = ["sst-2", "qqp", "mnli"]
         for task, result_group in zip(tasks, model_group):
@@ -137,7 +137,7 @@ def group_and_format_extra_compression_data(results, table):
                 times_seen_arch[data["arch"]] += 1
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[data["arch"]]
-                acc_data.append(f"{arch_fmt} {model_id}")
+                acc_data.append(f"{arch_fmt}_{model_id}")
             acc_1, acc_2 = data["acc"]
             acc_str = f"{(acc_1 * 100):.2f}"
             if acc_2 is not None:
@@ -171,13 +171,22 @@ def print_extra_compression_table(grouped_data, table):
 
     # Print headers
     header_line = (
-        "& SST-2 & QQP & MNLI & Size (SS) & Size "
-        "(SP) & Compr. Ratios\\\\"
+        "& SST-2 & QQP & MNLI & SS Size & "
+        "SP Size & Compr. Ratios\\\\"
     )
     print(header_line)
     print("\\hhline{=|=|=|=|=|=|=}")
 
+    roberta_data = [
+        "0.9653", "0.9035 / 0.90055", "0.9220 / 0.8963", "1426.02", "1426.02", "1x / 1x"
+    ]
+
     # Actually print the data
+    for model_data in roberta_data:
+        print(" & ".join(model_data) + "\\\\")
+
+    print("\\hline")
+
     for model_data in grouped_data:
         print(" & ".join(model_data) + "\\\\")
 
@@ -193,9 +202,10 @@ def print_extra_compression_table(grouped_data, table):
         task_desc = "Size is disk size of model"
 
     caption = (
-        f"Results for {task_name} of selected models. {task_desc}.\\\\\n" +
-        "Compression Ratio is compared to the disk size of teacher model RoBERTa Large.\\\\\n" +
-        "SS: Single Sentence. SP: Sentence Pair."
+        f"Results for {task_name} of selected distilled models. Performances are measured by " +
+        "accuracy, accuracy/f1-score, matched/mismatched accuracy for the three tasks, " +
+        f"respectively. {task_desc}. Compression Ratio is compared to the disk size of " +
+        "teacher model RoBERTa Large. \\textit{SS}: Single Sentence. \\textit{SP}: Sentence Pair."
     )
     print("\\caption{" + caption + "}")
     print("\\label{tab:" + task_name + "_results}")
