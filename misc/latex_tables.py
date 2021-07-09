@@ -153,7 +153,7 @@ def group_and_format_extra_compression_data(results, table):
         all_model_data.append(data_for_model)
     return all_model_data
 
-def print_extra_compression_table(grouped_data):
+def print_extra_compression_table(grouped_data, table):
     print("{")
     print("\\centering")
     print("\\begin{table*}[!htb]")
@@ -177,8 +177,22 @@ def print_extra_compression_table(grouped_data):
 
     print("\\hline")
     print("\\end{tabular}")
-    print("\\caption{Caption goes here\\\\SS: Single Sentence\\\\SP: Sentence Pair}")
-    print("\\label{tab:quantization_results}")
+
+    # Caption stuff.
+    if table == "prune":
+        task_name = "pruning"
+        task_desc = "Size is disk size of zipped model using gzip defalte algorithm"
+    elif table == "quantize":
+        task_name = "quantization"
+        task_desc = "Size is disk size of model"
+
+    caption = (
+        f"Results for {task_name} of selected models. {task_desc}.\\\\\n" +
+        "Compression Ratio is compared to the disk size of RoBERTa Large teacher model finetuned to the individual tasks.\\\\\n" +
+        "SS: Single Sentence. SP: Sentence Pair."
+    )
+    print("\\caption{" + caption + "}")
+    print("\\label{tab:" + task_name + "_results}")
     print("\\end{table*}")
     print("}")
 
@@ -265,7 +279,7 @@ def main(args):
     else:
         all_results = load_results.get_extra_compression_results(args.table)
         grouped_data = group_and_format_extra_compression_data(all_results, args.table)
-        print_extra_compression_table(grouped_data)
+        print_extra_compression_table(grouped_data, args.table)
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
