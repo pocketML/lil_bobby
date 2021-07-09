@@ -15,10 +15,11 @@ def main(args):
         keys = [
             "params", "nonzero_params",
             "model_disk_size",
-            "theoretical_size", "eval_acc"
+            "theoretical_size", "eval_acc",
+            "eval_f1", "eval_matched", "eval_mismatched"
         ]
         for key in keys:
-            if key is not None:
+            if getattr(args, key) is not None:
                 value = getattr(args, key)
                 sacred_key = acc_metrics_map.get(key, key)
                 print(f"Setting {sacred_key} to {value}")
