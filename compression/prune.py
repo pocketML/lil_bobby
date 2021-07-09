@@ -36,9 +36,9 @@ class TopKPruning(prune.BasePruningMethod):
 
         if self.module_to_prune is not None:
             if isinstance(self.module_to_prune, torch.nn.LSTM):
-                self.threshold *= 1.0
+                self.threshold *= 1.1
             elif isinstance(self.module_to_prune, torch.nn.Embedding):
-                self.threshold *= 0.8
+                self.threshold *= 0.75
             elif isinstance(self.module_to_prune, torch.nn.Linear):
                 self.threshold *= 0.25
 
@@ -142,6 +142,9 @@ def do_pruning(model, args, epoch=None):
         pass
     elif args.prune_topk:
         prune_class = TopKPruning
+
+    if prune_class is None:
+        return pruned_model # Return untouched model.
 
     pruned_model = actual_pruning(pruned_model, prune_class, threshold, args.prune_local)
 
