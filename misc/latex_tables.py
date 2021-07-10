@@ -148,7 +148,7 @@ def group_and_format_extra_compression_data(results, table):
             compress_data = load_results.get_experiment_data(result_group, table)
             og_results = get_og_results(result_group, task)
             og_data = load_results.get_experiment_data(og_results, table)
-            for data, acc_list, size_list, all_model_list in [(compress_data, og_data), (acc_data, sizes), (og_acc_data, og_sizes), (all_model_data, og_model_data)]:
+            for data, acc_list, size_list, all_model_list in [(compress_data, acc_data, sizes, all_model_data), (og_data, og_acc_data, og_sizes, og_model_data)]:
                 if task == "sst-2": # Only add arch once.
                     model_id_index = times_seen_arch[data["arch"]]
                     times_seen_arch[data["arch"]] += 1

@@ -173,13 +173,16 @@ def get_experiment_data(experiment_group, table):
                 accuracies_2.append(accuracy_2)
 
             sizes.append(metrics_data["model_disk_size"]["values"][0])
-            theoretical_sizes.append(metrics_data["theoretical_size"]["values"][0])
+            if "theoretical_size" in metrics_data:
+                theoretical_sizes.append(metrics_data["theoretical_size"]["values"][0])
         params = metrics[0]["model_params"]["values"][0]
     except KeyError:
         return None
 
     mean_size = np.mean(np.array(sizes))
-    mean_theoretical = np.mean(np.array(theoretical_sizes))
+    mean_theoretical = None
+    if theoretical_sizes != []:
+        mean_theoretical = np.mean(np.array(theoretical_sizes))
 
     mean_1 = np.mean(np.array(accuracies_1))
     mean_2 = None if accuracies_2 == [] else np.mean(np.array(accuracies_2))
