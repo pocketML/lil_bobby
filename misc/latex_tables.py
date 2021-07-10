@@ -126,7 +126,7 @@ def get_og_results(result_group, task):
         task_index = task_ids[task]
         if model_group[task_index] in result_group[0]:
             return [
-                f"..experiments/{model_group[task_index]}_{seed_name}"
+                f"../experiments/{model_group[task_index]}_{seed_name}"
                 for seed_name in ("bennington", "hadfield", "feynman", "simone")
             ]
     return None
