@@ -120,44 +120,58 @@ def group_and_format_distill_data(results, table):
 
     return grouped_data
 
+def get_og_results(result_group, task):
+    task_ids = {"sst-2": 0, "qqp": 1, "mnli": 2}
+    for model_group in load_results.EXTRA_COMPRESSION_MODELS:
+        task_index = task_ids[task]
+        if result_group[0].startswith(model_group[task_index]):
+            return model_group[task_index]
+    return None
+
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
+    og_model_data = []
     model_ids = ["A", "B", "C"]
     times_seen_arch = {"bilstm": 0, "rnn": 0, "emb-ffn": 0}
     for model_group in results:
         acc_data = []
+        og_acc_data = []
         sizes = []
+        og_sizes = []
         compr_ratio = ""
 
         tasks = ["sst-2", "qqp", "mnli"]
         for task, result_group in zip(tasks, model_group):
-            data = load_results.get_experiment_data(result_group, table)
-            if task == "sst-2": # Only add arch once.
-                model_id_index = times_seen_arch[data["arch"]]
-                times_seen_arch[data["arch"]] += 1
-                model_id = model_ids[model_id_index]
-                arch_fmt = ARCH_FORMATTED[data["arch"]]
-                acc_data.append(f"${arch_fmt}_{model_id}$")
-            acc_1, acc_2 = data["acc"]
-            acc_str = f"{(acc_1 * 100):.2f}"
-            if acc_2 is not None:
-                acc_str += f" / {(acc_2 * 100):.2f}"
+            compress_data = load_results.get_experiment_data(result_group, table)
+            og_results = get_og_results(result_group, task)
+            og_data = load_results.get_experiment_data(og_results, table)
+            for data, acc_list, size_list, all_model_list in [(compress_data, og_data), (acc_data, sizes), (og_acc_data, og_sizes), (all_model_data, og_model_data)]:
+                if task == "sst-2": # Only add arch once.
+                    model_id_index = times_seen_arch[data["arch"]]
+                    times_seen_arch[data["arch"]] += 1
+                    model_id = model_ids[model_id_index]
+                    arch_fmt = ARCH_FORMATTED[data["arch"]]
+                    acc_list.append(f"${arch_fmt}_{model_id}$")
+                acc_1, acc_2 = data["acc"]
+                acc_str = f"{(acc_1 * 100):.2f}"
+                if acc_2 is not None:
+                    acc_str += f" / {(acc_2 * 100):.2f}"
 
-            acc_data.append(acc_str)
+                acc_list.append(acc_str)
 
-            if task in ("sst-2", "qqp"):
-                size_value = data['size'] if table == "quantize" else data['theoretical_size']
-                if compr_ratio != "":
-                    compr_ratio += " / "
-                compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
-                sizes.append(f"{size_value:.2f}")
+                if task in ("sst-2", "qqp"):
+                    size_value = data['size'] if table == "quantize" else data['theoretical_size']
+                    if compr_ratio != "":
+                        compr_ratio += " / "
+                    size_list += f"{int(SIZE_ROBERTA / size_value)}x"
+                    sizes.append(f"{size_value:.2f}")
 
-        sizes.append(compr_ratio)
+                size_list.append(compr_ratio)
 
-        data_for_model = acc_data + sizes
+                data_for_model = acc_list + size_list
 
-        all_model_data.append(data_for_model)
-    return all_model_data
+                all_model_list.append(data_for_model)
+    return all_model_data, og_model_data
 
 def print_extra_compression_table(grouped_data, table):
     print("{")
@@ -185,8 +199,13 @@ def print_extra_compression_table(grouped_data, table):
     print(" & ".join(roberta_data) + "\\\\")
 
     print("\\hline")
+    compress_data, og_data = grouped_data
 
-    for model_data in grouped_data:
+    # Print original data
+    for model_data in og_data:
+        print(" & ".join(model_data) + "\\\\")
+
+    for model_data in compress_data:
         print(" & ".join(model_data) + "\\\\")
 
     print("\\hline")
