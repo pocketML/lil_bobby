@@ -137,20 +137,13 @@ def format_extra_compression_row(data, table, task, compr_ratio):
     if acc_2 is not None:
         acc_str += f" / {(acc_2 * 100):.2f}"
 
-    data_to_return = [acc_str]
-
     size_value = data['size'] if table in ("distill", "quantize") else data['theoretical_size']
     if task in ("sst-2", "qqp"):
         if compr_ratio != "":
             compr_ratio += " / "
         compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
 
-        data_to_return.append(f"{size_value:.2f}")
-
-        if task == "qqp":
-            data_to_return.append(compr_ratio)
-
-    return data_to_return
+    return acc_str, f"{size_value:.2f}", compr_ratio
 
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
@@ -160,8 +153,10 @@ def group_and_format_extra_compression_data(results, table):
     for model_group in results:
         compr_ratio = ""
         compr_ratio_og = ""
-        row_data = []
-        row_data_og = []
+        acc_data = []
+        acc_data_og = []
+        size_data = []
+        size_data_og = []
 
         tasks = ["sst-2", "qqp", "mnli"]
         for task, result_group in zip(tasks, model_group):
@@ -174,16 +169,22 @@ def group_and_format_extra_compression_data(results, table):
                 times_seen_arch[og_data["arch"]] += 1
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
-                model_name = f"${arch_fmt}_{model_id}$"
-                row_data.append(model_name + " quantized")
-                row_data_og.append(model_name)
+                model_name = f"${arch_fmt}_{model_id}"
+                acc_data.append(model_name + " + quantized$")
+                acc_data_og.append(model_name + "$")
 
-            row_data.extend(format_extra_compression_row(compress_data, table, task, compr_ratio))
+            acc, size, compr_ratio = format_extra_compression_row(compress_data, table, task, compr_ratio)
+            acc_og, size_og, compr_ratio_og = format_extra_compression_row(og_data, "distill", task, compr_ratio_og)
+ 
+            acc_data.append(acc)
+            acc_data_og.append(acc_og)
 
-            all_model_data.append(row_data)
+            if task in ("sst-2", "qqp"):
+                size_data.append(size)
+                size_data_og.append(size_og)
 
-            row_data_og.extend(format_extra_compression_row(og_data, "distill", task, compr_ratio_og))
-            og_model_data.append(row_data_og)
+        all_model_data.append(acc_data + size_data)
+        og_model_data.append(acc_data_og + size_data_og)
 
     return all_model_data, og_model_data
 
