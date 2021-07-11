@@ -124,7 +124,8 @@ def get_og_results(result_group, task):
     task_ids = {"sst-2": 0, "qqp": 1, "mnli": 2}
     for model_group in load_results.EXTRA_COMPRESSION_MODELS:
         task_index = task_ids[task]
-        if model_group[task_index] in result_group[0]:
+        model_name = "_".join(model_group[task_index].split("_")[:-1])
+        if model_name in result_group[0]:
             return [
                 f"../experiments/{model_group[task_index]}_{seed_name}"
                 for seed_name in ("bennington", "hadfield", "feynman", "simone")

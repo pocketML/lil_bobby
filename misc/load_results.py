@@ -62,7 +62,7 @@ def get_experiment_day(result_name):
         for index, month in enumerate(months, start=1):
             if month in s:
                 day = int(s.replace(month, ""))
-                return -(sum(days_in_month[:index]) + day)
+                return sum(days_in_month[:index]) + day
     return 0
 
 def group_results_by_model(results_for_day):
