@@ -201,7 +201,7 @@ def print_extra_compression_table(grouped_data, table):
     print("\\begin{footnotesize}")
 
     # Start of table
-    print("\\begin{tabular}{c||c|c|c|c|c|c}")
+    print("\\begin{tabular}{l||c|c|c|c|c|c}")
     print("\\hline")
 
     # Print headers

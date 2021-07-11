@@ -26,7 +26,7 @@ model_name = EXTRA_COMPRESSION_MODELS[model_index][task_id]
 
 args_list = [
     "--task", args.task, "--student-arch", args.arch,
-    "--ptq-embedding", "--dq-encoder", "--dq-classifier",
+    "--prune-topk", "--prune-threshold", "0.5", "--prune-local",
     "--load-trained-model", model_name
 ]
 
