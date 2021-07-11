@@ -137,13 +137,20 @@ def format_extra_compression_row(data, table, task, compr_ratio):
     if acc_2 is not None:
         acc_str += f" / {(acc_2 * 100):.2f}"
 
-    size_value = data['size'] if table == "quantize" else data['theoretical_size']
+    data_to_return = [acc_str]
+
+    size_value = data['size'] if table in ("distill", "quantize") else data['theoretical_size']
     if task in ("sst-2", "qqp"):
         if compr_ratio != "":
             compr_ratio += " / "
         compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
 
-    return [acc_str, size_value, compr_ratio]
+        data_to_return.append(f"{size_value:.2f}")
+
+        if task == "qqp":
+            data_to_return.append(compr_ratio)
+
+    return data_to_return
 
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
@@ -172,6 +179,7 @@ def group_and_format_extra_compression_data(results, table):
                 row_data_og.append(model_name)
 
             row_data.extend(format_extra_compression_row(compress_data, table, task, compr_ratio))
+
             all_model_data.append(row_data)
 
             row_data_og.extend(format_extra_compression_row(og_data, "distill", task, compr_ratio_og))
