@@ -14,7 +14,7 @@ def main(args):
         }
         for key in args.__dict__:
             value = getattr(args, key)
-            if value is not None:
+            if key != "name" and value is not None:
                 sacred_key = acc_metrics_map.get(key, key)
                 print(f"Setting {sacred_key} to {value}")
                 time_now = datetime.now()

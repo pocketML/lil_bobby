@@ -81,7 +81,7 @@ def group_results_by_model(results_for_day):
     return grouped_results
 
 def get_extra_compression_results(table):
-    compress_method = None
+    compress_method = table
     if table == "final":
         compress_method = "prune_quant"
     elif table == "quantize":
@@ -91,10 +91,7 @@ def get_extra_compression_results(table):
     for model_group in EXTRA_COMPRESSION_MODELS:
         model_groups = []
         for task_specific_model in model_group:
-            if table != "quantize":
-                task_specific_model = "_".join(task_specific_model.split("_")[:-1])
-            file_suffix = f"{compress_method}_*" if table != "prune" else "july*"
-            results = glob(f"../experiments/{task_specific_model}_{file_suffix}")
+            results = glob(f"../experiments/{task_specific_model}_{compress_method}_*")
             if len(results) < 4:
                 continue
             results.sort(key=lambda x: (get_experiment_day(x), get_experiment_suffix(x)))
@@ -121,9 +118,7 @@ def get_distillation_results():
 
 def validate_experiment(data, table):
     compress_actions = [table]
-    if table == "prune": # Get training aware pruning results.
-        compress_actions = ["distill", "prune"]
-    elif table == "final":
+    if table == "final":
         compress_actions = ["prune", "quantize"]
 
     for comp_action in compress_actions:
