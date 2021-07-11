@@ -131,49 +131,52 @@ def get_og_results(result_group, task):
             ]
     return None
 
+def format_extra_compression_row(data, table, task, compr_ratio):
+    acc_1, acc_2 = data["acc"]
+    acc_str = f"{(acc_1 * 100):.2f}"
+    if acc_2 is not None:
+        acc_str += f" / {(acc_2 * 100):.2f}"
+
+    size_value = data['size'] if table == "quantize" else data['theoretical_size']
+    if task in ("sst-2", "qqp"):
+        if compr_ratio != "":
+            compr_ratio += " / "
+        compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
+
+    return [acc_1, acc_2, size_value, compr_ratio]
+
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
     og_model_data = []
     model_ids = ["A", "B", "C"]
     times_seen_arch = {"bilstm": 0, "rnn": 0, "emb-ffn": 0}
     for model_group in results:
-        acc_data = []
-        og_acc_data = []
-        sizes = []
-        og_sizes = []
         compr_ratio = ""
+        compr_ratio_og = ""
+        row_data = []
+        row_data_og = []
 
         tasks = ["sst-2", "qqp", "mnli"]
         for task, result_group in zip(tasks, model_group):
             compress_data = load_results.get_experiment_data(result_group, table)
             og_results = get_og_results(result_group, task)
-            og_data = load_results.get_experiment_data(og_results, table)
-            for data, acc_list, size_list, all_model_list in [(compress_data, acc_data, sizes, all_model_data), (og_data, og_acc_data, og_sizes, og_model_data)]:
-                if task == "sst-2": # Only add arch once.
-                    model_id_index = times_seen_arch[data["arch"]]
-                    times_seen_arch[data["arch"]] += 1
-                    model_id = model_ids[model_id_index]
-                    arch_fmt = ARCH_FORMATTED[data["arch"]]
-                    acc_list.append(f"${arch_fmt}_{model_id}$")
-                acc_1, acc_2 = data["acc"]
-                acc_str = f"{(acc_1 * 100):.2f}"
-                if acc_2 is not None:
-                    acc_str += f" / {(acc_2 * 100):.2f}"
+            og_data = load_results.get_experiment_data(og_results, "distill")
 
-                acc_list.append(acc_str)
+            if task == "sst-2": # Only add arch once.
+                model_id_index = times_seen_arch[og_data["arch"]]
+                times_seen_arch[og_data["arch"]] += 1
+                model_id = model_ids[model_id_index]
+                arch_fmt = ARCH_FORMATTED[og_data["arch"]]
+                model_name = f"${arch_fmt}_{model_id}$"
+                row_data.append(model_name + " quantized")
+                row_data_og.append(model_name)
 
-                if task in ("sst-2", "qqp"):
-                    size_value = data['size'] if table == "quantize" else data['theoretical_size']
-                    if compr_ratio != "":
-                        compr_ratio += " / "
-                    size_list += f"{int(SIZE_ROBERTA / size_value)}x"
-                    sizes.append(f"{size_value:.2f}")
+            row_data.extend(format_extra_compression_row(compress_data, table, task, compr_ratio))
+            all_model_data.append(row_data)
 
-                size_list.append(compr_ratio)
+            row_data_og.extend(format_extra_compression_row(og_data, "distill", task, compr_ratio_og))
+            og_model_data.append(row_data_og)
 
-                data_for_model = acc_list + size_list
-
-                all_model_list.append(data_for_model)
     return all_model_data, og_model_data
 
 def print_extra_compression_table(grouped_data, table):
