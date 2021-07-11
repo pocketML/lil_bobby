@@ -171,7 +171,7 @@ def group_and_format_extra_compression_data(results, table):
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
                 model_name = f"${arch_fmt}_{model_id}"
-                acc_data.append(model_name + " + quantized$")
+                acc_data.append(f"{model_name} + {table}d$")
                 acc_data_og.append(model_name + "$")
 
             acc, size, compr_ratio = format_extra_compression_row(compress_data, table, task, compr_ratio)

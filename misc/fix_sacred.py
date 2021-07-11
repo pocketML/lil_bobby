@@ -14,15 +14,16 @@ def main(args):
         }
         for key in args.__dict__:
             value = getattr(args, key)
-            sacred_key = acc_metrics_map.get(key, key)
-            print(f"Setting {sacred_key} to {value}")
-            time_now = datetime.now()
-            metrics_entry = {
-                "steps": [0],
-                "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
-                "values": [value]
-            }
-            metrics_data[sacred_key] = metrics_entry
+            if value is not None:
+                sacred_key = acc_metrics_map.get(key, key)
+                print(f"Setting {sacred_key} to {value}")
+                time_now = datetime.now()
+                metrics_entry = {
+                    "steps": [0],
+                    "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
+                    "values": [value]
+                }
+                metrics_data[sacred_key] = metrics_entry
 
     with open(metrics_path, "w", encoding="utf-8") as fp:
         json.dump(metrics_data, fp, indent=2)
