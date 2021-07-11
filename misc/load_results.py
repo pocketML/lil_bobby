@@ -54,6 +54,17 @@ def get_experiment_suffix(result_name):
     except ValueError:
         return 1
 
+def get_experiment_day(result_name):
+    months = set(("may", "june", "july"))
+    days_in_month = [31, 30, 31, 31]
+    split = result_name.split("_")
+    for s in split:
+        for index, month in enumerate(months, start=1):
+            if month in s:
+                day = int(s.replace(month, ""))
+                return -(sum(days_in_month[:index]) + day)
+    return 0
+
 def group_results_by_model(results_for_day):
     grouped_results = {}
     for result in results_for_day:
@@ -86,7 +97,7 @@ def get_extra_compression_results(table):
             results = glob(f"../experiments/{task_specific_model}_{file_suffix}")
             if len(results) < 4:
                 continue
-            results.sort(key=get_experiment_suffix)
+            results.sort(key=lambda x: (get_experiment_day(x), get_experiment_suffix(x)))
             model_groups.append(results[-4:])
         models.append(model_groups)
     return models

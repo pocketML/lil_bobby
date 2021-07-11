@@ -183,6 +183,10 @@ def group_and_format_extra_compression_data(results, table):
                 size_data.append(size)
                 size_data_og.append(size_og)
 
+            if task == "mnli":
+                size_data.append(compr_ratio)
+                size_data_og.append(compr_ratio_og)
+
         all_model_data.append(acc_data + size_data)
         og_model_data.append(acc_data_og + size_data_og)
 
@@ -193,6 +197,7 @@ def print_extra_compression_table(grouped_data, table):
     print("\\centering")
     print("\\begin{table*}[!htb]")
     print("\\centering")
+    print("\\begin{footnotesize}")
 
     # Start of table
     print("\\begin{tabular}{c||c|c|c|c|c|c}")
@@ -200,7 +205,7 @@ def print_extra_compression_table(grouped_data, table):
 
     # Print headers
     header_line = (
-        "& SST-2 & QQP & MNLI & SS Size & "
+        "Model & SST-2 & QQP & MNLI & SS Size & "
         "SP Size & Compr. Ratios\\\\"
     )
     print(header_line)
@@ -235,11 +240,13 @@ def print_extra_compression_table(grouped_data, table):
     caption = (
         f"Results for {task_name} of selected distilled models. Performances are measured by " +
         "accuracy, accuracy/f1-score, matched/mismatched accuracy for the three tasks, " +
-        f"respectively. {task_desc}. Compression Ratio is compared to the disk size of " +
-        "teacher model RoBERTa Large. \\textit{SS}: Single Sentence. \\textit{SP}: Sentence Pair."
+        f"respectively. {task_desc}. Compression ratio is single sentence / sentence pair models " +
+        "compared to the disk size of teacher model RoBERTa Large. " +
+        "\\textit{SS}: Single Sentence. \\textit{SP}: Sentence Pair."
     )
     print("\\caption{" + caption + "}")
     print("\\label{tab:" + task_name + "_results}")
+    print("\\end{footnotesize}")
     print("\\end{table*}")
     print("}")
 
