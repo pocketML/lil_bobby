@@ -143,7 +143,7 @@ def format_extra_compression_row(data, table, task, compr_ratio):
             compr_ratio += " / "
         compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
 
-    return [acc_1, acc_2, size_value, compr_ratio]
+    return [acc_str, size_value, compr_ratio]
 
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
@@ -208,10 +208,8 @@ def print_extra_compression_table(grouped_data, table):
     compress_data, og_data = grouped_data
 
     # Print original data
-    for model_data in og_data:
-        print(" & ".join(model_data) + "\\\\")
-
-    for model_data in compress_data:
+    for model_data, model_data_og in zip(compress_data, og_data):
+        print(" & ".join(model_data_og) + "\\\\")
         print(" & ".join(model_data) + "\\\\")
 
     print("\\hline")
