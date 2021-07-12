@@ -15,6 +15,7 @@ EMB_FORMATTED = {
 }
 
 SIZE_ROBERTA = 1426.02 # MB
+SIZE_GLUE = 170 # MB
 
 def group_and_format_distill_data(results, table):
     alpha_indices = {1.0: 1, 0.5: 2, 0.0: 3}
@@ -132,6 +133,20 @@ def get_og_results(result_group, task):
             ]
     return None
 
+def format_compr_ratio(ratio):
+    ratio_str = str(ratio)
+    if len(ratio_str) < 4:
+        return ratio_str + "x"
+
+    str_with_spaces = ""
+    for i in range(len(ratio_str), 0, -1):
+        reverse_i = len(ratio_str) - i
+        if reverse_i > 0 and i % 3 == 0:
+            str_with_spaces += " "
+        str_with_spaces += ratio_str[reverse_i]
+
+    return str_with_spaces + "x"
+
 def format_extra_compression_row(data, table, task, compr_ratio):
     acc_1, acc_2 = data["acc"]
     acc_str = f"{(acc_1 * 100):.2f}"
@@ -142,7 +157,7 @@ def format_extra_compression_row(data, table, task, compr_ratio):
     if task in ("sst-2", "qqp"):
         if compr_ratio != "":
             compr_ratio += " / "
-        compr_ratio += f"{int(SIZE_ROBERTA / size_value)}x"
+        compr_ratio += format_compr_ratio(int(SIZE_ROBERTA / size_value))
 
     return acc_str, f"{size_value:.2f}", compr_ratio
 
@@ -170,7 +185,7 @@ def group_and_format_extra_compression_data(results, table):
                 times_seen_arch[og_data["arch"]] += 1
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
-                model_name = f"${arch_fmt}\\textsubscript" + "{" + model_id + "}"
+                model_name = f"{arch_fmt}\\textsubscript" + "{" + model_id + "}"
                 compress_denote = f"{table}d" if table != "final" else "p / q"
                 acc_data.append(f"{model_name} + {compress_denote}")
                 acc_data_og.append(model_name)
