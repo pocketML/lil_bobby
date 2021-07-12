@@ -46,9 +46,9 @@ EXTRA_COMPRESSION_MODELS = [
         "embffn_mnli_alpha1_bpe100_june10"
     ],
     [ # The L1 cache boi
-        "embffn_sst_alpha1_hash25_july12",
-        "embffn_qqp_alpha1_hash25_july12",
-        "embffn_mnli_alpha1_hash25_july12"
+        "embffn_sst_alpha0_hash25_july12",
+        "embffn_qqp_alpha0_hash25_july12",
+        "embffn_mnli_alpha0_hash25_july12"
     ]
 ]
 
