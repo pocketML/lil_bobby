@@ -170,9 +170,10 @@ def group_and_format_extra_compression_data(results, table):
                 times_seen_arch[og_data["arch"]] += 1
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
-                model_name = f"${arch_fmt}_{model_id}"
-                acc_data.append(f"{model_name} + {table}d$")
-                acc_data_og.append(model_name + "$")
+                model_name = f"${arch_fmt}\\textsubscript" + "{" + model_id + "}"
+                compress_denote = f"{table}d" if table != "final" else "p / q"
+                acc_data.append(f"{model_name} + {compress_denote}")
+                acc_data_og.append(model_name)
 
             acc, size, compr_ratio = format_extra_compression_row(compress_data, table, task, compr_ratio)
             acc_og, size_og, compr_ratio_og = format_extra_compression_row(og_data, "distill", task, compr_ratio_og)
@@ -206,14 +207,14 @@ def print_extra_compression_table(grouped_data, table):
 
     # Print headers
     header_line = (
-        "Model & SST-2 & QQP & MNLI & SS Size & "
-        "SP Size & Compr. Ratios\\\\"
+        "Model & SST-2 & QQP & MNLI & SS size & "
+        "SP size & Compress rate\\\\"
     )
     print(header_line)
     print("\\hhline{=|=|=|=|=|=|=}")
 
     roberta_data = [
-        "RoBERTa Large", "96.53", "90.35 / 90.06", "92.20 / 89.63", "1426.02", "1426.02", "1x / 1x"
+        "RoBERTa\\textsubscript{Large}", "96.53", "90.35 / 90.06", "92.20 / 89.63", "1426.02", "1426.02", "1x / 1x"
     ]
 
     # Actually print the data
@@ -226,6 +227,7 @@ def print_extra_compression_table(grouped_data, table):
     for model_data, model_data_og in zip(compress_data, og_data):
         print(" & ".join(model_data_og) + "\\\\")
         print(" & ".join(model_data) + "\\\\")
+        print("\\hline")
 
     print("\\hline")
     print("\\end{tabular}")
@@ -233,10 +235,13 @@ def print_extra_compression_table(grouped_data, table):
     # Caption stuff.
     if table == "prune":
         task_name = "pruning"
-        task_desc = "Size is disk size of zipped model using gzip defalte algorithm"
+        task_desc = "Size is disk size of zipped model using gzip deflate algorithm"
     elif table == "quantize":
         task_name = "quantization"
         task_desc = "Size is disk size of model"
+    elif table == "final":
+        task_name = "pruning \& quantization"
+        task_desc = "Size is disk size of zipped model using gzip deflate algorithm"
 
     caption = (
         f"Results for {task_name} of selected distilled models. Performances are measured by " +
