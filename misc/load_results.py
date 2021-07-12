@@ -44,6 +44,11 @@ EXTRA_COMPRESSION_MODELS = [
         "embffn_sst_alpha1_bpe100_may29",
         "embffn_qqp_alpha1_bpe100_june7",
         "embffn_mnli_alpha1_bpe100_june10"
+    ],
+    [ # The L1 cache boi
+        "embffn_sst_alpha1_hash25_july12",
+        "embffn_qqp_alpha1_hash25_july12",
+        "embffn_mnli_alpha1_hash25_july12"
     ]
 ]
 
@@ -80,6 +85,13 @@ def group_results_by_model(results_for_day):
         grouped_results[name].append(result)
     return grouped_results
 
+def get_results_for_distilled_model(model_name, compress_method):
+    results = glob(f"../experiments/{model_name}_{compress_method}_*")
+    if len(results) < 4:
+        return None
+    results.sort(key=lambda x: (get_experiment_day(x), get_experiment_suffix(x)))
+    return results[-4:]
+
 def get_extra_compression_results(table):
     compress_method = table
     if table == "final":
@@ -91,11 +103,10 @@ def get_extra_compression_results(table):
     for model_group in EXTRA_COMPRESSION_MODELS:
         model_groups = []
         for task_specific_model in model_group:
-            results = glob(f"../experiments/{task_specific_model}_{compress_method}_*")
-            if len(results) < 4:
+            results = get_results_for_distilled_model(task_specific_model, compress_method)
+            if results is None:
                 continue
-            results.sort(key=lambda x: (get_experiment_day(x), get_experiment_suffix(x)))
-            model_groups.append(results[-4:])
+            model_groups.append(results)
         models.append(model_groups)
     return models
 
