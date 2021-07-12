@@ -244,7 +244,6 @@ def print_extra_compression_table(grouped_data, table):
         print(" & ".join(model_data) + "\\\\")
         print("\\hline")
 
-    print("\\hline")
     print("\\end{tabular}")
 
     # Caption stuff.
@@ -266,7 +265,7 @@ def print_extra_compression_table(grouped_data, table):
         "\\textit{SS}: Single Sentence. \\textit{SP}: Sentence Pair."
     )
     print("\\caption{" + caption + "}")
-    print("\\label{tab:" + task_name + "_results}")
+    print("\\label{tab:" + task_name.replace(" \& ", "_") + "_results}")
     print("\\end{footnotesize}")
     print("\\end{table*}")
     print("}")

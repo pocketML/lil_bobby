@@ -35,6 +35,8 @@ class TopKPruning(prune.BasePruningMethod):
         self.module_to_prune = module_to_prune
 
         if self.module_to_prune is not None:
+            if isinstance(self.module_to_prune, torch.nn.RNN):
+                self.threshold *= 0.2
             if isinstance(self.module_to_prune, torch.nn.Embedding):
                 self.threshold *= 0.8
             elif isinstance(self.module_to_prune, torch.nn.Linear):
