@@ -128,7 +128,7 @@ def get_og_results(result_group, task):
         model_name = "_".join(model_group[task_index].split("_")[:-1])
         if model_name in result_group[0]:
             return [
-                f"../experiments/{model_group[task_index]}_{seed_name}"
+                f"experiments/{model_group[task_index]}_{seed_name}"
                 for seed_name in ("bennington", "hadfield", "feynman", "simone")
             ]
     return None
@@ -249,18 +249,18 @@ def print_extra_compression_table(grouped_data, table):
     # Caption stuff.
     if table == "prune":
         task_name = "pruning"
-        task_desc = "Size is disk size of zipped model using gzip deflate algorithm"
+        task_desc = "Size is disk size in MB of zipped model using gzip deflate algorithm"
     elif table == "quantize":
         task_name = "quantization"
-        task_desc = "Size is disk size of model"
+        task_desc = "Size is disk size in MB of model"
     elif table == "final":
         task_name = "pruning \& quantization"
-        task_desc = "Size is disk size of zipped model using gzip deflate algorithm"
+        task_desc = "Size is disk size in MB of zipped model using gzip deflate algorithm"
 
     caption = (
         f"Results for {task_name} of selected distilled models. Performances are measured by " +
         "accuracy, accuracy/f1-score, matched/mismatched accuracy for the three tasks, " +
-        f"respectively. {task_desc}. Compression ratio is single sentence / sentence pair models " +
+        f"respectively. {task_desc}. Compression ratio is single sentence/sentence pair models " +
         "compared to the disk size of teacher model RoBERTa Large. " +
         "\\textit{SS}: Single Sentence. \\textit{SP}: Sentence Pair."
     )

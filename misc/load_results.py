@@ -86,7 +86,7 @@ def group_results_by_model(results_for_day):
     return grouped_results
 
 def get_results_for_distilled_model(model_name, compress_method):
-    results = glob(f"../experiments/{model_name}_{compress_method}_*")
+    results = glob(f"experiments/{model_name}_{compress_method}_*")
     if len(results) < 4:
         return None
     results.sort(key=lambda x: (get_experiment_day(x), get_experiment_suffix(x)))
@@ -118,7 +118,7 @@ def get_distillation_results():
     new_results = []
     for month_index, month in enumerate(month_names):
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
-            results_for_day = glob(f"../experiments/*_{month}{day}*")
+            results_for_day = glob(f"experiments/*_{month}{day}*")
             results_for_day.sort(key=get_experiment_suffix)
 
             grouped_results = group_results_by_model(results_for_day)
