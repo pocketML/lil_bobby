@@ -8,6 +8,7 @@ models/*
 data/*
 experiments/*
 misc/*.txt
+misc/*.png
 
 # SLURM bash file
 submit.job
