@@ -229,11 +229,22 @@ def print_extra_compression_table(grouped_data, table):
     print("\\hhline{=|=|=|=|=|=|=}")
 
     roberta_data = [
-        "RoBERTa\\textsubscript{Large}", "96.53", "90.35 / 90.06", "92.20 / 89.63", "1426.02", "1426.02", "1x / 1x"
+        "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33 / 90.33", "1426.02", "1426.02", "1x / 1x"
     ]
 
     # Actually print the data
     print(" & ".join(roberta_data) + "\\\\")
+
+    if table == "final":
+        glue_data = [
+            "GLUE Baseline + Elmo", "90.2", "85.7 / 65.6", "72.9 / 73.4", "681.13", "681.13", "2x / 2x"
+        ]
+        print(" & ".join(glue_data) + "\\\\")
+
+        tinybert_data = [
+            "TinyBERT\\textsubscript{4}", "93.0", "90.4 / 90.06", "92.20 / 89.63", "116.0", "116.0", "12x / 12x"
+        ]
+        print(" & ".join(tinybert_data) + "\\\\")
 
     print("\\hline")
     compress_data, og_data = grouped_data

@@ -3,6 +3,10 @@ import json
 
 import numpy as np
 
+SEED_NAMES = [
+    "bennington", "hadfield", "feynman", "simone"
+]
+
 # Which models to save further compression results for.
 EXTRA_COMPRESSION_MODELS = [
     [ # BiLSTM
@@ -86,7 +90,10 @@ def group_results_by_model(results_for_day):
     return grouped_results
 
 def get_results_for_distilled_model(model_name, compress_method):
-    results = glob(f"experiments/{model_name}_{compress_method}_*")
+    results = []
+    for seed in SEED_NAMES:
+        results += glob(f"experiments/{model_name}_{compress_method}_{seed}*")
+
     if len(results) < 4:
         return None
     results.sort(key=lambda x: (get_experiment_day(x), get_experiment_suffix(x)))

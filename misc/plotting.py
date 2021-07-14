@@ -7,21 +7,24 @@ import load_results
 # Data is task -> list of [model_name, acc_1, acc_2, size]
 MODEL_DATA = {
     "sst-2": [
-        ("RoBERTa Large", 96.53, 1426.02 * 1000),
+        ("RoBERTa Large", 96.56, 1426.02 * 1000),
         ("GLUE Baseline", 90.2, 681.128 * 1000),
         ("TinyBERT", 93.0, 116 * 1000)
     ],
     "qqp": [
         ("RoBERTa Large", 92.15, 1426.02 * 1000),
         ("GLUE Baseline", 85.7, 681.128 * 1000),
-        ("TinyBERT", 91.1, 116 * 1000)
+        ("TinyBERT", 90.4, 116 * 1000)
     ],
     "mnli": [
-        ("RoBERTa Large", 90.92, 1426.02 * 1000),
+        ("RoBERTa Large", 90.15, 1426.02 * 1000),
         ("GLUE Baseline", 73.15, 681.128 * 1000),
         ("TinyBERT", 84.5, 116 * 1000)
     ]
 }
+
+# 90.3275
+# 89.975
 
 LETTERS = ("A", "B", "C")
 
@@ -40,16 +43,16 @@ for model_name, model_group in zip(MODEL_NAMES, load_results.EXTRA_COMPRESSION_M
 
 TEXT_OFFSETS = {
     "sst-2": [
-        (-25, 12), (-18, 12), (-20, 12), (-35, 12), (-45, 12), (-60, -24), (-100, 12),
-        (-25, 12), (-18, 12), (-20, 12), (-35, 12), (-45, 12), (-60, -24), (-100, 12)
+        (-88, -6), (-35, 12), (-55, 10), (-20, -22), (10, -6), (-65, -6),
+        (-10, -22), (-25, 10), (-30, 12), (-40, 12), (-60, 12), (-90, 12)
     ],
     "qqp": [
-        (-25, 12), (-18, 12), (-20, 12), (-35, 12), (-45, 12), (-60, -24), (-100, 12),
-        (-10, -25), (-65, -6), (-25, 10), (-35, -24), (-90, -6), (-60, 12), (-90, 12)
+        (-35, -24), (-36, -24), (12, -6), (-25, -24), (12, -7), (-35, 10),
+        (-25, 10), (-60, -6), (8, -16), (-90, -6), (-60, 12), (-90, 12)
     ],
     "mnli": [
-        (-15, 10), (-25, 10), (-25, 10), (-35, 10), (-90, -6), (-60, 12), (-135, -4),
-        (-15, 10), (-25, 10), (-25, 10), (-35, 10), (-90, -6), (-60, 12), (-135, -4)
+        (12, -6), (-35, 10), (-90, -6), (10, -6), (-8, 10), (10, -7),
+        (-25, 10), (-60, -7), (8, -16), (-90, -6), (-60, 12), (-135, -6)
     ]
 }
 
@@ -105,8 +108,10 @@ def plot_pareto(data, pareto_x, pareto_y, task):
 
     ax.set_xscale("log")
     ax.set_ylim(min(pareto_y) - 3, max(pareto_y) + 3)
-    x_lim_min = 10 if task == "sst-2" else 15
+    x_lim_min = 8 if task == "sst-2" else 15
     ax.set_xlim(x_lim_min, 3_500_000)
+
+    ax.grid(b=True, which="major", axis="both", linestyle="--")
 
     ax.set_xlabel("Size (KB)")
     ax.set_ylabel("Accuracy (%)")
@@ -115,15 +120,16 @@ def plot_pareto(data, pareto_x, pareto_y, task):
     points_y = [x[1] for x in data]
 
     for index, (model_name, p_y, p_x) in enumerate(data):
+        model_index = MODEL_NAMES.index(model_name) if model_name in MODEL_NAMES else index
         ax.annotate(
-            model_name, get_annotation_position(p_x, p_y, index, task, ax), fontsize=12
+            model_name, get_annotation_position(p_x, p_y, model_index, task, ax), fontsize=12
         )
 
     ax.plot(pareto_x, pareto_y, linestyle=":", linewidth=2, c="red")
 
     ax.scatter(points_x, points_y, s=50)
 
-    filename = f"pareto_{task}.png"
+    filename = f"misc/pareto_{task}.pdf"
 
     plt.savefig(filename)
     plt.show()
