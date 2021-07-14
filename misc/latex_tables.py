@@ -159,7 +159,7 @@ def format_extra_compression_row(data, table, task, compr_ratio):
             compr_ratio += " / "
         compr_ratio += format_compr_ratio(int(SIZE_ROBERTA / size_value))
 
-    return acc_str, f"{size_value:.2f}", compr_ratio
+    return acc_str, f"{size_value:.3f}", compr_ratio
 
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
@@ -257,16 +257,21 @@ def print_extra_compression_table(grouped_data, table):
 
     print("\\end{tabular}")
 
+    if table in ("prune", "final"):
+        compress_desc = "quantized/pruned" if table == "final" else "pruned"
+        task_desc = (
+            f"Size of original models is disk size in MB. Size of {compress_desc} models " +
+            "is disk size in MB of zipped model using gzip deflate algorithm."
+        )
+
     # Caption stuff.
     if table == "prune":
         task_name = "pruning"
-        task_desc = "Size is disk size in MB of zipped model using gzip deflate algorithm"
     elif table == "quantize":
         task_name = "quantization"
-        task_desc = "Size is disk size in MB of model"
+        task_desc = "Size is disk size of model in MB"
     elif table == "final":
         task_name = "pruning \& quantization"
-        task_desc = "Size is disk size in MB of zipped model using gzip deflate algorithm"
 
     caption = (
         f"Results for {task_name} of selected distilled models. Performances are measured by " +
