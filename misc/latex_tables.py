@@ -52,7 +52,7 @@ def group_and_format_distill_data(results, table):
             for emb_type, emb_dim in embeddings:
                 key = f"{emb_type}_{emb_dim}"
                 vocabs = [5000]
-                if emb_type == "hash" and emb_dim == "25" and arch == "emb-ffn":
+                if emb_type == "hash" and emb_dim == 25 and arch == "emb-ffn":
                     vocabs.append(2500)
 
                 for vocab in vocabs:
@@ -120,7 +120,9 @@ def group_and_format_distill_data(results, table):
                     grouped_by_emb[key]["measurements"] = interleaved_measurements
 
             emb_group_list = list(grouped_by_emb.values())
-            emb_group_list.sort(key=lambda x: (emb_sort_order.index(x["emb-type"]), x["emb-dim"]))
+            emb_group_list.sort(
+                key=lambda x: (-x["vocab-size"], emb_sort_order.index(x["emb-type"]), x["emb-dim"])
+            )
 
             grouped_data[task][arch] = emb_group_list
 

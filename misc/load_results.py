@@ -152,7 +152,7 @@ def validate_experiment(data, table):
         ("embedding_type", ["hash", "bpe", "char", None])
     ]
     if table == "distill":
-        expected_params.append(("vocab_size", [5000, None]))
+        expected_params.append(("vocab_size", [2500, 5000, None]))
 
     for param, expected_values in expected_params:
         if data[param] not in expected_values:
@@ -227,6 +227,6 @@ def get_experiment_data(experiment_group, table):
         "task": config["task"], "arch": config["student_arch"], "emb-type": config["embedding_type"],
         "emb-dim": config["embedding_dim"], "alpha": config.get("alpha"), "og": config.get("only_original_data"),
         "params": params, "size": mean_size, "theoretical_size": mean_theoretical,
-        "acc": (mean_1, mean_2), "std": (std_1, std_2)
+        "acc": (mean_1, mean_2), "std": (std_1, std_2), "vocab-size": config["vocab_size"]
     }
     return data_for_experiment
