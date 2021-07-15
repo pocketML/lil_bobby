@@ -18,7 +18,7 @@ def load_model(args, is_roberta_model, kw_model=None):
         # 312_000 for ELMO
         return model_utils.GlueBaseline(vocab_size=312000)
     elif args.arch in distill_models.STUDENT_MODELS.keys():
-        return distill_models.load_student(args.task, args.arch, False, model_name=args.model_name)
+        return distill_models.load_student(args.task, args.arch, False, model_name=args.model_name, args=args)
 
 def main(args, **kwargs):
     sacred_experiment = kwargs.get("sacred_experiment")

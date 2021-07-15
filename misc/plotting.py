@@ -63,11 +63,8 @@ def load_model_data():
             data = load_results.get_experiment_data(results, "final")
 
             task = data["task"]
-            acc, acc_2 = data["acc"]
+            acc = data["acc"][0]
             size = data["theoretical_size"]
-
-            if task == "mnli":
-                acc = (acc + acc_2) / 2
 
             MODEL_DATA[task].append((model_name, acc * 100, size * 1000))
 

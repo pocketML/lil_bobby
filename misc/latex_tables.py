@@ -229,7 +229,7 @@ def print_extra_compression_table(grouped_data, table):
     print("\\hhline{=|=|=|=|=|=|=}")
 
     roberta_data = [
-        "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33 / 90.33", "1426.02", "1426.02", "1x / 1x"
+        "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33", "1426.02", "1426.02", "1x / 1x"
     ]
 
     # Actually print the data
@@ -237,12 +237,12 @@ def print_extra_compression_table(grouped_data, table):
 
     if table == "final":
         glue_data = [
-            "GLUE Baseline + Elmo", "90.2", "85.7 / 65.6", "72.9 / 73.4", "681.13", "681.13", "2x / 2x"
+            "GLUE Baseline + Elmo", "91.5", "88.0 / 84.3", "68.6", "681.13", "681.13", "2x / 2x"
         ]
         print(" & ".join(glue_data) + "\\\\")
 
         tinybert_data = [
-            "TinyBERT\\textsubscript{4}", "93.0", "90.4 / 90.06", "92.20 / 89.63", "116.0", "116.0", "12x / 12x"
+            "TinyBERT\\textsubscript{4}", "93.0", "88.00 / 91.10", "84.50", "268.00", "268.00", "5x / 5x"
         ]
         print(" & ".join(tinybert_data) + "\\\\")
 
@@ -292,8 +292,8 @@ def print_distill_table(grouped_data, task):
     print("\\centering")
     print("\\begin{table*}[!htb]")
     print("\\centering")
-    if task != "sst-2":
-        print("\\setlength{\\tabcolsep}{4pt}")
+    if task == "sst-2":
+        print("\\setlength{\\tabcolsep}{3pt}")
     print("\\begin{footnotesize}")
     print("\\renewcommand{\\arraystretch}{1.3}")
 
@@ -341,7 +341,9 @@ def print_distill_table(grouped_data, task):
     if task == "qqp":
         task_specific_caption = "Performances written as \\textbf{accuracy/f1-score}. "
     elif task == "mnli":
-        task_specific_caption = "Performances written as \\textbf{matched accuracy/mismatched accuracy}. "
+        task_specific_caption = (
+            "Performances written as average of \\textbf{matched accuracy/mismatched accuracy}. "
+        )
 
     # Table caption
     caption_text = (

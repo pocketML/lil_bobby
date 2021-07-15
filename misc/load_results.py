@@ -192,6 +192,11 @@ def get_experiment_data(experiment_group, table):
             for key in ("test.f1", "test.mismatched.accuracy"):
                 if key in metrics_data:
                     accuracy_2 = metrics_data[key]["values"][0]
+
+            if "test.matched.accuracy" in metrics_data:
+                accuracy_1 = (accuracy_1 + accuracy_1) / 2
+                accuracy_2 = None
+
             accuracies_1.append(accuracy_1)
             if accuracy_2 is not None:
                 accuracies_2.append(accuracy_2)
