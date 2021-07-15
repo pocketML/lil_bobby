@@ -51,16 +51,21 @@ def group_and_format_distill_data(results, table):
 
             for emb_type, emb_dim in embeddings:
                 key = f"{emb_type}_{emb_dim}"
-                grouped_by_emb[key] = {
-                    "emb-type": emb_type,
-                    "emb-dim": emb_dim,
-                    "params": "", "size": "",
-                    "acc": [(None, None) for _ in range(4)],
-                    "std": [(None, None) for _ in range(4)]
-                }
+                vocabs = [5000]
+                if emb_type == "hash" and emb_dim == "25" and arch == "emb-ffn":
+                    vocabs.append(2500)
+
+                for vocab in vocabs:
+                    grouped_by_emb[f"{key}_{vocab}"] = {
+                        "emb-type": emb_type,
+                        "emb-dim": emb_dim,
+                        "params": "", "size": "",
+                        "acc": [(None, None) for _ in range(4)],
+                        "std": [(None, None) for _ in range(4)]
+                    }
 
             for data in grouped_data[task][arch]:
-                key = f"{data['emb-type']}_{data['emb-dim']}"
+                key = f"{data['emb-type']}_{data['emb-dim']}_{data['vocab-size']}"
 
                 fmt_params = np.format_float_scientific(data["params"], precision=1, exp_digits=1, trim="0")
                 fmt_size = f"{data['size']:.2f}"

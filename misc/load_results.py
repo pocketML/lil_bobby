@@ -84,7 +84,7 @@ def group_results_by_model(results_for_day):
             end = -2 if len(split) == 7 else -1
 
         name = "_".join(split[:end])
-        if name not in grouped_results or len(grouped_results[name]) == 4:
+        if name not in grouped_results:
             grouped_results[name] = []
         grouped_results[name].append(result)
     return grouped_results
@@ -197,7 +197,8 @@ def get_experiment_data(experiment_group, table):
                     accuracy_2 = metrics_data[key]["values"][0]
 
             if "test.matched.accuracy" in metrics_data:
-                accuracy_1 = (accuracy_1 + accuracy_1) / 2
+                # Average MNLI matched/mismatched accuracy.
+                accuracy_1 = (accuracy_1 + accuracy_2) / 2
                 accuracy_2 = None
 
             accuracies_1.append(accuracy_1)
