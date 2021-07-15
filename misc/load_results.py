@@ -142,9 +142,13 @@ def validate_experiment(data, table):
     if compress_actions != data["compression_actions"]:
         return False
 
+    embedding_dims = [25, 100, 300, None]
+    if data["task"] != "sst-2":
+        embedding_dims.remove(300)
+
     expected_params = [
         ("embedding_freeze", [False, None]),
-        ("embedding_dim", [25, 100, 300, None]),
+        ("embedding_dim", embedding_dims),
         ("embedding_type", ["hash", "bpe", "char", None])
     ]
     if table == "distill":
