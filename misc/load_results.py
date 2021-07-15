@@ -139,9 +139,8 @@ def validate_experiment(data, table):
     if table == "final":
         compress_actions = ["prune", "quantize"]
 
-    for comp_action in compress_actions:
-        if comp_action not in data["compression_actions"]:
-            return False
+    if compress_actions != data["compression_actions"]:
+        return False
 
     expected_params = [
         ("embedding_freeze", [False, None]),
