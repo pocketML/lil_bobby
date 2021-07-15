@@ -59,6 +59,7 @@ def group_and_format_distill_data(results, table):
                     grouped_by_emb[f"{key}_{vocab}"] = {
                         "emb-type": emb_type,
                         "emb-dim": emb_dim,
+                        "vocab-size": vocab,
                         "params": "", "size": "",
                         "acc": [(None, None) for _ in range(4)],
                         "std": [(None, None) for _ in range(4)]
@@ -299,7 +300,7 @@ def print_distill_table(grouped_data, task):
     print("\\centering")
     print("\\begin{table*}[!htb]")
     print("\\centering")
-    if task == "sst-2":
+    if task == "qqp":
         print("\\setlength{\\tabcolsep}{3pt}")
     print("\\begin{footnotesize}")
     print("\\renewcommand{\\arraystretch}{1.3}")
@@ -333,6 +334,8 @@ def print_distill_table(grouped_data, task):
             row_data = row_data + data["measurements"]
 
             line += " & ".join(row_data) + "\\\\"
+            if arch == "emb-ffn" and index == len(grouped_data[task][arch]) - 2:
+                line += "\n\\hdashline"
             if index < len(grouped_data[task][arch]) - 1:
                 line += "\n & "
 
