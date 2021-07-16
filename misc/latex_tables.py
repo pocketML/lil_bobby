@@ -194,7 +194,7 @@ def group_and_format_extra_compression_data(results, table):
                 model_id = model_ids[model_id_index]
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
                 model_name = f"{arch_fmt}\\textsubscript" + "{" + model_id + "}"
-                compress_denote = f"{table}d" if table != "final" else "p / q"
+                compress_denote = f"{table}d" if table != "final" else "p + q"
                 acc_data.append(f"{model_name} + {compress_denote}")
                 acc_data_og.append(model_name)
 
@@ -255,12 +255,13 @@ def print_extra_compression_table(grouped_data, table):
         print(" & ".join(tinybert_data) + "\\\\")
 
     print("\\hline")
-    compress_data, og_data = grouped_data
 
     # Print original data
-    for model_data, model_data_og in zip(compress_data, og_data):
+    for model_data_og, model_data_prune, model_data_quant, model_data_final in zip(*grouped_data):
         print(" & ".join(model_data_og) + "\\\\")
-        print(" & ".join(model_data) + "\\\\")
+        print(" & ".join(model_data_prune) + "\\\\")
+        print(" & ".join(model_data_quant) + "\\\\")
+        print(" & ".join(model_data_final) + "\\\\")
         print("\\hline")
 
     print("\\end{tabular}")
@@ -379,9 +380,14 @@ def main(args):
         grouped_data = group_and_format_distill_data(all_results, args.table)
         print_distill_table(grouped_data, args.task)
     else:
-        all_results = load_results.get_extra_compression_results(args.table)
-        grouped_data = group_and_format_extra_compression_data(all_results, args.table)
-        print_extra_compression_table(grouped_data, args.table)
+        all_table_data = []
+        for table in ("prune", "quantize", "final"):
+            all_results = load_results.get_extra_compression_results(table)
+            compress_data, og_data = group_and_format_extra_compression_data(all_results, table)
+            if table == "prune":
+                all_table_data.append(og_data)
+            all_table_data.append(compress_data)
+        print_extra_compression_table(all_table_data, args.table)
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
