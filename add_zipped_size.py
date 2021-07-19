@@ -8,19 +8,25 @@ from misc import load_results
 result_groups = load_results.get_distillation_results()
 
 for result_group in result_groups:
-    for result_folder in result_group:
-        try:
-            with open(f"{result_folder}/metrics.json", "r", encoding="utf-8") as fp:
-                name = result_folder.replace("\\", "/").split("/")[-1]
-                name_split = name.split("_")
-                arch = name_split[0]
-                if arch == "embffn":
-                    arch = "emb-ffn"
-                task = name_split[1]
-                if task == "sst":
-                    task = "sst-2"
+    try:
+        with open(f"{result_group[0]}/config.json", "r") as fp:
+            config = json.load(fp)["task_args"]["compress"]
 
+        if not load_results.validate_experiment(config, "distill"):
+            continue
+
+        for result_folder in result_group:
+            with open(f"{result_folder}/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
+
+            name = result_folder.replace("\\", "/").split("/")[-1]
+            name_split = name.split("_")
+            arch = name_split[0]
+            if arch == "embffn":
+                arch = "emb-ffn"
+            task = name_split[1]
+            if task == "sst":
+                task = "sst-2"
 
             model = distill_models.load_student(task, arch, use_gpu=False, model_name=name)
             if "theoretical_size" not in metrics_data:
@@ -39,6 +45,5 @@ for result_group in result_groups:
 
             with open(f"{result_folder}/metrics.json", "w", encoding="utf-8") as fp:
                 json.dump(metrics_data, fp, indent=2)
-
-        except (IOError, KeyError):
-            pass
+    except (IOError, KeyError):
+        continue
