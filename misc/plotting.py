@@ -77,10 +77,13 @@ def get_annotation_position(x, y, model_index, task, axis):
 
     return new_x, new_y
 
-def get_pareto_data(sorted_data):
+def get_pareto_data(sorted_data, staircase=False):
     points_x = []
-    min_y = min(x[1] for x in sorted_data)
-    points_y = [min_y]
+    points_y = []
+    if staircase:
+        min_y = min(x[1] for x in sorted_data)
+        points_y.append(min_y)
+
     highest_acc = 0
     models_on_skyline = set()
     for model_name, accuracy, size in sorted_data:
@@ -89,18 +92,23 @@ def get_pareto_data(sorted_data):
             highest_acc = accuracy
             y = accuracy
             models_on_skyline.add(model_name)
-        points_x.extend([size] * 2)
-        points_y.extend([y] * 2)
+        if staircase:
+            points_x.extend([size] * 2)
+            points_y.extend([y] * 2)
+        else:
+            points_x.append(size)
+            points_y.append(y)
 
-    points_x.append(points_x[-1])
+    if staircase:
+        points_x.append(points_x[-1])
 
-    return points_x, points_y
+    return points_x, points_y, models_on_skyline
 
-def plot_pareto(data, pareto_x, pareto_y, task):
+def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     fig, ax = plt.subplots()
 
-    width = 6.5 #3.487
-    height = (width / 1.2)
+    width = 12 #3.487
+    height = (width * 0.5625)
     fig.set_size_inches(width, height, forward=True)
 
     ax.set_xscale("log")
@@ -115,6 +123,8 @@ def plot_pareto(data, pareto_x, pareto_y, task):
 
     points_x = [x[2] for x in data]
     points_y = [x[1] for x in data]
+    skyline_x = [x[2] for x in data if x[0] in skyline_models]
+    skyline_y = [x[1] for x in data if x[0] in skyline_models]
 
     for index, (model_name, p_y, p_x) in enumerate(data):
         model_index = MODEL_NAMES.index(model_name) if model_name in MODEL_NAMES else index
@@ -122,9 +132,12 @@ def plot_pareto(data, pareto_x, pareto_y, task):
             model_name, get_annotation_position(p_x, p_y, model_index, task, ax), fontsize=12
         )
 
-    ax.plot(pareto_x, pareto_y, linestyle=":", linewidth=2, c="red")
+    ax.plot(pareto_x, pareto_y, linewidth=2, c="#2EC038")
 
-    ax.scatter(points_x, points_y, s=50)
+    radius = 50
+    border_width = 30
+    ax.scatter(skyline_x, skyline_y, s=radius + border_width, color="red")
+    ax.scatter(points_x, points_y, s=radius, color="#0D4B89")
 
     filename = f"misc/pareto_{task}.pdf"
 
@@ -135,10 +148,11 @@ if __name__ == "__main__":
     AP = argparse.ArgumentParser()
 
     AP.add_argument("task", choices=("sst-2", "qqp", "mnli"))
+    AP.add_argument("--staircase", action="store_true")
 
     ARGS = AP.parse_args()
 
     load_model_data()
     sorted_by_size = sorted(MODEL_DATA[ARGS.task], key=lambda x: x[2])
-    x_data, y_data = get_pareto_data(sorted_by_size)
-    plot_pareto(sorted_by_size, x_data, y_data, ARGS.task)
+    x_data, y_data, models_on_skyline = get_pareto_data(sorted_by_size, ARGS.staircase)
+    plot_pareto(sorted_by_size, x_data, y_data, ARGS.task, models_on_skyline)

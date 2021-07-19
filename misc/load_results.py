@@ -122,7 +122,7 @@ def get_distillation_results():
     start_day_in_month = [25, 0, 0, 0]
     end_day_in_month = [31, 30, 31, 31]
 
-    new_results = []
+    results = []
     for month_index, month in enumerate(month_names):
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
             results_for_day = glob(f"experiments/*_{month}{day}*")
@@ -131,8 +131,8 @@ def get_distillation_results():
             grouped_results = group_results_by_model(results_for_day)
 
             for group in grouped_results:
-                new_results.append(grouped_results[group])
-    return new_results
+                results.append(grouped_results[group])
+    return results
 
 def validate_experiment(data, table):
     compress_actions = [table]

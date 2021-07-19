@@ -9,11 +9,6 @@ MODEL_ARCHS = [
     "emb-ffn", "rnn", "bilstm", "large"
 ]
 
-# "emb-ffn": "embffn_sst_alpha0_hash100_may18_hadfield",
-# "rnn": "test_rrn_bigger",
-# "bilstm": "tang_best",
-# "large": "finetuned_sst-2_feynman"
-
 def get_predictions_roberta(model, val_data):
     """
     Return all indices of sentences in the validation dataset

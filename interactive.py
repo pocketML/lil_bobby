@@ -10,12 +10,12 @@ def predict_roberta(model, sentence_data, device, task):
     if task_utils.is_sentence_pair(task):
         x = encoded[0].to(device), encoded[1].to(device)
     else:
-        x = sentence_data.to(device)
+        x = encoded.to(device)
 
-    pred_logits = model.predict('sentence_classification_head', x).argmax().item()
-    pred_label = label_fn(pred_logits)
+    pred_logits = model.predict('sentence_classification_head', x)
+    pred_label = label_fn(pred_logits.argmax().item())
 
-    return pred_logits, pred_label
+    return pred_logits.tolist(), pred_label
 
 def predict_student(model, sentence_data, device, task):
     if task_utils.is_sentence_pair(task):
