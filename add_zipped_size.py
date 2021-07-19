@@ -8,14 +8,14 @@ from misc import load_results
 result_groups = load_results.get_distillation_results()
 
 for result_group in result_groups:
-    try:
-        with open(f"{result_group[0]}/config.json", "r") as fp:
-            config = json.load(fp)["task_args"]["compress"]
+    for result_folder in result_group:
+        try:
+            with open(f"{result_folder}/config.json", "r") as fp:
+                config = json.load(fp)["task_args"]["compress"]
 
-        if not load_results.validate_experiment(config, "distill"):
-            continue
+            if not load_results.validate_experiment(config, "distill"):
+                continue
 
-        for result_folder in result_group:
             with open(f"{result_folder}/metrics.json", "r", encoding="utf-8") as fp:
                 metrics_data = json.load(fp)
 
@@ -45,5 +45,5 @@ for result_group in result_groups:
 
             with open(f"{result_folder}/metrics.json", "w", encoding="utf-8") as fp:
                 json.dump(metrics_data, fp, indent=2)
-    except (IOError, KeyError):
-        continue
+        except (IOError, KeyError):
+            continue
