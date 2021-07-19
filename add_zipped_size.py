@@ -22,20 +22,23 @@ for result_group in result_groups:
 
                 metrics_data = json.load(fp)
 
-                model = distill_models.load_student(task, arch, use_gpu=False, model_name=name)
-                if "theoretical_size" not in metrics_data:
-                    nonzero_params, theoretical_size = get_theoretical_size(model)
-                    time_now = datetime.now()
-                    metrics_data["nonzero_params"] = {
-                        "steps": [0],
-                        "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
-                        "values": [nonzero_params]
-                    }
-                    metrics_data["theoretical_size"] = {
-                        "steps": [0],
-                        "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
-                        "values": [theoretical_size]
-                    }
+            model = distill_models.load_student(task, arch, use_gpu=False, model_name=name)
+            if "theoretical_size" not in metrics_data:
+                nonzero_params, theoretical_size = get_theoretical_size(model)
+                time_now = datetime.now()
+                metrics_data["nonzero_params"] = {
+                    "steps": [0],
+                    "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
+                    "values": [nonzero_params]
+                }
+                metrics_data["theoretical_size"] = {
+                    "steps": [0],
+                    "timestamp": [time_now.strftime("%Y-%m-%dT%H:%M%S.%f")],
+                    "values": [theoretical_size]
+                }
+
+            with open(f"{result_folder}/metrics.json", "w", encoding="utf-8") as fp:
+                json.dump(metrics_data, fp, indent=2)
 
         except (IOError, KeyError):
             pass
