@@ -155,17 +155,16 @@ def format_compr_ratio(ratio):
 
     return str_with_spaces + "x"
 
-def format_extra_compression_row(data, task, compr_ratio):
+def format_extra_compression_row(data, task):
     acc_1, acc_2 = data["acc"]
     acc_str = f"{(acc_1 * 100):.2f}"
     if acc_2 is not None:
         acc_str += f" / {(acc_2 * 100):.2f}"
 
+    compr_ratio = None
     size_value = data['theoretical_size']
     if task in ("sst-2", "qqp"):
-        if compr_ratio != "":
-            compr_ratio += " / "
-        compr_ratio += format_compr_ratio(int(SIZE_ROBERTA / size_value))
+        compr_ratio = format_compr_ratio(int(SIZE_ROBERTA / size_value))
 
     return acc_str, f"{size_value:.3f}", compr_ratio
 
@@ -175,12 +174,12 @@ def group_and_format_extra_compression_data(results, table):
     model_ids = ["A", "B", "C"]
     times_seen_arch = {"bilstm": 0, "rnn": 0, "emb-ffn": 0}
     for model_group in results:
-        compr_ratio = ""
-        compr_ratio_og = ""
         acc_data = []
         acc_data_og = []
         size_data = []
         size_data_og = []
+        compr_ratio = []
+        compr_ratio_og = []
 
         tasks = ["sst-2", "qqp", "mnli"]
         for task, result_group in zip(tasks, model_group):
@@ -198,8 +197,8 @@ def group_and_format_extra_compression_data(results, table):
                 acc_data.append(f"{model_name} + {compress_denote}")
                 acc_data_og.append(model_name)
 
-            acc, size, compr_ratio = format_extra_compression_row(compress_data, task, compr_ratio)
-            acc_og, size_og, compr_ratio_og = format_extra_compression_row(og_data, task, compr_ratio_og)
+            acc, size, ratio = format_extra_compression_row(compress_data, task)
+            acc_og, size_og, ratio_og = format_extra_compression_row(og_data, task)
  
             acc_data.append(acc)
             acc_data_og.append(acc_og)
@@ -207,13 +206,11 @@ def group_and_format_extra_compression_data(results, table):
             if task in ("sst-2", "qqp"):
                 size_data.append(size)
                 size_data_og.append(size_og)
+                compr_ratio.append(ratio)
+                compr_ratio_og.append(ratio_og)
 
-            if task == "mnli":
-                size_data.append(compr_ratio)
-                size_data_og.append(compr_ratio_og)
-
-        all_model_data.append(acc_data + size_data)
-        og_model_data.append(acc_data_og + size_data_og)
+        all_model_data.append(acc_data + size_data + compr_ratio)
+        og_model_data.append(acc_data_og + size_data_og + compr_ratio_og)
 
     return all_model_data, og_model_data
 
@@ -225,16 +222,16 @@ def print_extra_compression_table(grouped_data, table):
     print("\\begin{footnotesize}")
 
     # Start of table
-    print("\\begin{tabular}{l||c|c|c|c|c|c}")
+    print("\\begin{tabular}{l||c|c|c|c|c|rr}")
     print("\\hline")
 
     # Print headers
     header_line = (
         "Model & SST-2 & QQP & MNLI & SS size & "
-        "SP size & Compress rate\\\\"
+        "SP size & \\multicolumn{2}{c}{Compress rate (SS/SP)}\\\\"
     )
     print(header_line)
-    print("\\hhline{=|=|=|=|=|=|=}")
+    print("\\hhline{=|=|=|=|=|=|=|=}")
 
     roberta_data = [
         "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33", "1426.02", "1426.02", "1x / 1x"

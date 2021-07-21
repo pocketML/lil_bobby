@@ -119,13 +119,13 @@ def get_extra_compression_results(table):
 
 def get_distillation_results():
     month_names = ["may", "june", "july", "august"]
-    start_day_in_month = [25, 0, 0, 0]
+    start_day_in_month = [25, 1, 1, 1]
     end_day_in_month = [31, 30, 31, 31]
 
     results = []
     for month_index, month in enumerate(month_names):
         for day in range(start_day_in_month[month_index], end_day_in_month[month_index] + 1):
-            results_for_day = glob(f"experiments/*_{month}{day}*")
+            results_for_day = glob(f"experiments/*_{month}{day}_*")
             results_for_day.sort(key=get_experiment_suffix)
 
             grouped_results = group_results_by_model(results_for_day)
@@ -161,7 +161,7 @@ def validate_experiment(data, table):
 
 def get_experiment_data(experiment_group, table):
     valid_groups = []
-    for group_index in range(0, len(experiment_group) // 4, 4):
+    for group_index in range(0, len(experiment_group), 4):
         with open(f"{experiment_group[group_index]}/config.json", "r") as fp:
             config = json.load(fp)["task_args"]["compress"]
 
@@ -170,6 +170,9 @@ def get_experiment_data(experiment_group, table):
 
     if valid_groups == []:
         return None
+
+    with open(f"{valid_groups[0]}/config.json", "r") as fp:
+        config = json.load(fp)["task_args"]["compress"]
 
     metrics = []
     if len(valid_groups) > 4:
