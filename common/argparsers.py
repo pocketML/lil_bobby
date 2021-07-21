@@ -321,7 +321,7 @@ def args_run_extra_compression(args=None):
 
 def args_validate_augment():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--task")
+    ap.add_argument("--task", required=True)
 
     return ap.parse_args()
 

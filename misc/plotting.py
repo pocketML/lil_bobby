@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import argparse
-font = {'size': 14}
+font = {'size': 16}
 plt.rc('font', **font)
 import load_results
 
@@ -43,16 +43,16 @@ for model_name, model_group in zip(MODEL_NAMES, load_results.EXTRA_COMPRESSION_M
 
 TEXT_OFFSETS = {
     "sst-2": [
-        (-88, -6), (-35, 12), (-55, 10), (-20, -22), (10, -6), (-65, -6),
-        (-10, -22), (-25, 10), (-30, 12), (-40, 12), (-60, 12), (-90, 12)
+        (-20, -26), (-60, 12), (-100, -7), (-30, -26), (10, -7), (-30, 12),
+        (-10, -26), (-25, 10), (-30, 12), (-65, 12), (-70, 12), (-84, 12)
     ],
     "qqp": [
-        (-35, -24), (-36, -24), (12, -6), (-25, -24), (12, -7), (-35, 10),
-        (-25, 10), (-60, -6), (8, -16), (-90, -6), (-60, 12), (-90, 12)
+        (-35, -24), (-40, -24), (12, -6), (-25, -26), (12, -7), (-25, -25),
+        (-25, 10), (-66, -7), (-26, -26), (-100, -2), (-70, 12), (-84, 12)
     ],
     "mnli": [
-        (12, -6), (-35, 10), (-90, -6), (10, -6), (-8, 10), (10, -7),
-        (-25, 10), (-60, -7), (8, -16), (-90, -6), (-60, 12), (-135, -6)
+        (12, -6), (10, -14), (-102, -4), (10, -6), (-28, 10), (10, -7),
+        (16, -10), (-68, -7), (-30, -26), (-100, -2), (-70, 12), (-155, 4)
     ]
 }
 
@@ -92,12 +92,13 @@ def get_pareto_data(sorted_data, staircase=False):
             highest_acc = accuracy
             y = accuracy
             models_on_skyline.add(model_name)
+            if not staircase:
+                points_x.append(size)
+                points_y.append(y)
+
         if staircase:
             points_x.extend([size] * 2)
             points_y.extend([y] * 2)
-        else:
-            points_x.append(size)
-            points_y.append(y)
 
     if staircase:
         points_x.append(points_x[-1])
@@ -107,12 +108,17 @@ def get_pareto_data(sorted_data, staircase=False):
 def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     fig, ax = plt.subplots()
 
+    points_x = [x[2] for x in data]
+    points_y = [x[1] for x in data]
+    skyline_x = [x[2] for x in data if x[0] in skyline_models]
+    skyline_y = [x[1] for x in data if x[0] in skyline_models]
+
     width = 12 #3.487
     height = (width * 0.5625)
     fig.set_size_inches(width, height, forward=True)
 
     ax.set_xscale("log")
-    ax.set_ylim(min(pareto_y) - 3, max(pareto_y) + 3)
+    ax.set_ylim(min(points_y) - 3, max(points_y) + 3)
     x_lim_min = 8 if task == "sst-2" else 15
     ax.set_xlim(x_lim_min, 3_500_000)
 
@@ -121,23 +127,18 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     ax.set_xlabel("Size (KB)")
     ax.set_ylabel("Accuracy (%)")
 
-    points_x = [x[2] for x in data]
-    points_y = [x[1] for x in data]
-    skyline_x = [x[2] for x in data if x[0] in skyline_models]
-    skyline_y = [x[1] for x in data if x[0] in skyline_models]
-
     for index, (model_name, p_y, p_x) in enumerate(data):
         model_index = MODEL_NAMES.index(model_name) if model_name in MODEL_NAMES else index
         ax.annotate(
-            model_name, get_annotation_position(p_x, p_y, model_index, task, ax), fontsize=12
+            model_name, get_annotation_position(p_x, p_y, model_index, task, ax), fontsize=14
         )
 
     ax.plot(pareto_x, pareto_y, linewidth=2, c="#2EC038")
 
     radius = 50
     border_width = 30
-    ax.scatter(skyline_x, skyline_y, s=radius + border_width, color="red")
-    ax.scatter(points_x, points_y, s=radius, color="#0D4B89")
+    ax.scatter(skyline_x, skyline_y, s=radius + border_width, color="red", zorder=2.5)
+    ax.scatter(points_x, points_y, s=radius, color="#0D4B89", zorder=3)
 
     filename = f"misc/pareto_{task}.pdf"
 
