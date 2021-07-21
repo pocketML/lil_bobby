@@ -155,13 +155,13 @@ def format_compr_ratio(ratio):
 
     return str_with_spaces + "x"
 
-def format_extra_compression_row(data, table, task, compr_ratio):
+def format_extra_compression_row(data, task, compr_ratio):
     acc_1, acc_2 = data["acc"]
     acc_str = f"{(acc_1 * 100):.2f}"
     if acc_2 is not None:
         acc_str += f" / {(acc_2 * 100):.2f}"
 
-    size_value = data['size'] if table in ("distill", "quantize") else data['theoretical_size']
+    size_value = data['theoretical_size']
     if task in ("sst-2", "qqp"):
         if compr_ratio != "":
             compr_ratio += " / "
@@ -198,8 +198,8 @@ def group_and_format_extra_compression_data(results, table):
                 acc_data.append(f"{model_name} + {compress_denote}")
                 acc_data_og.append(model_name)
 
-            acc, size, compr_ratio = format_extra_compression_row(compress_data, table, task, compr_ratio)
-            acc_og, size_og, compr_ratio_og = format_extra_compression_row(og_data, "distill", task, compr_ratio_og)
+            acc, size, compr_ratio = format_extra_compression_row(compress_data, task, compr_ratio)
+            acc_og, size_og, compr_ratio_og = format_extra_compression_row(og_data, task, compr_ratio_og)
  
             acc_data.append(acc)
             acc_data_og.append(acc_og)
@@ -328,15 +328,16 @@ def print_distill_table(grouped_data, task):
         line = "\\multirow{" + f"{len(grouped_data[task][arch])}" + "}{*}"
         line += "{" + ARCH_FORMATTED[arch] + "} & "
         for index, data in enumerate(grouped_data[task][arch]):
+            emb_name = EMB_FORMATTED[data["emb-type"]]
+            if data["vocab-size"] == 2500:
+                emb_name = emb_name + "*"
+
             row_data = [
-                EMB_FORMATTED[data["emb-type"]], str(data["emb-dim"]),
-                data["params"], data["size"]
+                emb_name, str(data["emb-dim"]), data["params"], data["size"]
             ]
             row_data = row_data + data["measurements"]
 
             line += " & ".join(row_data) + "\\\\"
-            if arch == "emb-ffn" and index == len(grouped_data[task][arch]) - 2:
-                line += "\n\\hdashline"
             if index < len(grouped_data[task][arch]) - 1:
                 line += "\n & "
 
@@ -366,7 +367,7 @@ def print_distill_table(grouped_data, task):
         "Dimension of embedding vectors. \\textit{P}: Parameter count for the " +
         "entire model. \\textit{S}: Size on disk, in Megabytes. \\textit{b}: " +
         "Bootstrapped dataset. Bold: best mean across the four training methods " +
-        "for that combination of embedding type and dimension.}"
+        "for that combination of embedding type and dimension. *Vocab Size of 2500.}"
     )
     print(caption_text)
     short_task = "sst" if task == "sst-2" else task
