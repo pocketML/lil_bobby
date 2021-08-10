@@ -59,10 +59,11 @@ def main(experiment_args, task_args):
                 index += 1
             run_id = f"{run_id}_{index}"
 
-            # Update model_name parameter for evaluate and analyze.
-            for task_type in ("evaluate", "analyze"):
-                if task_type in task_args and task_args[task_type].model_name is not None:
-                    setattr(task_args[task_type], "model_name", run_id)
+            if "compress" in task_args or "finetune" in task_args:
+                # Update model_name parameter for evaluate and analyze.
+                for task_type in ("evaluate", "analyze"):
+                    if task_type in task_args and task_args[task_type].model_name is not None:
+                        setattr(task_args[task_type], "model_name", run_id)
 
     sacred_cfg = {"task_args": task_args}
     if "compress" in task_args:
