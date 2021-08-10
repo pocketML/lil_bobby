@@ -152,6 +152,7 @@ def args_evaluate(args=None, namespace=None, parse_known=False):
     ap.add_argument('--cpu', action='store_true')
     ap.add_argument("--loadbar", action="store_true")
     ap.add_argument('--arch', choices=MODEL_ARCHS, required=True)
+    ap.add_argument("--time", action="store_true")
 
     if parse_known:
         return ap.parse_known_args(args=args, namespace=namespace)

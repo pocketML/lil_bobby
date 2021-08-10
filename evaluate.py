@@ -1,5 +1,8 @@
+from time import time
+
 from common import argparsers, task_utils, model_utils, data_utils
 from compression.distillation import models as distill_models
+
 from tqdm import tqdm
 import torch
 
@@ -70,6 +73,8 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
     running_corrects, num_examples, tp, fp, fn, tn = 0, 0, 0, 0, 0, 0
     iterator = tqdm(dl, leave=False) if args.loadbar else dl
 
+    time_start = time()
+
     for x1, lens, target_labels, _ in iterator:
         if task_utils.is_sentence_pair(model.cfg['task']):
             x1 = x1[0].to(device), x1[1].to(device)
@@ -86,6 +91,8 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
         num_examples += examples
         if include_f1:
             tp, fp, fn, tn = update_f1_counts_distilled(preds, target_labels, tp, fp, fn, tn)
+
+    time_end = time()
 
     accuracy = 0 if num_examples == 0 else running_corrects / num_examples
 
@@ -115,6 +122,10 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
         if sacred_experiment is not None:
             sacred_experiment.log_scalar("test.accuracy", accuracy)
         print(f'|--> eval val accuracy: {accuracy:.4f}')
+
+    if args.time:
+        time_taken = f"{(time_end - time_start):.2f}"
+        print(f'|--> eval time taken: {time_taken} seconds')
 
 def main(args, **kwargs):
     sacred_experiment = kwargs.get("sacred_experiment")
