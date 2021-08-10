@@ -67,7 +67,7 @@ def update_f1_counts_distilled(pred_labels, target_labels, tp, fp, fn, tn):
     tn += torch.count_nonzero(torch.logical_and(pred_zeros, target_zeros)).item()
     return tp, fp, fn, tn
 
-def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, include_f1=False, mnli_subtask=None):
+def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, include_f1=False, mnli_subtask=None, include_time=False):
     model.to(device)
     model.eval()
     running_corrects, num_examples, tp, fp, fn, tn = 0, 0, 0, 0, 0, 0
@@ -123,7 +123,7 @@ def evaluate_distilled_model(model, dl, device, args, sacred_experiment=None, in
             sacred_experiment.log_scalar("test.accuracy", accuracy)
         print(f'|--> eval val accuracy: {accuracy:.4f}')
 
-    if args.time:
+    if include_time:
         time_taken = f"{(time_end - time_start):.2f}"
         print(f'|--> eval time taken: {time_taken} seconds')
 
@@ -177,12 +177,12 @@ def main(args, **kwargs):
             for subtask in ['matched', 'mismatched']:
                 val_data = data_utils.load_val_data(task, mnli_subtask=subtask)
                 dl = data_utils.get_val_dataloader(model, val_data)
-                evaluate_distilled_model(model, dl, device, args, sacred_experiment, mnli_subtask=subtask)
+                evaluate_distilled_model(model, dl, device, args, sacred_experiment, mnli_subtask=subtask, include_time=args.time)
         else:
             include_f1 = task in ['qqp']
             val_data = data_utils.load_val_data(task)
             dl = data_utils.get_val_dataloader(model, val_data)
-            evaluate_distilled_model(model, dl, device, args, sacred_experiment, include_f1=include_f1)
+            evaluate_distilled_model(model, dl, device, args, sacred_experiment, include_f1=include_f1, include_time=args.time)
     return model
 
 if __name__ == "__main__":
