@@ -18,6 +18,7 @@ def predict_roberta(model, sentence_data, device, task):
     return pred_logits.tolist(), pred_label
 
 def predict_student(model, sentence_data, device, task):
+    label_fn = lambda label: model.label_dict[str(label)]
     if task_utils.is_sentence_pair(task):
         encoded_1 = torch.LongTensor(model.embedding.encode(sentence_data[0]))
         encoded_2 = torch.LongTensor(model.embedding.encode(sentence_data[1]))
@@ -29,9 +30,9 @@ def predict_student(model, sentence_data, device, task):
         x = encoded.unsqueeze(0).to(device)
 
     pred_logits = model(x, lens)
-    _, pred_label = torch.max(pred_logits, 1)
+    pred_label = label_fn(torch.max(pred_logits, 1)[1].item())
 
-    return pred_logits.tolist(), pred_label.item()
+    return pred_logits.tolist(), pred_label
 
 def main(args):
     device = torch.device('cpu') if args.cpu else torch.device('cuda')
