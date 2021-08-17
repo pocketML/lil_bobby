@@ -54,7 +54,7 @@ def args_prune(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     ap.add_argument("--prune-magnitude", action="store_true")
     group = ap.add_mutually_exclusive_group()
-    group.add_argument("--prune-topk", action="store_true")
+    group.add_argument("--prune-topv", action="store_true")
     group.add_argument("--prune-movement", action="store_true")
     ap.add_argument("--prune-local", action="store_true")
     ap.add_argument("--prune-aware", action="store_true")

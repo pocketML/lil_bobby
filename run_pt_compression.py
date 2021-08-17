@@ -25,7 +25,7 @@ model_index = arch_id + model_id
 
 model_name = EXTRA_COMPRESSION_MODELS[model_index][task_id]
 
-prune_args = ["--prune-topk", "--prune-threshold", "0.5", "--prune-local"]
+prune_args = ["--prune-topv", "--prune-threshold", "0.5", "--prune-local"]
 quant_args = ["--ptq-embedding", "--dq-encoder", "--dq-classifier"]
 
 args_list = [

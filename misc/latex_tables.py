@@ -241,10 +241,15 @@ def print_extra_compression_table(grouped_data, table):
     print(" & ".join(roberta_data) + "\\\\")
 
     if table == "final":
-        glue_data = [
+        glue_data_base = [
+            "GLUE Baseline", "87.5", "85.3 / 82.0", "66.7", "681.13", "681.13", "2x / 2x"
+        ]
+        print(" & ".join(glue_data_base) + "\\\\")
+
+        glue_data_elmo = [
             "GLUE Baseline + Elmo", "91.5", "88.0 / 84.3", "68.6", "681.13", "681.13", "2x / 2x"
         ]
-        print(" & ".join(glue_data) + "\\\\")
+        print(" & ".join(glue_data_elmo) + "\\\\")
 
         tinybert_data = [
             "TinyBERT\\textsubscript{4}", "93.0", "88.00 / 91.10", "84.50", "268.00", "268.00", "5x / 5x"

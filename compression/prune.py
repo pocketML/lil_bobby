@@ -21,7 +21,7 @@ class MagnitudePruning(prune.BasePruningMethod):
         mask[abs(inputs) < self.threshold] = 0
         return mask
 
-class TopKPruning(prune.BasePruningMethod):
+class TopVPruning(prune.BasePruningMethod):
     """
     Prune the lowest ratio of parameters according to threshold.
     Threshold=0.3 would prune the weights with lowest value,
@@ -140,8 +140,8 @@ def do_pruning(model, args, epoch=None):
         prune_class = MagnitudePruning
     elif args.prune_movement:
         pass
-    elif args.prune_topk:
-        prune_class = TopKPruning
+    elif args.prune_topv:
+        prune_class = TopVPruning
 
     if prune_class is None:
         return pruned_model # Return untouched model.
