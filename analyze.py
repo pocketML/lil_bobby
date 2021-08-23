@@ -16,7 +16,7 @@ def load_model(args, is_roberta_model, kw_model=None):
     elif args.arch == 'glue':
         # 2_200_000 vocab_size for original GloVe
         # 312_000 for ELMO
-        return model_utils.GlueBaseline(vocab_size=312000)
+        return model_utils.GlueBaseline(vocab_size=2200000)
     elif args.arch in distill_models.STUDENT_MODELS.keys():
         return distill_models.load_student(args.task, args.arch, False, model_name=args.model_name, args=args)
 

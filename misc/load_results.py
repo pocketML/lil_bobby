@@ -24,6 +24,11 @@ EXTRA_COMPRESSION_MODELS = [
         "bilstm_qqp_alpha0_bpe25_june2",
         "bilstm_mnli_alpha0_bpe25_june9"
     ],
+    [
+        "bilstm_sst_alpha05_char100_may26",
+        "bilstm_qqp_alpha05_char100_june5",
+        "bilstm_mnli_alpha05_char100_june10"
+    ],
     [ # RNN
         "rnn_sst_alpha0_hash100_may27",
         "rnn_qqp_alpha0_hash100_june6",
