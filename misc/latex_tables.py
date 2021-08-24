@@ -228,13 +228,13 @@ def print_extra_compression_table(grouped_data, table):
     # Print headers
     header_line = (
         "Model & SST-2 & QQP & MNLI & SS size & "
-        "SP size & \\multicolumn{2}{c}{Compress rate (SS/SP)}\\\\"
+        "SP size & \\multicolumn{2}{c}{Compr. rate (SS/SP)}\\\\"
     )
     print(header_line)
     print("\\hhline{=|=|=|=|=|=|=|=}")
 
     roberta_data = [
-        "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33", "1426.02", "1426.02", "1x / 1x"
+        "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33", "1426.02", "1426.02", "1x & 1x"
     ]
 
     # Actually print the data
@@ -242,17 +242,17 @@ def print_extra_compression_table(grouped_data, table):
 
     if table == "final":
         glue_data_base = [
-            "GLUE Baseline", "87.5", "85.3 / 82.0", "66.7", "681.13", "681.13", "2x / 2x"
+            "GLUE Baseline", "87.5", "85.3 / 82.0", "66.7", "681.13", "681.13", "2x & 2x"
         ]
         print(" & ".join(glue_data_base) + "\\\\")
 
         glue_data_elmo = [
-            "GLUE Baseline + Elmo", "91.5", "88.0 / 84.3", "68.6", "681.13", "681.13", "2x / 2x"
+            "GLUE Baseline + Elmo", "91.5", "88.0 / 84.3", "68.6", "681.13", "681.13", "2x & 2x"
         ]
         print(" & ".join(glue_data_elmo) + "\\\\")
 
         tinybert_data = [
-            "TinyBERT\\textsubscript{4}", "93.0", "88.00 / 91.10", "84.50", "268.00", "268.00", "5x / 5x"
+            "TinyBERT\\textsubscript{4}", "93.0", "88.00 / 91.10", "84.50", "268.00", "268.00", "5x & 5x"
         ]
         print(" & ".join(tinybert_data) + "\\\\")
 
