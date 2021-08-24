@@ -171,8 +171,6 @@ def format_extra_compression_row(data, task):
 def group_and_format_extra_compression_data(results, table):
     all_model_data = []
     og_model_data = []
-    model_ids = ["A", "B", "C"]
-    times_seen_arch = {"bilstm": 0, "rnn": 0, "emb-ffn": 0}
     for model_group in results:
         acc_data = []
         acc_data_og = []
@@ -188,9 +186,8 @@ def group_and_format_extra_compression_data(results, table):
             og_data = load_results.get_experiment_data(og_results, "distill")
 
             if task == "sst-2": # Only add arch once.
-                model_id_index = times_seen_arch[og_data["arch"]]
-                times_seen_arch[og_data["arch"]] += 1
-                model_id = model_ids[model_id_index]
+                emb_fmt = EMB_FORMATTED[og_data["emb-type"]]
+                model_id = f"{emb_fmt}{og_data['emb-dim']}"
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
                 model_name = f"{arch_fmt}\\textsubscript" + "{" + model_id + "}"
                 compress_denote = f"{table}d" if table != "final" else "p + q"
