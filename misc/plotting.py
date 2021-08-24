@@ -9,7 +9,7 @@ MODEL_DATA = {
     "sst-2": [
         ("RoBERTa Large", 96.56, 1426.02 * 1000),
         ("GLUE + Elmo", 91.5, 681.128 * 1000),
-        ("GLUE Baseline", 87.5, 2946.728 * 1000),
+        ("GLUE + GLoVE", 87.5, 2946.728 * 1000),
         ("TinyBERT", 93.0, 116 * 1000)
     ],
     "qqp": [

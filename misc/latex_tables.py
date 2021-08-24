@@ -190,7 +190,7 @@ def group_and_format_extra_compression_data(results, table):
                 model_id = f"{emb_fmt}{og_data['emb-dim']}"
                 arch_fmt = ARCH_FORMATTED[og_data["arch"]]
                 model_name = f"{arch_fmt}\\textsubscript" + "{" + model_id + "}"
-                compress_denote = f"{table}d" if table != "final" else "p + q"
+                compress_denote = table[0] if table != "final" else "p + q"
                 acc_data.append(f"{model_name} + {compress_denote}")
                 acc_data_og.append(model_name)
 
@@ -219,16 +219,16 @@ def print_extra_compression_table(grouped_data, table):
     print("\\begin{footnotesize}")
 
     # Start of table
-    print("\\begin{tabular}{l||c|c|c|c|c|rr}")
+    print("\\begin{tabular}{l||c|c|c||rr|rr}")
     print("\\hline")
 
     # Print headers
     header_line = (
-        "Model & SST-2 & QQP & MNLI & SS size & "
-        "SP size & \\multicolumn{2}{c}{Compr. rate (SS/SP)}\\\\"
+        "Model & SST-2 & QQP & MNLI & \\multicolumn{2}{c}{Size (SS/SP)} & "
+        "\\multicolumn{2}{c}{Compr. rate (SS/SP)}\\\\"
     )
     print(header_line)
-    print("\\hhline{=|=|=|=|=|=|=|=}")
+    print("\\hline")
 
     roberta_data = [
         "RoBERTa\\textsubscript{Large}", "96.56", "92.15 / 89.58", "90.33", "1426.02", "1426.02", "1x & 1x"
@@ -239,7 +239,7 @@ def print_extra_compression_table(grouped_data, table):
 
     if table == "final":
         glue_data_base = [
-            "GLUE Baseline", "87.5", "85.3 / 82.0", "66.7", "681.13", "681.13", "2x & 2x"
+            "GLUE Baseline + GLoVE", "87.5", "85.3 / 82.0", "66.7", "2946.73", "2946.7", "2x & 2x"
         ]
         print(" & ".join(glue_data_base) + "\\\\")
 
