@@ -72,7 +72,7 @@ def weight_pie_chart(model, arch, save_pdf=False):
                 print(f'whelp, {key} not recognized')
         labels = get_labels(['Sentence encoder', 'Transformer layers', 'LM Head'], p_count)
     else: # presumably we have a student model or the glue baseline
-        if arch == 'glue':
+        if arch == 'glue_elmo':
             module_names = ['emb', 'bilstm', 'cls']
             labels = ['Embedding layer', 'BiLSTM', 'Classifier']
         elif arch == 'emb-ffn':

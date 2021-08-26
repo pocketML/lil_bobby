@@ -5,6 +5,9 @@ from sacred import Experiment, SETTINGS
 from sacred.observers import FileStorageObserver
 from common.argparsers import args_experiment
 from argparse import ArgumentError
+import numpy as np
+
+np.dot
 
 from common import transponder
 from finetune import main as finetune_main
@@ -18,6 +21,18 @@ TASK_FUNCS = {
 }
 
 def run_experiment(task_args, _run):
+    """
+    Description of method
+    
+    Parameters
+    ----------
+    task_args : str
+        Blablablabl
+    _run -- raifjsiajfas
+
+    Returns
+    ----------
+    """
     metrics_filename = f"experiments/{_run.info['name']}/metrics.json"
     if not os.path.exists(metrics_filename):
         # Sometimes metrics.json is not created by Sacred... So we do it ourselves.
@@ -31,11 +46,12 @@ def run_experiment(task_args, _run):
         )
 
 def main(experiment_args, task_args):
-    SETTINGS["CAPTURE_MODE"] = "no"
+    SETTINGS["CAPTURE_MODE"] = "no" # Disable stdout capturing by Sacred as it causes issues.
 
-    if stdout.encoding != "utf-8" and stdout.encoding != "UTF-8" :
+    if stdout.encoding != "utf-8" and stdout.encoding != "UTF-8" : # Ensure stdout utf-8 encoding.
         raise UnicodeError(f"Stdout encoding is {stdout.encoding} (should be utf-8)!")
 
+    # Create Sacred experiment and associated experiment folders.
     experiment = Experiment(experiment_args.name)
 
     output_dir = "experiments"

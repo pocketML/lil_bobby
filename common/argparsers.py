@@ -180,7 +180,8 @@ def args_finetune(args=None, namespace=None, parse_known=False):
 def args_analyze(args=None, namespace=None, parse_known=False):
     ap = argparse.ArgumentParser()
     ap.add_argument('--model-name', type=str, default=None)
-    ap.add_argument('--arch', choices=MODEL_ARCHS + ['glue'], required=True)
+    glue_models = ['glue_glove', "glue_elmo"]
+    ap.add_argument('--arch', choices=MODEL_ARCHS + glue_models, required=True)
     ap.add_argument('--task', choices=TASK_INFO.keys(), required=True)
     ap.add_argument('--model-size', action='store_true')
     ap.add_argument('--theoretical-size', action='store_true')
