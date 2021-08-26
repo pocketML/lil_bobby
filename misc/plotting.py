@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import argparse
 font = {'size': 16}
 plt.rc('font', **font)
@@ -7,31 +8,33 @@ import load_results
 # Data is task -> list of [model_name, acc_1, acc_2, size]
 MODEL_DATA = {
     "sst-2": [
-        ("RoBERTa Large", 96.56, 1426.02 * 1000),
+        ("RoBERTa$_{\\rm Large}$", 96.56, 1426.02 * 1000),
         ("GLUE + Elmo", 91.5, 681.128 * 1000),
         ("GLUE + GLoVE", 87.5, 2946.728 * 1000),
-        ("TinyBERT", 93.0, 116 * 1000)
+        ("TinyBERT$_{\\rm 6}$", 93.0, 116 * 1000)
     ],
     "qqp": [
-        ("RoBERTa Large", 92.15, 1426.02 * 1000),
+        ("RoBERTa$_{\\rm Large}$", 92.15, 1426.02 * 1000),
         ("GLUE + Elmo", 88.0, 681.128 * 1000),
-        ("GLUE Baseline", 85.3, 2946.728 * 1000),
-        ("TinyBERT", 90.4, 116 * 1000)
+        ("GLUE + GLoVE", 85.3, 2946.728 * 1000),
+        ("TinyBERT$_{\\rm 6}$", 90.4, 116 * 1000)
     ],
     "mnli": [
-        ("RoBERTa Large", 90.15, 1426.02 * 1000),
+        ("RoBERTa$_{\\rm Large}$", 90.15, 1426.02 * 1000),
         ("GLUE + Elmo", 68.6, 681.128 * 1000),
-        ("GLUE Baseline", 66.7, 2946.728 * 1000),
-        ("TinyBERT", 84.5, 116 * 1000)
+        ("GLUE + GLoVE", 66.7, 2946.728 * 1000),
+        ("TinyBERT$_{\\rm 6}$", 84.5, 116 * 1000)
     ]
 }
 
-LETTERS = ("A", "B", "C")
+SUBSCRIPT_BILSTM = ("Hash100", "BPE100", "BPE25", "Char100")
+SUBSCRIPT_RNN = ("Hash100", "BPE100", "Char100")
+SUBSCRIPT_FFN = ("Hash25", "BPE100", "Hash25^*")
 
 MODEL_NAMES = (
-    [f"BiLSTM {letter}" for letter in LETTERS + ("D",)] +
-    [f"RNN {letter}" for letter in LETTERS] +
-    [f"FFN {letter}" for letter in LETTERS]
+    ["BiLSTM$_{\\rm " + letter + "}$" for letter in SUBSCRIPT_BILSTM] +
+    ["RNN$_{\\rm " + letter + "}$" for letter in SUBSCRIPT_RNN] +
+    ["FFN$_{\\rm " + letter + "}$" for letter in SUBSCRIPT_FFN]
 )
 
 MODELS_TO_LOAD = []
@@ -43,16 +46,16 @@ for model_name, model_group in zip(MODEL_NAMES, load_results.EXTRA_COMPRESSION_M
 
 TEXT_OFFSETS = {
     "sst-2": [
-        (-20, -26), (-60, 12), (-100, -7), (-30, -26), (10, -7), (-30, 12), (-30, 12),
-        (-10, -26), (-25, 10), (-30, 12), (-65, 12), (-65, 12), (-85, 12), (-152, -6)
+        (-150, 40), (30, 30), (-57, 70), (20, -50), (-50, -40), (30, -30), (-95, 30),
+        (20, -40), (25, -8), (-65, 25), (-80, 35), (-64, -42), (-150, 25), (-175, -9)
     ],
     "qqp": [
-        (-35, -24), (-40, -24), (12, -6), (-25, -26), (12, -7), (-25, -25), (-25, -25),
-        (-25, 10), (-66, -7), (-26, -26), (-100, -2), (-65, 12), (-85, 12), (-152, -6)
+        (-60, -45), (25, -25), (30, 5), (-65, 30), (-130, -9), (25, -9), (-70, 55),
+        (5, 25), (-110, 20), (-49, 90), (-80, 35), (-64, -38), (-150, 25), (-155, -30)
     ],
     "mnli": [
-        (12, -6), (10, -14), (-102, -4), (10, -6), (-28, 10), (10, -7), (10, -7),
-        (16, -10), (-68, -7), (-30, -26), (-100, -2), (-65, 14), (-150, 4), (-130, -22)
+        (-30, -40), (-65, 35), (-145, 0), (35, 0), (35, -25), (35, 9), (-90, 25),
+        (40, 25), (-120, -20), (-55, 40), (-120, 10), (-64, 30), (-170, -10), (-155, -35)
     ]
 }
 
@@ -127,11 +130,20 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     ax.set_xlabel("Size (KB)")
     ax.set_ylabel("Accuracy (%)")
 
+    annotations = []
+
     for index, (model_name, p_y, p_x) in enumerate(data):
         model_index = MODEL_NAMES.index(model_name) if model_name in MODEL_NAMES else index
-        ax.annotate(
-            model_name, get_annotation_position(p_x, p_y, model_index, task, ax), fontsize=14
+        text_x, text_y = get_annotation_position(p_x, p_y, model_index, task, ax)
+        annotation = ax.text(
+            text_x, text_y, model_name, fontsize=14,
+            bbox=dict(facecolor="white", edgecolor="black", boxstyle="round")
         )
+        annotations.append((p_x, p_y, annotation))
+
+    filename = f"misc/pareto_{task}.pdf"
+
+    plt.savefig(filename)
 
     ax.plot(pareto_x, pareto_y, linewidth=2, c="#2EC038")
 
@@ -139,6 +151,19 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     border_width = 30
     ax.scatter(skyline_x, skyline_y, s=radius + border_width, color="red", zorder=2.5)
     ax.scatter(points_x, points_y, s=radius, color="#0D4B89", zorder=3)
+
+    for p_x, p_y, annotation in annotations:
+        bbox = annotation.get_bbox_patch()
+        bbox_w, bbox_h = (bbox.get_width(), bbox.get_height())
+        text_x, text_y = ax.transData.transform((annotation.get_position()))
+        mid_x = text_x + (bbox_w / 2)
+        mid_y = text_y + (bbox_h / 2)
+        arrow_x, arrow_y = ax.transData.inverted().transform((mid_x, mid_y))
+        arrow = patches.FancyArrowPatch(
+            (p_x, p_y), (arrow_x, arrow_y)
+        )
+        ax.add_patch(arrow)
+        #ax.arrow(p_y, p_x, p_x - text_x, p_y - text_y)
 
     filename = f"misc/pareto_{task}.pdf"
 
