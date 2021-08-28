@@ -34,6 +34,8 @@ def create_show_pie_chart(data, labels, save_pdf):
             bbox=bbox_props, zorder=0, va="center")
     for i, p in enumerate(wedges):
         ang = (p.theta2 - p.theta1)/2. + p.theta1
+        # if i == 1:
+        #     ang -= 6
         y = np.sin(np.deg2rad(ang))
         x = np.cos(np.deg2rad(ang))
         horizontalalignment = {-1: "right", 1: "left"}[int(np.sign(x))]
@@ -43,7 +45,7 @@ def create_show_pie_chart(data, labels, save_pdf):
                     horizontalalignment=horizontalalignment, **kw)
     plt.tight_layout()
     if save_pdf:
-        plt.savefig('pie_chart.pdf', bbox_inches="tight")
+        plt.savefig('misc/pie_chart.pdf', bbox_inches="tight")
     plt.show()
 
 def weight_pie_chart(model, arch, save_pdf=False):
@@ -72,7 +74,7 @@ def weight_pie_chart(model, arch, save_pdf=False):
                 print(f'whelp, {key} not recognized')
         labels = get_labels(['Sentence encoder', 'Transformer layers', 'LM Head'], p_count)
     else: # presumably we have a student model or the glue baseline
-        if arch == 'glue_elmo':
+        if arch in ('glue_elmo', 'glue_glove'):
             module_names = ['emb', 'bilstm', 'cls']
             labels = ['Embedding layer', 'BiLSTM', 'Classifier']
         elif arch == 'emb-ffn':

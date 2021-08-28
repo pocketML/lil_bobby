@@ -5,6 +5,22 @@ from compression.distillation import models as distill_models
 from common import argparsers, model_utils
 
 def load_model(args, is_roberta_model, kw_model=None):
+    """
+    Load a baseline/finetuned/distilled model.
+
+    Parameters
+    ----------
+    args : Namespace
+        Arguments for what type of model to load and where it is saved.
+    is_roberta_model : bool
+        Whether the model to load is a RoBERTa model (either a masked LM or finetuned).
+    kw_model : Model
+        This may be an existing model or None. If it is not None, return it.
+
+    Returns
+        A loaded model, either a masked LM, finetuned, or distilled model.
+    ----------
+    """
     if kw_model is not None:
         return kw_model
     elif is_roberta_model: # Load RoBERTa model.
@@ -17,7 +33,7 @@ def load_model(args, is_roberta_model, kw_model=None):
         # 2_200_000 vocab_size for original GloVe
         # 312_000 for ELMO
         vocab_size = 2200000 if args.arch == "glue_glove" else 312000
-        return model_utils.GlueBaseline(vocab_size=vocab_size)
+        return model_utils.GlueBaseline(args.task, vocab_size=vocab_size)
     elif args.arch in distill_models.STUDENT_MODELS.keys(): # Load distilled model.
         return distill_models.load_student(args.task, args.arch, False, model_name=args.model_name, args=args)
 

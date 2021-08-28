@@ -9,20 +9,26 @@ import load_results
 MODEL_DATA = {
     "sst-2": [
         ("RoBERTa$_{\\rm Large}$", 96.56, 1426.02 * 1000),
-        ("GLUE + Elmo", 91.5, 681.128 * 1000),
-        ("GLUE + GLoVE", 87.5, 2946.728 * 1000),
+        ("GLUE + Elmo", 91.5, 684.200 * 1000),
+        ("GLUE + GLoVE", 87.5, 2949.800 * 1000),
         ("TinyBERT$_{\\rm 6}$", 93.0, 116 * 1000)
     ],
     "qqp": [
         ("RoBERTa$_{\\rm Large}$", 92.15, 1426.02 * 1000),
-        ("GLUE + Elmo", 88.0, 681.128 * 1000),
-        ("GLUE + GLoVE", 85.3, 2946.728 * 1000),
-        ("TinyBERT$_{\\rm 6}$", 90.4, 116 * 1000)
+        ("GLUE + Elmo", 88.0, 702.632 * 1000),
+        ("GLUE + GLoVE", 85.3, 2968.232 * 1000),
+        ("TinyBERT$_{\\rm 6}$", 91.1, 116 * 1000)
+    ],
+    "qqp_f1": [
+        ("RoBERTa$_{\\rm Large}$", 89.58, 1426.02 * 1000),
+        ("GLUE + Elmo", 84.3, 702.632 * 1000),
+        ("GLUE + GLoVE", 82.0, 2968.232 * 1000),
+        ("TinyBERT$_{\\rm 6}$", 88.0, 116 * 1000)
     ],
     "mnli": [
-        ("RoBERTa$_{\\rm Large}$", 90.15, 1426.02 * 1000),
-        ("GLUE + Elmo", 68.6, 681.128 * 1000),
-        ("GLUE + GLoVE", 66.7, 2946.728 * 1000),
+        ("RoBERTa$_{\\rm Large}$", 90.33, 1426.02 * 1000),
+        ("GLUE + Elmo", 68.6, 702.632 * 1000),
+        ("GLUE + GLoVE", 66.7, 2968.232 * 1000),
         ("TinyBERT$_{\\rm 6}$", 84.5, 116 * 1000)
     ]
 }
@@ -51,7 +57,11 @@ TEXT_OFFSETS = {
     ],
     "qqp": [
         (-60, -45), (25, -25), (30, 5), (-65, 30), (-130, -9), (25, -9), (-70, 55),
-        (5, 25), (-110, 20), (-49, 90), (-80, 35), (-64, -38), (-150, 25), (-155, -30)
+        (5, 25), (-110, 20), (-49, 90), (-90, 32), (-64, -38), (-150, 25), (-155, -30)
+    ],
+    "qqp_f1": [
+        (-60, -45), (25, -25), (30, 5), (-65, 30), (-130, -9), (25, -9), (-70, 55),
+        (5, 25), (-110, 20), (-49, 100), (-100, 32), (-75, -38), (-160, 10), (-155, -50)
     ],
     "mnli": [
         (-30, -40), (-65, 35), (-145, 0), (35, 0), (35, -25), (35, 9), (-90, 25),
@@ -59,14 +69,18 @@ TEXT_OFFSETS = {
     ]
 }
 
-def load_model_data():
+def load_model_data(use_f1=False):
     for model_name, model_list in MODELS_TO_LOAD:
         for task_specific_model in  model_list:
             results = load_results.get_results_for_distilled_model(task_specific_model, "prune_quant")
             data = load_results.get_experiment_data(results, "final")
 
             task = data["task"]
-            acc = data["acc"][0]
+            if task == "qqp" and use_f1:
+                task = "qqp_f1"
+
+            acc_index = 1 if task == "qqp_f1" else 0
+            acc = data["acc"][acc_index]
             size = data["theoretical_size"]
 
             MODEL_DATA[task].append((model_name, acc * 100, size * 1000))
@@ -135,9 +149,10 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     for index, (model_name, p_y, p_x) in enumerate(data):
         model_index = MODEL_NAMES.index(model_name) if model_name in MODEL_NAMES else index
         text_x, text_y = get_annotation_position(p_x, p_y, model_index, task, ax)
+        bg_color = "white" if model_name in skyline_models else "gainsboro"
         annotation = ax.text(
             text_x, text_y, model_name, fontsize=14,
-            bbox=dict(facecolor="white", edgecolor="black", boxstyle="round")
+            bbox=dict(facecolor=bg_color, edgecolor="black", boxstyle="round")
         )
         annotations.append((p_x, p_y, annotation))
 
@@ -163,7 +178,6 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
             (p_x, p_y), (arrow_x, arrow_y)
         )
         ax.add_patch(arrow)
-        #ax.arrow(p_y, p_x, p_x - text_x, p_y - text_y)
 
     filename = f"misc/pareto_{task}.pdf"
 
@@ -175,10 +189,18 @@ if __name__ == "__main__":
 
     AP.add_argument("task", choices=("sst-2", "qqp", "mnli"))
     AP.add_argument("--staircase", action="store_true")
+    AP.add_argument("--use-f1", action="store_true")
 
     ARGS = AP.parse_args()
 
-    load_model_data()
+    if ARGS.task != "qqp" and ARGS.use_f1:
+        print("Error: Can only use F1-score with QQP.")
+        exit(0)
+
+    load_model_data(use_f1=ARGS.use_f1)
+    if ARGS.task == "qqp" and ARGS.use_f1:
+        ARGS.task = "qqp_f1"
+
     sorted_by_size = sorted(MODEL_DATA[ARGS.task], key=lambda x: x[2])
     x_data, y_data, models_on_skyline = get_pareto_data(sorted_by_size, ARGS.staircase)
     plot_pareto(sorted_by_size, x_data, y_data, ARGS.task, models_on_skyline)
