@@ -142,7 +142,8 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
     ax.grid(b=True, which="major", axis="both", linestyle="--")
 
     ax.set_xlabel("Size (KB)")
-    ax.set_ylabel("Accuracy (%)")
+    y_label = "F1-Score (%)" if task == "qqp_f1" else "Accuracy (%)"
+    ax.set_ylabel(y_label)
 
     annotations = []
 

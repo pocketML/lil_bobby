@@ -1,3 +1,8 @@
+"""
+This module is used from the command line to provide information about
+various types of models. This information includes 
+"""
+
 from argparse import ArgumentError
 
 from analysis import parameters, pretty_print, plotting
@@ -18,8 +23,9 @@ def load_model(args, is_roberta_model, kw_model=None):
         This may be an existing model or None. If it is not None, return it.
 
     Returns
-        A loaded model, either a masked LM, finetuned, or distilled model.
     ----------
+    Model
+        A loaded model, either a masked LM, finetuned, or distilled model.
     """
     if kw_model is not None:
         return kw_model
