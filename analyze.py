@@ -1,6 +1,7 @@
 """
-This module is used from the command line to provide information about
-various types of models. This information includes 
+This module is used to provide information about various types of models.
+This information includes size of a model, size of a
+zipped model, parameter distributions in a model, etc.
 """
 
 from argparse import ArgumentError

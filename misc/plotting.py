@@ -1,6 +1,9 @@
+import argparse
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import argparse
+import numpy as np
+
 font = {'size': 16}
 plt.rc('font', **font)
 import load_results
@@ -76,14 +79,15 @@ def load_model_data(use_f1=False):
             data = load_results.get_experiment_data(results, "final")
 
             task = data["task"]
-            if task == "qqp" and use_f1:
-                task = "qqp_f1"
 
-            acc_index = 1 if task == "qqp_f1" else 0
-            acc = data["acc"][acc_index]
+            acc = data["acc"][0]
             size = data["theoretical_size"]
 
             MODEL_DATA[task].append((model_name, acc * 100, size * 1000))
+
+            if task == "qqp" and use_f1:
+                f1 = data["acc"][1]
+                MODEL_DATA["qqp_f1"].append((model_name, f1 * 100, size * 1000))
 
 def get_annotation_position(x, y, model_index, task, axis):
     offset_x, offset_y = TEXT_OFFSETS[task][model_index]
@@ -122,17 +126,11 @@ def get_pareto_data(sorted_data, staircase=False):
 
     return points_x, points_y, models_on_skyline
 
-def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
-    fig, ax = plt.subplots()
-
+def plot_pareto(ax, data, pareto_x, pareto_y, task, skyline_models):
     points_x = [x[2] for x in data]
     points_y = [x[1] for x in data]
     skyline_x = [x[2] for x in data if x[0] in skyline_models]
     skyline_y = [x[1] for x in data if x[0] in skyline_models]
-
-    width = 12 #3.487
-    height = (width * 0.5625)
-    fig.set_size_inches(width, height, forward=True)
 
     ax.set_xscale("log")
     ax.set_ylim(min(points_y) - 3, max(points_y) + 3)
@@ -180,11 +178,6 @@ def plot_pareto(data, pareto_x, pareto_y, task, skyline_models):
         )
         ax.add_patch(arrow)
 
-    filename = f"misc/pareto_{task}.pdf"
-
-    plt.savefig(filename)
-    plt.show()
-
 if __name__ == "__main__":
     AP = argparse.ArgumentParser()
 
@@ -199,9 +192,25 @@ if __name__ == "__main__":
         exit(0)
 
     load_model_data(use_f1=ARGS.use_f1)
-    if ARGS.task == "qqp" and ARGS.use_f1:
-        ARGS.task = "qqp_f1"
 
-    sorted_by_size = sorted(MODEL_DATA[ARGS.task], key=lambda x: x[2])
-    x_data, y_data, models_on_skyline = get_pareto_data(sorted_by_size, ARGS.staircase)
-    plot_pareto(sorted_by_size, x_data, y_data, ARGS.task, models_on_skyline)
+    tasks = [ARGS.task]
+    if ARGS.task == "qqp" and ARGS.use_f1:
+        tasks.append("qqp_f1")
+
+    fig, axes = plt.subplots(len(tasks), 1, squeeze=True)
+    width = 12 #3.487
+    height = (width * 0.5625 * len(tasks))
+    fig.set_size_inches(width, height, forward=True)
+
+    axes = np.array(axes)
+
+    for ax, task in zip(axes, tasks):
+        sorted_by_size = sorted(MODEL_DATA[task], key=lambda x: x[2])
+        x_data, y_data, models_on_skyline = get_pareto_data(sorted_by_size, ARGS.staircase)
+
+        plot_pareto(ax, sorted_by_size, x_data, y_data, task, models_on_skyline)
+
+    filename = f"misc/pareto_{task}.pdf"
+
+    plt.savefig(filename)
+    plt.show()

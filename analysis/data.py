@@ -1,3 +1,8 @@
+"""
+This module contains functions for analyzing different aspects of
+training data for GLUE or for augmented data.
+"""
+
 from common.task_utils import TASK_LABEL_DICT, is_sentence_pair
 
 def get_label_distribution(data, task):

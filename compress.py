@@ -1,3 +1,9 @@
+"""
+This module is used for performing compression on models.
+Compression includes knowledge distillation, pruning
+(training-aware of post-training), and quantization.
+"""
+
 import torch
 
 from argparse import ArgumentError
