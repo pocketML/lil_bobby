@@ -97,6 +97,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
         temperature=args.temperature,
     )
     optim = model.get_optimizer()
+    best_model = model
 
     best_performance, no_improvement = 0, 0,
     for epoch in range(1, args.epochs + 1):
@@ -118,6 +119,7 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
         if model_performance > best_performance:
             print(f'Saving new best model')
             best_performance = model_performance
+            best_model = model
             save_checkpoint(model, args.student_arch, sacred_experiment)
             no_improvement = 0
         else:
@@ -129,4 +131,5 @@ def distill_model(task, model, device, args, callback, sacred_experiment):
 
             if no_improvement == args.early_stopping:
                 break
-    return model
+
+    return best_model

@@ -94,13 +94,17 @@ def is_quantized_model(model):
     return False
 
 class GlueBaseline(nn.Module):
-  def __init__(self, vocab_size=2200000):
+  def __init__(self, task, vocab_size=2200000):
     super().__init__()
 
-    self.emb = nn.Embedding(vocab_size,300)
+    self.emb = nn.Embedding(vocab_size, 300)
     self.bilstm = nn.LSTM(300, 1500, 2, bidirectional=True)
+    cls_in = 1500 * 2
+    if task in ("qqp", "mnli"):
+        cls_in *= 4 # GLUE uses cat-cmp with sentence pair tasks.
+
     self.cls = nn.Sequential( # their fancy MLP version
-      nn.Linear(1500, 512),
+      nn.Linear(1500 * 2 * 4, 512),
       nn.Linear(512, 512),
       nn.Linear(512, 2)
     )

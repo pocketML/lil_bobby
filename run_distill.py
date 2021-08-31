@@ -58,17 +58,19 @@ def main(args, args_remain):
                 else:
                     new_line = f"##SBATCH --mem-per-cpu={mem_per_cpu}\n"
             elif "#SBATCH --time=" in line:
+                time = "12:00:00"
                 if args.student_arch == "emb-ffn":
-                    new_line = "#SBATCH --time=04:00:00\n"
-                else:
-                    new_line = "#SBATCH --time=12:00:00\n"
+                    time = "04:00:00"
+                elif args.embedding_type == "char":
+                    time = "32:00:00"
+                new_line = f"#SBATCH --time={time}\n"
 
             fp.write(new_line)
 
     # Include final static arguments.
     args_list.extend([
-        "--embedding-freeze", "False", "--epochs", "50",
-        "--model-size", "--model-disk-size", "--transponder"
+        "--embedding-freeze", "False", "--model-size",
+        "--model-disk-size", "--transponder"
     ])
 
     # Create a name for the experiment that we are running.

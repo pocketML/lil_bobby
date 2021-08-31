@@ -1,5 +1,4 @@
 import os
-from omegaconf import base
 
 import torch
 
@@ -9,11 +8,6 @@ from compression.distillation import models as distill_models
 MODEL_ARCHS = [
     "emb-ffn", "rnn", "bilstm", "large"
 ]
-
-# "emb-ffn": "embffn_sst_alpha0_hash100_may18_hadfield",
-# "rnn": "test_rrn_bigger",
-# "bilstm": "tang_best",
-# "large": "finetuned_sst-2_feynman"
 
 def get_predictions_roberta(model, val_data):
     """

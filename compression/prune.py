@@ -1,3 +1,4 @@
+from copy import deepcopy
 import torch
 import torch.nn.utils.prune as prune
 
@@ -20,7 +21,7 @@ class MagnitudePruning(prune.BasePruningMethod):
         mask[abs(inputs) < self.threshold] = 0
         return mask
 
-class TopKPruning(prune.BasePruningMethod):
+class TopVPruning(prune.BasePruningMethod):
     """
     Prune the lowest ratio of parameters according to threshold.
     Threshold=0.3 would prune the weights with lowest value,
@@ -34,10 +35,12 @@ class TopKPruning(prune.BasePruningMethod):
         self.module_to_prune = module_to_prune
 
         if self.module_to_prune is not None:
-            if isinstance(self.module_to_prune, torch.nn.LSTM):
+            if isinstance(self.module_to_prune, torch.nn.RNN):
+                self.threshold *= 0.2
+            if isinstance(self.module_to_prune, torch.nn.Embedding):
+                self.threshold *= 0.8
+            elif isinstance(self.module_to_prune, torch.nn.Linear):
                 self.threshold *= 0.25
-            elif isinstance(self.module_to_prune, torch.nn.Embedding):
-                self.threshold *= 0.5
 
     def compute_mask(self, inputs, default_mask):
         mask = default_mask.clone()
@@ -80,14 +83,14 @@ def get_prunable_params(model):
             if module.embedding is not None:
                 containers = [module.embedding]
             else:
-                containers = [module.vectors, module.scalars]
+                continue
         else:
             containers = [module]
 
         for container in containers:
             params = container.named_parameters() if is_sequential or is_embedding else grouped_params[name]
             for param_name, param_values in params:
-                if "weight" in param_name:
+                if "weight" in param_name or "bias" in param_name:
                     name_fmt = param_name
                     if not is_sequential and not is_embedding:
                         name_fmt = ".".join(param_name.split(".")[1:])
@@ -126,6 +129,8 @@ def actual_pruning(model, prune_cls, threshold, prune_local=False, sparsify=Fals
     return model
 
 def do_pruning(model, args, epoch=None):
+    pruned_model = deepcopy(model)
+
     threshold = args.prune_threshold
     if epoch is not None and epoch < args.prune_warmup:
         threshold = threshold * (epoch / args.prune_warmup)
@@ -135,16 +140,19 @@ def do_pruning(model, args, epoch=None):
         prune_class = MagnitudePruning
     elif args.prune_movement:
         pass
-    elif args.prune_topk:
-        prune_class = TopKPruning
+    elif args.prune_topv:
+        prune_class = TopVPruning
 
-    model = actual_pruning(model, prune_class, threshold, args.prune_local)
+    if prune_class is None:
+        return pruned_model # Return untouched model.
 
-    params, zero = get_model_sparsity(model)
+    pruned_model = actual_pruning(pruned_model, prune_class, threshold, args.prune_local)
+
+    params, zero = get_model_sparsity(pruned_model)
     sparsity = (zero / params) * 100
     print(f"Sparsity: {sparsity:.2f}%")
 
-    return model
+    return pruned_model
 
 def prune_model(model, device, args, sacred_experiment=None):
     dl = data_utils.get_val_dataloader(model, data_utils.load_val_data(args.task))

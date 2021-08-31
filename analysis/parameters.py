@@ -52,7 +52,7 @@ def get_model_disk_size(model, sacred_experiment=None):
 def get_model_parameters_safe(model):
     """
     Method for getting parameters from a model that also
-    takes into account if the model is quantized.
+    takes into account whether the model is quantized.
     """
     parameters = model.parameters()
 
@@ -71,16 +71,28 @@ def get_model_parameters_safe(model):
         for module in module_iter:
             if "quant" in str(type(module)).lower():
                 parameters.append(torch.dequantize(module.weight()))
+                parameters.append(module.bias())
 
         if model.cfg["type"] == "lstm":
-            bilstm_weights = model.bilstm.get_weight()
-            for key in bilstm_weights:
-                parameters.append(torch.dequantize(bilstm_weights[key]))
-            bilstm_biases = model.bilstm.get_bias()
-            for key in bilstm_biases:
-               parameters.append(bilstm_biases[key])
+            if isinstance(model.bilstm, torch.nn.LSTM):
+                parameters.extend(model.bilstm.parameters())
+            else:
+                bilstm_weights = model.bilstm.get_weight()
+                for key in bilstm_weights:
+                    parameters.append(torch.dequantize(bilstm_weights[key]))
+                bilstm_biases = model.bilstm.get_bias()
+                for key in bilstm_biases:
+                    parameters.append(bilstm_biases[key])
         elif model.cfg["type"] == "rnn":
-            parameters.extend(model.encoder.parameters())
+            if isinstance(model.encoder, torch.nn.RNN):
+                parameters.extend(model.encoder.parameters())
+            else:
+                param_names = ["forward_i", "forward_h", "reverse_i", "reverse_h"]
+                for param_name in param_names:
+                    if hasattr(model.encoder, param_name):
+                        parameters.append(torch.dequantize(getattr(model.encoder, param_name).weight()))
+                        parameters.append(getattr(model.encoder, param_name).bias())
+
     return parameters
 
 # returns tuple with number of params and number of bits used
@@ -124,3 +136,14 @@ def get_theoretical_size(model, sacred_experiment=None):
     os.remove(temp_name)
 
     return nonzero_params, size
+
+def write_params_to_file(model, name, sacred_experiment=None):
+    filename = (
+        f"{name}_{model.cfg['arch'].out}" if sacred_experiment is None
+        else f"{name}__{sacred_experiment.info['name']}.out"
+    )
+    with open(filename, "w", encoding="utf-8") as fp:
+        for param_name, param_val in model.named_parameters():
+            fp.write(f"===== {param_name} =====\n")
+            fp.write(str(param_val) + "\n")
+            fp.write("\n")

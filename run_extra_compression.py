@@ -4,7 +4,7 @@ import run_distill
 import run_all_seeds
 
 def main(args, args_remain):
-    do_pruning = "--prune-magnitude" in args_remain or "--prune-topk" in args_remain
+    do_pruning = "--prune-magnitude" in args_remain or "--prune-topv" in args_remain
     do_quant = (
         "--ptq-embedding" in args_remain or "--dq-encoder" in args_remain or
         "--dq-classifier" in args_remain or "--ptq-classifier" in args_remain

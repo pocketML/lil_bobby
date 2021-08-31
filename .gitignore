@@ -8,6 +8,7 @@ models/*
 data/*
 experiments/*
 misc/*
+!misc/*.py
 
 # SLURM bash file
 submit.job

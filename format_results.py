@@ -280,8 +280,18 @@ def main(meta_args, search_args):
     else:
         if meta_args.tab_separate and found_data != []:
             accuracies_1 = np.array([float(data_point["acc_1"]) for data_point in found_data])
+            sizes = np.array([float(data_point["size"]) for data_point in found_data])
+            nonzero_mean = None
+            if "nonzero_params" in found_data[0]:
+                nonzero_params = np.array([float(data_point["nonzero_params"]) for data_point in found_data])
+                nonzero_mean = np.mean(nonzero_params)
+            theoretical_size_mean = None
+            if "theoretical_size" in found_data[0]:
+                theoretical_sizes = np.array([float(data_point["theoretical_size"]) for data_point in found_data])
+                theoretical_size_mean = np.mean(theoretical_sizes)
             mean_1 = np.mean(accuracies_1)
             std_dev_1 = np.std(accuracies_1) * 100
+            size_mean = np.mean(sizes)
             accuracies_2 = None
             mean_2 = None
             std_dev_2 = None
@@ -311,13 +321,13 @@ def main(meta_args, search_args):
                         line += " "
 
                     line += f" {data_point['params']}"
-                    if "nonzero_params" in data_point:
-                        line += f" {data_point['nonzero_params']}"
+                    if nonzero_mean is not None:
+                        line += f" {nonzero_mean}"
 
-                    line += f" {data_point['size']}"
+                    line += f" {size_mean}"
 
-                    if "theoretical_size" in data_point:
-                        line += f" {data_point['theoretical_size']}"
+                    if theoretical_size_mean is not None:
+                        line += f" {theoretical_size_mean}"
             else:
                 line = ", ".join([f"{k}={v}" for (k, v) in data_point.items()])
             print(line)
