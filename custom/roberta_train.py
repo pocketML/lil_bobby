@@ -132,7 +132,7 @@ def main(cfg: FairseqConfig, **kwargs) -> None:
             break
 
         # train for one epoch
-        valid_losses, should_stop = train(cfg, trainer, task, epoch_itr)
+        valid_losses, should_stop = train.train(cfg, trainer, task, epoch_itr)
 
         if experiment is not None:
             experiment.log_scalar("validation.acc", valid_losses[0])
