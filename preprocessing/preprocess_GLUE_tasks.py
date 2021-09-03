@@ -153,7 +153,7 @@ def preprocess_glue_task(glue_task):
             for input_type in range(input_count):
                 lang = f"input{input_type}"
                 os.system(
-                    "python -m examples.roberta.multiprocessing_bpe_encoder "
+                    "python custom/multiprocessing_bpe_encoder "
                     f"--encoder-json {BPEMB_PATH}/encoder.json --vocab-bpe {BPEMB_PATH}/vocab.bpe "
                     f"--inputs {processed_folder}/{split}.raw.{lang} "
                     f"--outputs {processed_folder}/{split}.{lang} "

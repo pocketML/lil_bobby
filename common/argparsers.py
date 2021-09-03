@@ -1,3 +1,8 @@
+"""
+This module contains argument parsers for all the parts of our
+program that is executable from the command line.
+"""
+
 import argparse
 
 from common.task_utils import TASK_INFO
@@ -84,7 +89,6 @@ def args_compress(args=None, namespace=None, parse_known=False):
         'quantize': args_quantize,
     }
     ap.add_argument("--compression-actions", nargs="+", choices=compression_actions.keys(), required=True)
-
     ap.add_argument("--task", choices=FINETUNE_TASKS, required=True)
     ap.add_argument("--load-trained-model", type=str, default=None)
     ap.add_argument("--student-arch", type=str, choices=STUDENT_MODELS.keys(), required=True)
@@ -161,9 +165,9 @@ def args_evaluate(args=None, namespace=None, parse_known=False):
 
 def args_finetune(args=None, namespace=None, parse_known=False):
     arch_choices = ['roberta_base', 'roberta_large']
-    
+
     ap = argparse.ArgumentParser()
-    ap.add_argument("--task", "-t", choices=TASK_INFO.keys(), required=True)
+    ap.add_argument("--task", choices=TASK_INFO.keys(), required=True)
     ap.add_argument("--arch", choices=arch_choices, default="roberta_large")
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=10)
@@ -250,12 +254,12 @@ def args_experiment():
 
 def args_search():
     """
-    Search for any 
+    Search for any experiments based on experiment name or parameters used to run it.
     """
 
     # Job to search for.
     task_choices = ("finetune", "compress", "evaluate", "analyze")
-    
+
     ap = argparse.ArgumentParser()
     ap.add_argument("job", choices=task_choices)
 

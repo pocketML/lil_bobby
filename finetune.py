@@ -28,7 +28,7 @@ def get_finetune_string(
     settings = task_utils.TASK_INFO[task]['settings']
     seed = override_args.seed
 
-    # Set batch_size to task default if nothing specified
+    # Set batch_size to task default if nothing is specified
     batch_size = override_args.batch_size
     batch_size = batch_size if batch_size is not None else settings['batch-size']
 
