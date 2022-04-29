@@ -1,11 +1,26 @@
 """
 This module contains functions for analyzing different aspects of
-training data for GLUE or for augmented data.
+GLUE training data or for augmented data.
 """
 
 from common.task_utils import TASK_LABEL_DICT, is_sentence_pair
 
 def get_label_distribution(data, task):
+    """
+    Get label probability distribution for a task, given data.
+
+    Parameters
+    ----------
+    data : list[list[str]]
+        List of data samples for the given task.
+    task : str
+        The GLUE task to get label distribution for.
+
+    Returns
+    ----------
+    dict[int, float]
+        The probability distribution for each label in the given dataset.
+    """
     label_count = {}
     label_index = 2 if is_sentence_pair(task) else 1
     for label_str in data[label_index]:
